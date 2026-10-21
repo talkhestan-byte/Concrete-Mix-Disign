@@ -343,8 +343,10 @@ function renderHome() {
 
     <div class="grid">
       ${selectInput('cementClass', 'نوع سیمان مصرفی', [
-        { value: '42.5', label: 'رده مقاومتی ۴۲٫۵' },
-        { value: '52.5', label: 'رده مقاومتی ۵۲٫۵' }
+  { value: '32.5', label: 'رده مقاومتی ۳۲٫۵' },
+  { value: '42.5', label: 'رده مقاومتی ۴۲٫۵' },
+  { value: '52.5', label: 'رده مقاومتی ۵۲٫۵' }
+])}
       ])}
       ${numberInput('sgCement', fields.sgCement[0], 0.01)}
     </div>
