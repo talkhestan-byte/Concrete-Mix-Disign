@@ -30,17 +30,17 @@ const defaults = {
 };
 
 const sieves = [
-  { label: '۳۷٫۵ mm (حدود الک ۳۸)', mm: 37.5 },
-  { label: '۲۵ mm', mm: 25 },
-  { label: '۱۹ mm', mm: 19 },
-  { label: '۱۲٫۵ mm', mm: 12.5 },
-  { label: '۹٫۵ mm', mm: 9.5 },
-  { label: '۴٫۷۵ mm', mm: 4.75 },
-  { label: '۲٫۳۶ mm', mm: 2.36 },
-  { label: '۱٫۱۸ mm', mm: 1.18 },
-  { label: '۰٫۶ mm ـ الک ۳۰', mm: 0.6 },
-  { label: '۰٫۳ mm ـ الک ۵۰', mm: 0.3 },
-  { label: '۰٫۱۵ mm ـ الک ۱۰۰', mm: 0.15 }
+  { label: 'درصد گذشته از الک ۳۷٫۵ mm (حدود الک ۳۸)', mm: 37.5 },
+{ label: 'درصد گذشته از الک ۲۵ mm', mm: 25 },
+{ label: 'درصد گذشته از الک ۱۹ mm', mm: 19 },
+{ label: 'درصد گذشته از الک ۱۲٫۵ mm', mm: 12.5 },
+{ label: 'درصد گذشته از الک ۹٫۵ mm', mm: 9.5 },
+{ label: 'درصد گذشته از الک ۴٫۷۵ mm', mm: 4.75 },
+{ label: 'درصد گذشته از الک ۲٫۳۶ mm', mm: 2.36 },
+{ label: 'درصد گذشته از الک ۱٫۱۸ mm', mm: 1.18 },
+{ label: 'درصد گذشته از الک ۰٫۶ mm ـ الک ۳۰', mm: 0.6 },
+{ label: 'درصد گذشته از الک ۰٫۳ mm ـ الک ۵۰', mm: 0.3 },
+{ label: 'درصد گذشته از الک ۰٫۱۵ mm ـ الک ۱۰۰', mm: 0.15 }
 ];
 
 const slumpClasses = {
@@ -409,17 +409,30 @@ function renderAggregateTable() {
     `<th>سنگدانه ${i + 1}</th>`
   ).join('');
 
-  const fractureRow = `
-    <tr>
-      <th>درصد شکستگی (%)</th>
-      ${Array.from({ length: data.aggregateCount }, (_, i) => `
-        <td>
-          <input class="table-input" type="number" min="0" max="100" step="0.1"
-            data-agg="${i}" data-agg-field="fracture"
-            value="${data.aggregates[i].fracture}">
-        </td>
-      `).join('')}
-    </tr>
+  const nameRow = `
+  <tr>
+    <th>نام سنگدانه</th>
+    ${Array.from({ length: data.aggregateCount }, (_, i) => `
+      <td>
+        <input class="table-input" type="text"
+          data-agg="${i}" data-agg-field="name"
+          value="${data.aggregates[i].name}">
+      </td>
+    `).join('')}
+  </tr>
+`;
+
+const fractureRow = `
+  <tr>
+    <th>درصد شکستگی (%)</th>
+    ${Array.from({ length: data.aggregateCount }, (_, i) => `
+      <td>
+        <input class="table-input" type="number" min="0" max="100" step="0.1"
+          data-agg="${i}" data-agg-field="fracture"
+          value="${data.aggregates[i].fracture}">
+      </td>
+    `).join('')}
+  </tr>
   `;
 
   const sieveRows = sieves.map((sieve, j) => `
@@ -458,6 +471,7 @@ function renderAggregateTable() {
           </tr>
         </thead>
         <tbody>
+          ${nameRow}
           ${fractureRow}
           ${sieveRows}
         </tbody>
@@ -665,9 +679,11 @@ function view() {
       const index = Number(element.dataset.agg);
       const oldValue = element.value;
 
-      if (element.dataset.aggField === 'fracture') {
+      if (element.dataset.aggField === 'name') {
+        data.aggregates[index].name = element.value;
+}      else if (element.dataset.aggField === 'fracture') {
         data.aggregates[index].fracture = Number(element.value);
-      } else {
+}      else {
         const sieveIndex = Number(element.dataset.sieve);
         data.aggregates[index].passing[sieveIndex] = Number(element.value);
       }
@@ -676,8 +692,10 @@ function view() {
         validateAggregates();
         save();
       } catch (error) {
-        if (element.dataset.aggField === 'fracture') {
-          data.aggregates[index].fracture = Number(oldValue);
+        if (element.dataset.aggField === 'name') {
+         data.aggregates[index].name = element.value;
+        } else if (element.dataset.aggField === 'fracture') {
+         data.aggregates[index].fracture = Number(element.value);
         } else {
           const sieveIndex = Number(element.dataset.sieve);
           data.aggregates[index].passing[sieveIndex] = Number(oldValue);
