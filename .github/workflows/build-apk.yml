@@ -1,7 +1,7 @@
 name: Build Beton479 APK
 
 on:
-workflow_dispatch:
+  workflow_dispatch:
 
 permissions:
 contents: read
