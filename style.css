@@ -15,19 +15,19 @@ body {
 header {
   background: #123e59;
   color: #fff;
-  padding: 14px 10px;
+  padding: 13px 10px;
   text-align: center;
 }
 
 h1 {
   margin: 0;
-  font-size: 21px;
+  font-size: 20px;
 }
 
 main {
-  max-width: 920px;
+  max-width: 960px;
   margin: auto;
-  padding: 9px;
+  padding: 8px;
 }
 
 .notice {
@@ -91,7 +91,7 @@ h2 {
 
 h3 {
   font-size: 14px;
-  margin: 15px 0 8px;
+  margin: 14px 0 8px;
 }
 
 .grid {
@@ -118,7 +118,7 @@ h3 {
   border: 1px solid #b9cbd5;
   border-radius: 7px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 14px;
   background: white;
   color: #17364a;
 }
@@ -129,7 +129,8 @@ h3 {
 }
 
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.table-input:focus {
   outline: 2px solid #8ac6df;
   border-color: #14658b;
 }
@@ -184,6 +185,87 @@ summary {
   margin-top: 12px;
 }
 
+/* جدول دانه‌بندی سنگدانه‌ها */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  margin: 10px 0;
+  border: 1px solid #dce7ed;
+  border-radius: 8px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.aggregate-table {
+  width: 100%;
+  min-width: 430px;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 0;
+}
+
+.aggregate-table th,
+.aggregate-table td {
+  border: 1px solid #e0e9ee;
+  padding: 6px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.aggregate-table thead th {
+  background: #eaf2f6;
+  color: #17364a;
+  font-weight: bold;
+}
+
+.aggregate-table tbody th {
+  background: #f6f9fb;
+  text-align: right;
+  white-space: nowrap;
+  font-weight: normal;
+}
+
+.aggregate-table th:first-child {
+  min-width: 150px;
+}
+
+.aggregate-table td {
+  min-width: 88px;
+}
+
+.table-input {
+  width: 100%;
+  min-width: 68px;
+  padding: 7px 3px;
+  border: 1px solid #b9cbd5;
+  border-radius: 5px;
+  background: white;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: center;
+  direction: ltr;
+}
+
+table:not(.aggregate-table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 8px 0;
+}
+
+table:not(.aggregate-table) td,
+table:not(.aggregate-table) th {
+  padding: 8px 6px;
+  border-bottom: 1px solid #e0e9ee;
+  text-align: right;
+  line-height: 1.7;
+}
+
+table:not(.aggregate-table) td:last-child {
+  text-align: left;
+  direction: ltr;
+  white-space: nowrap;
+}
+
 .actions {
   display: flex;
   justify-content: space-between;
@@ -193,36 +275,6 @@ summary {
 
 .actions button {
   min-width: 90px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-  margin: 8px 0;
-}
-
-td,
-th {
-  padding: 8px 6px;
-  border-bottom: 1px solid #e0e9ee;
-  text-align: right;
-  line-height: 1.7;
-}
-
-td:last-child {
-  text-align: left;
-  direction: ltr;
-  white-space: nowrap;
-}
-
-svg {
-  width: 100%;
-  height: auto;
-  background: #f9fcfe;
-  border: 1px solid #e1e9ee;
-  border-radius: 8px;
-  margin-top: 10px;
 }
 
 .bad {
@@ -272,20 +324,25 @@ footer {
   .field input,
   .field select {
     padding: 9px 5px;
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .notice {
     font-size: 11px;
   }
 
-  table {
+  .aggregate-table {
     font-size: 11px;
   }
 
-  td,
-  th {
-    padding: 7px 4px;
+  .aggregate-table th,
+  .aggregate-table td {
+    padding: 5px 4px;
+  }
+
+  .table-input {
+    font-size: 12px;
+    min-width: 62px;
   }
 }
 
@@ -313,5 +370,9 @@ footer {
 
   button {
     display: none;
+  }
+
+  .table-scroll {
+    overflow: visible;
   }
 }
