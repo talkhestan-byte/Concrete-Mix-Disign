@@ -1,18 +1,41 @@
-'use strict';
-const defaults={strength:30,slump:100,msa:19,cementClass:'42.5',water:185,wc:0.5,coarseShare:0.6,air:2,sgCement:3.15,sgSand:2.65,sgGravel:2.7,absSand:1,wetSand:3,absGravel:0.5,wetGravel:1,sandPassing:'100,100,98,90,72,48,22,5',gravelPassing:'100,100,95,70,25,5,1,0'};
-let data={...defaults,...JSON.parse(localStorage.getItem('beton479')||'{}')};let page=0;
-const titles=['اطلاعات اولیه','۱. آب به سیمان','۲. دانه‌بندی','۳. آب آزاد','۴. سیمان','۵. سنگ‌دانه و گزارش'];
-const fields={strength:['مقاومت مشخصه (MPa)',0.1],slump:['اسلامپ (mm)',1],msa:['حداکثر اندازه سنگ‌دانه MSA (mm)',0.1],water:['آب آزاد انتخاب‌شده (kg/m³)',0.1],wc:['نسبت آب به سیمان انتخاب‌شده',0.001],coarseShare:['سهم حجمی شن از کل سنگ‌دانه',0.001],air:['هوای بتن (%)',0.1],sgCement:['چگالی نسبی سیمان',0.01],sgSand:['چگالی نسبی ماسه (SSD)',0.01],sgGravel:['چگالی نسبی شن (SSD)',0.01],absSand:['جذب آب ماسه (%)',0.1],wetSand:['رطوبت کل ماسه (%)',0.1],absGravel:['جذب آب شن (%)',0.1],wetGravel:['رطوبت کل شن (%)',0.1]};
-function input(k){let [label,step]=fields[k];return `<label class="field">${label}<input data-key="${k}" type="number" step="${step}" value="${data[k]}"></label>`}
-function group(keys){return `<div class="grid">${keys.map(input).join('')}</div>`}
-function save(){localStorage.setItem('beton479',JSON.stringify(data))}
-function validate(){for(const k of Object.keys(fields)){if(!Number.isFinite(Number(data[k])))throw Error('ورودی نامعتبر: '+fields[k][0]);}if(+data.water<=0||+data.wc<=0||+data.wc>=1||+data.coarseShare<=0||+data.coarseShare>=1||+data.air<0||+data.air>=15)throw Error('آب، نسبت آب به سیمان، سهم شن یا درصد هوا نامعتبر است.');for(const k of ['sgCement','sgSand','sgGravel'])if(+data[k]<=0)throw Error('چگالی نسبی باید مثبت باشد.');for(const k of ['absSand','absGravel','wetSand','wetGravel'])if(+data[k]<0)throw Error('جذب آب و رطوبت نمی‌توانند منفی باشند.');}
-class Step1{run(){return {wc:+data.wc,strength:+data.strength}}}
-class Step2{run(){const sieve=[37.5,25,19,12.5,9.5,4.75,2.36,0.6];const parse=k=>data[k].split(',').map(x=>Number(x.trim()));let sand=parse('sandPassing'),gravel=parse('gravelPassing');if(sand.length!==8||gravel.length!==8||[...sand,...gravel].some(x=>!Number.isFinite(x)||x<0||x>100))throw Error('برای هر مصالح، ۸ درصد عبوری بین صفر تا ۱۰۰ وارد کنید.');const share=+data.coarseShare;return {sieve,sand,gravel,mix:sand.map((v,i)=>v*(1-share)+gravel[i]*share)}}}
-class Step3{run(){return {water:+data.water}}}
-class Step4{run(){validate();return {cement:+data.water/+data.wc}}}
-class Step5{run(){validate();const c=new Step4().run().cement,w=+data.water,vc=c/(+data.sgCement*1000),vw=w/1000,va=+data.air/100,agg=1-vc-vw-va;if(agg<=0)throw Error('حجم باقی‌مانده برای سنگ‌دانه مثبت نیست.');let vg=agg*(+data.coarseShare),vs=agg-vg,s=vs*(+data.sgSand)*1000,g=vg*(+data.sgGravel)*1000;let as=+data.absSand/100,ag=+data.absGravel/100,ms=+data.wetSand/100,mg=+data.wetGravel/100;let sw=s*(1+ms)/(1+as),gw=g*(1+mg)/(1+ag),batchWater=w-s*(ms-as)/(1+as)-g*(mg-ag)/(1+ag);return {c,w,s,g,sw,gw,batchWater,vc,vw,va,vs,vg}}}
-function graph(xs,lines,log=false){let W=660,H=310,L=55,R=20,T=22,B=47;const X=x=>log?L+(Math.log(x)-Math.log(xs[xs.length-1]))/(Math.log(xs[0])-Math.log(xs[xs.length-1]))*(W-L-R):L+x*(W-L-R)/(xs.length-1);const Y=y=>T+(100-y)*(H-T-B)/100;let parts=[`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="نمودار درصد عبوری">`];for(let n=0;n<=100;n+=20)parts.push(`<line x1="${L}" y1="${Y(n)}" x2="${W-R}" y2="${Y(n)}" stroke="#dbe5eb"/><text x="${L-8}" y="${Y(n)+4}" text-anchor="end" font-size="11">${n}</text>`);xs.forEach((x,i)=>parts.push(`<text x="${X(log?x:i)}" y="${H-21}" text-anchor="middle" font-size="10">${x}</text>`));lines.forEach(([name,values,color],j)=>{let pts=values.map((y,i)=>`${X(log?xs[i]:i)},${Y(y)}`).join(' ');parts.push(`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="3"/>`);parts.push(`<text x="${L+j*150}" y="${H-4}" font-size="12" fill="${color}">${name}</text>`)});return parts.join('')+'</svg>'}
-function table(rows){return `<table><tbody>${rows.map(([k,v])=>`<tr><td>${k}</td><td>${typeof v==='number'?v.toFixed(2):v}</td></tr>`).join('')}</tbody></table>`}
-function view(){document.getElementById('tabs').innerHTML=titles.map((t,i)=>`<button data-page="${i}" class="${i===page?'active':''}">${t}</button>`).join('');let html='';try{switch(page){case 0:html=`<h2>اطلاعات اولیه طرح</h2>${group(['strength','slump','msa','air','sgCement','sgSand','sgGravel','absSand','wetSand','absGravel','wetGravel'])}<p class="hint">مقادیر پیش‌فرض صرفاً نمونه‌اند و باید با نتایج آزمایش واقعی جایگزین شوند.</p>`;break;case 1:html=`<h2>گام اول — تعیین نسبت آب به سیمان</h2>${group(['wc'])}<p class="hint">نمودار رسمی رابطه مقاومت و نسبت آب به سیمان باید از نشریه ۴۷۹ عددی‌سازی و با نوع سیمان و مصالح کالیبره شود. به‌جای ترسیم منحنی ساختگی، مقدار منتخب مهندس را می‌گیریم.</p>${table([['مقاومت مشخصه (MPa)',+data.strength],['نسبت آب به سیمان منتخب',new Step1().run().wc]])}`;break;case 2:{let r=new Step2().run();html=`<h2>گام دوم — منحنی مخلوط دانه‌بندی</h2>${group(['msa','coarseShare'])}<p class="hint">درصد عبوری هر مصالح را به ترتیب الک‌های 37.5، 25، 19، 12.5، 9.5، 4.75، 2.36 و 0.6 میلی‌متر وارد کنید. مقادیر اولیه فقط برای نمایش هستند. حدود مجاز رسمی MSA هنوز اضافه نشده‌اند.</p><label class="field">درصد عبوری ماسه (۸ عدد با ویرگول)<input data-key="sandPassing" value="${data.sandPassing}"></label><label class="field">درصد عبوری شن (۸ عدد با ویرگول)<input data-key="gravelPassing" value="${data.gravelPassing}"></label>${graph(r.sieve,[['ماسه',r.sand,'#dd8c27'],['شن',r.gravel,'#267eae'],['مخلوط',r.mix,'#208257']],true)}${table(r.sieve.map((x,i)=>['عبوری مخلوط از الک '+x+' mm',r.mix[i]]))}`;break;}case 3:html=`<h2>گام سوم — تعیین آب آزاد</h2>${group(['water','slump'])}<p class="hint">نمودار آب آزاد تابع داده‌های مرجع روش ملی و مشخصات مصالح است. تا زمان ثبت داده‌های رسمی، آب آزاد از ورودی معتبر کاربر دریافت می‌شود؛ هیچ نمودار فرضی نمایش داده نمی‌شود.</p>${table([['آب آزاد (kg/m³)',new Step3().run().water]])}`;break;case 4:html=`<h2>گام چهارم — تعیین مقدار سیمان</h2>${group(['wc','water'])}${table([['سیمان (kg/m³)',new Step4().run().cement]])}<p class="hint">رابطه محاسباتی: سیمان = آب آزاد ÷ نسبت آب به سیمان. کنترل حداقل و حداکثر سیمان بر اساس شرایط دوام هنوز نیازمند داده‌های مرجع است.</p>`;break;case 5:{let r=new Step5().run();html=`<h2>گام پنجم — سنگ‌دانه و گزارش</h2>${group(['coarseShare'])}${table([['آب آزاد طرح (kg/m³)',r.w],['سیمان (kg/m³)',r.c],['ماسه SSD (kg/m³)',r.s],['شن SSD (kg/m³)',r.g],['ماسه مرطوب قابل توزین (kg/m³)',r.sw],['شن مرطوب قابل توزین (kg/m³)',r.gw],['آب قابل افزودن به مخلوط‌کن (kg/m³)',r.batchWater],['حجم کل اجزا (m³)',r.vc+r.vw+r.va+r.vs+r.vg]])}<button id="print">چاپ / ذخیره PDF</button><p class="hint">این گزارش مبتنی بر روش حجم مطلق و اصلاح رطوبت است؛ جایگزین تأیید نهایی طرح اختلاط طبق نشریه نیست.</p>`;break;}}}catch(e){html=`<p class="bad">${e.message}</p><p>ورودی‌های این بخش را اصلاح کنید.</p>`;}document.getElementById('screen').innerHTML=`<article class="panel">${html}</article>`;document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>{page=+b.dataset.page;view()});document.querySelectorAll('[data-key]').forEach(el=>el.onchange=()=>{data[el.dataset.key]=el.type==='number'?Number(el.value):el.value;save();view()});let p=document.getElementById('print');if(p)p.onclick=()=>window.print();document.getElementById('prev').disabled=page===0;document.getElementById('next').disabled=page===5;}
-document.getElementById('prev').onclick=()=>{page=Math.max(0,page-1);view()};document.getElementById('next').onclick=()=>{page=Math.min(5,page+1);view()};view();if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+class Step5 {
+  run() {
+    validate();
+
+    const c = new Step4().run().cement;
+    const w = effectiveWater();
+
+    const vc = c / (num('sgCement') * 1000);
+    const vw = w / 1000;
+    const va = num('air') / 100;
+
+    const agg = 1 - vc - vw - va;
+
+    if (agg <= 0) {
+      throw Error('حجم باقی‌مانده برای سنگ‌دانه مثبت نیست.');
+    }
+
+    const vg = agg * num('coarseShare');
+    const vs = agg - vg;
+
+    // وزن خشک سنگ‌دانه‌ها بر مبنای حجم مطلق
+    const drySand = vs * num('sgSand') * 1000;
+    const dryGravel = vg * num('sgGravel') * 1000;
+
+    const admixtureMass = c * num('admixturePct') / 100;
+
+    return {
+      c,
+      w,
+      drySand,
+      dryGravel,
+      admixtureMass,
+      vc,
+      vw,
+      va,
+      vs,
+      vg,
+      volume: vc + vw + va + vs + vg
+    };
+  }
+}
