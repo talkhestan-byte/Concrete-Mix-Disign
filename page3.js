@@ -202,18 +202,28 @@ function p3Calculate() {
     fm
   };
 }
+
 function p3Chart(r) {
-  const W = 850, H = 420, L = 48, R = 20, T = 48, B = 42;
-  const min = Math.log10(0.15), max = Math.log10(37.5);
+  const W = 850;
+  const H = 440;
+  const L = 70;
+  const R = 24;
+  const T = 48;
+  const B = 58;
 
-  const x = mm => L +
-    (Math.log10(mm) - min) / (max - min) * (W - L - R);
+  const min = Math.log10(0.075);
+  const max = Math.log10(37.5);
 
-  const y = v => H - B - v / 100 * (H - T - B);
+  const x = mm =>
+    L + (Math.log10(mm) - min) / (max - min) * (W - L - R);
 
-  const path = pts => pts.map((p, i) =>
-    `${i ? 'L' : 'M'}${x(p.mm).toFixed(2)},${y(p.value).toFixed(2)}`
-  ).join(' ');
+  const y = v =>
+    H - B - (v / 100) * (H - T - B);
+
+  const path = pts =>
+    pts.map((p, i) =>
+      `${i ? 'L' : 'M'}${x(p.mm).toFixed(2)},${y(p.value).toFixed(2)}`
+    ).join(' ');
 
   let svg = `<svg viewBox="0 0 ${W} ${H}"
     style="width:100%;min-width:620px;background:#fff"
@@ -221,38 +231,51 @@ function p3Chart(r) {
 
   for (let v = 0; v <= 100; v += 10) {
     svg += `
-      <line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}"
+      <line x1="${L}" y1="${y(v)}"
+        x2="${W - R}" y2="${y(v)}"
         stroke="#d9e2ec"/>
-      <text x="${L-7}" y="${y(v)+4}" text-anchor="end"
-        font-size="12" fill="#334155">${v}</text>`;
+      <text x="${L - 12}" y="${y(v) + 4}"
+        text-anchor="end" font-size="12"
+        fill="#334155">${v}</text>`;
   }
 
-  for (const mm of p3Sieves) {
+  const chartSieves = [0.075, ...p3Sieves];
+
+  for (const mm of chartSieves) {
     svg += `
-      <line x1="${x(mm)}" y1="${T}" x2="${x(mm)}" y2="${H-B}"
+      <line x1="${x(mm)}" y1="${T}"
+        x2="${x(mm)}" y2="${H - B}"
         stroke="#a8b6c6" stroke-dasharray="4 4"/>
-      <text x="${x(mm)}" y="${T-12}" text-anchor="middle"
-        font-size="11" fill="#334155">${mm}</text>`;
+      <text x="${x(mm)}" y="${H - B + 19}"
+        text-anchor="middle" font-size="11"
+        fill="#334155">${mm}</text>`;
   }
 
   svg += `
-    <line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" stroke="#475569"/>
-    <line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#475569"/>`;
+    <line x1="${L}" y1="${T}"
+      x2="${L}" y2="${H - B}" stroke="#475569"/>
+    <line x1="${L}" y1="${H - B}"
+      x2="${W - R}" y2="${H - B}" stroke="#475569"/>`;
 
   const ref = p3Reference[Number(data.msa)];
 
   if (ref) {
     ['A', 'B', 'C'].forEach((label, k) => {
       const pts = p3Sieves.map((mm, i) => ({
-        mm, value: ref[i][k]
+        mm,
+        value: ref[i][k]
       }));
 
-      svg += `<path d="${path(pts)}" fill="none"
-        stroke="#72c9f0" stroke-width="2.4"/>`;
+      svg += `
+        <path d="${path(pts)}" fill="none"
+          stroke="#72c9f0" stroke-width="2.4"/>`;
 
       const p = pts[7];
-      svg += `<text x="${x(p.mm)+7}" y="${y(p.value)-6}"
-        font-size="16" font-weight="bold" fill="#238dbb">${label}</text>`;
+
+      svg += `
+        <text x="${x(p.mm) + 7}" y="${y(p.value) - 6}"
+          font-size="16" font-weight="bold"
+          fill="#238dbb">${label}</text>`;
     });
   }
 
@@ -260,26 +283,39 @@ function p3Chart(r) {
     if (data.p3Visible[i] === false) continue;
 
     const a = data.aggregates[i];
+
     const pts = p3Sieves.map(mm => {
-      const j = sieves.findIndex(s => Math.abs(s.mm - mm) < 0.02);
-      return { mm, value: j >= 0 ? Number(a.passing[j]) : NaN };
+      const j = sieves.findIndex(
+        s => Math.abs(s.mm - mm) < 0.02
+      );
+
+      return {
+        mm,
+        value: j >= 0 ? Number(a.passing[j]) : NaN
+      };
     });
 
-    if (pts.every(p => Number.isFinite(p.value) &&
-      p.value >= 0 && p.value <= 100)) {
-      svg += `<path d="${path(pts)}" fill="none"
-        stroke="${p3Colors[i]}" stroke-width="2.3"/>`;
+    if (pts.every(p =>
+      Number.isFinite(p.value) &&
+      p.value >= 0 &&
+      p.value <= 100
+    )) {
+      svg += `
+        <path d="${path(pts)}" fill="none"
+          stroke="${p3Colors[i]}" stroke-width="2.3"/>`;
     }
   }
 
   if (r.ready) {
-    svg += `<path d="${path(r.combined)}" fill="none"
-      stroke="#111111" stroke-width="3.2"/>`;
+    svg += `
+      <path d="${path(r.combined)}" fill="none"
+        stroke="#111111" stroke-width="3.2"/>`;
   }
 
   svg += `
-    <text x="${W/2}" y="${H-7}" text-anchor="middle"
-      font-size="13" fill="#334155">اندازه الک (mm) ـ محور لگاریتمی</text>
+    <text x="${W / 2}" y="${H - 8}"
+      text-anchor="middle" font-size="13"
+      fill="#334155">اندازه الک (mm) ـ محور لگاریتمی</text>
   </svg>`;
 
   return svg;
