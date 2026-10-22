@@ -703,12 +703,16 @@ function renderShares() {
   let chart = '';
 
   if (sharesValid) {
-    const allSieveDataEntered = sieves.every((_, j) =>
-      data.aggregates.slice(0, count).every(a =>
-        a.passing[j] !== '' &&
-        a.passing[j] != null &&
-        Number.isFinite(Number(a.passing[j]))
-      )
+        const allSieveDataEntered = sieves.every((_, j) =>
+      data.aggregates.slice(0, count).every(a => {
+        const v = a.passing[j];
+
+        return v !== '' &&
+          v != null &&
+          Number.isFinite(Number(v)) &&
+          Number(v) >= 0 &&
+          Number(v) <= 100;
+      })
     );
 
     if (allSieveDataEntered) {
