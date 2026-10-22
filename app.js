@@ -296,21 +296,33 @@ function validateAggregates() {
       throw Error(`اطلاعات دانه‌بندی سنگدانه ${i + 1} معتبر نیست.`);
     }
 
+        let previousPassing = -1;
+
     for (let j = 0; j < sieves.length; j++) {
       const v = a.passing[j];
 
       if (v === '' || v == null) continue;
 
+      const passing = Number(v);
+
       if (
-        !Number.isFinite(Number(v)) ||
-        Number(v) < 0 ||
-        Number(v) > 100
+        !Number.isFinite(passing) ||
+        passing < 0 ||
+        passing > 100
       ) {
         throw Error(
           `درصد عبوری از الک ${sieves[j].mm} باید بین صفر و ۱۰۰ باشد.`
         );
       }
-    }
+
+      if (passing < previousPassing) {
+        throw Error(
+          `درصد عبوری الک ${sieves[j].mm} میلی‌متر نمی‌تواند از درصد عبوری الک درشت‌ترِ قبلی کمتر باشد.`
+        );
+      }
+
+      previousPassing = passing;
+                               }
   }
 }
 
@@ -1135,11 +1147,14 @@ function view() {
           }
         }
 
+        
+        validateAggregates();
         save();
         view();
       } catch (error) {
         if (field === 'name') {
           data.aggregates[index].name = oldValue;
+
         } else if (field === 'fracture') {
           data.aggregates[index].fracture = oldValue;
         } else {
