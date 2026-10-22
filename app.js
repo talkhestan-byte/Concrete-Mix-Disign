@@ -1088,13 +1088,15 @@ function view() {
             );
           }
         }
-
+      
+        validate();
         save();
         view();
       } catch (error) {
         data[key] = oldValue;
         view();
         alert(error.message);
+      }
       }
     };
   });
