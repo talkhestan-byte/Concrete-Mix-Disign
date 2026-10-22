@@ -460,18 +460,6 @@ function renderHome() {
       'حداکثر نسبت آب به سیمان',
       0.001
     )}
-
-    <details>
-      <summary>تنظیمات پیشرفته مصالح</summary>
-      <div class="grid advanced-grid">
-        ${numberInput('sgSand', fields.sgSand[0], 0.01)}
-        ${numberInput('sgGravel', fields.sgGravel[0], 0.01)}
-      </div>
-      <p class="hint">
-        مبنای چگالی‌ها باید با روش محاسبه وزن خشک سنگدانه‌ها سازگار باشد.
-      </p>
-    </details>
-  `;
 }
 
 function renderTargetStrength() {
