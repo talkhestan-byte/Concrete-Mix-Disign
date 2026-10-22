@@ -768,7 +768,6 @@ function renderShares() {
       <strong>${shareTotal === null ? '—' : shareTotal.toFixed(2) + '%'}</strong>
     </p>
 
-    <h3>دانه‌بندی ترکیبی</h3>
 
     <div class="table-scroll">
       <table>
@@ -795,7 +794,7 @@ function renderGradingChart(points) {
 
   const sorted = [...points].sort((a, b) => a.mm - b.mm);
 
-  const minLog = Math.log10(sorted[0].mm);
+  const minLog = Math.log10(0.075);
   const maxLog = Math.log10(sorted[sorted.length - 1].mm);
 
   const coords = sorted.map(p => {
@@ -839,11 +838,27 @@ function renderGradingChart(points) {
         <polyline points="${polyline}" fill="none"
           stroke="#087e8b" stroke-width="2.5" />
 
-        ${coords.map(p => `
+                ${coords.map(p => `
           <circle cx="${p.x}" cy="${p.y}" r="3" fill="#087e8b" />
         `).join('')}
 
-        <text x="${width / 2}" y="${height - 5}"
+        ${sorted.map(p => {
+          const x = pad +
+            ((Math.log10(p.mm) - minLog) / (maxLog - minLog)) *
+            (width - 2 * pad);
+
+          return `
+            <line x1="${x}" y1="${height - pad}"
+              x2="${x}" y2="${height - pad + 4}"
+              stroke="#64748b" />
+            <text x="${x}" y="${height - pad + 14}"
+              text-anchor="middle" font-size="8" fill="#334155">
+              ${p.mm}
+            </text>
+          `;
+        }).join('')}
+
+        <text x="${width / 2}" y="${height - 2}"
           text-anchor="middle" font-size="10" fill="#334155">
           اندازه الک (mm) ـ محور افقی لگاریتمی
         </text>
@@ -1185,6 +1200,29 @@ function view() {
       }
 
       data.aggregateShares[index] = value;
+
+      const activeShares = data.aggregateShares
+        .slice(0, data.aggregateCount);
+
+      const allEntered = activeShares.every(
+        v => v !== '' && Number.isFinite(Number(v))
+      );
+
+      if (allEntered) {
+        const total = activeShares.reduce(
+          (sum, v) => sum + Number(v), 0
+        );
+
+        if (Math.abs(total - 100) > 0.0001) {
+          save();
+          view();
+          alert(
+            `مجموع سهم‌ها در حال حاضر ${total.toFixed(2)}٪ است؛ برای رسم منحنی مخلوط باید مجموع به ۱۰۰٪ برسد.`
+          );
+          return;
+        }
+      }
+
       save();
       view();
     };
