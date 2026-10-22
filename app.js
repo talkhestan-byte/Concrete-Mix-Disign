@@ -61,9 +61,6 @@ const slumpClasses = {
   S4: { label: 'S4 ـ روانی زیاد', min: 160, max: 210 }
 };
 
-/*
-  جدول موقت انحراف معیار.
-*/
 const standardDeviationTable = {
   16: { A: 2.5, B: 3.5, C: 4.0 },
   20: { A: 3.0, B: 4.0, C: 5.0 },
@@ -73,17 +70,6 @@ const standardDeviationTable = {
   40: { A: 4.5, B: 5.5, C: 6.5 }
 };
 
-/*
-  داده‌های مرجع A/B/C — دقیقاً مطابق جدول راهنمای
-  ملی طرح مخلوط بتن.
-
-  ترتیب مقادیر مطابق آرایه sieves است:
-  37.5, 25, 19, 12.5, 9.5, 6.35, 4.75,
-  2.36, 1.18, 0.6, 0.3, 0.15
-
-  نکته: مقدار ردیف 37.5 همیشه 100 گذاشته شده اما
-  در getReferenceSeries با فیلتر mm <= NMSA حذف می‌شود.
-*/
 const referenceCurves = {
   '9.5': {
     A: [100, 100, 100, 100, 100,  90, 83, 66, 51, 37, 27, 12],
@@ -106,6 +92,17 @@ const referenceCurves = {
     C: [100, 100, 82, 62, 51, 39, 32, 19, 11,  6,  3,  1]
   }
 };
+
+/* شاخص الک ۶٫۳۵ در آرایه sieves */
+const SIEVE_635_INDEX = sieves.findIndex(s => s.mm === 6.35);
+
+/*
+  آرایه‌ای که فقط برای «دانه‌بندی سنگدانه» استفاده می‌شود
+  (همه الک‌ها به‌جز ۶٫۳۵). نگاشت هر عضو به شاخص واقعی sieves.
+*/
+const aggregateSieves = sieves
+  .map((sieve, j) => ({ sieve, j }))
+  .filter(({ sieve }) => sieve.mm !== 6.35);
 
 const titles = [
   'اطلاعات اولیه',
@@ -148,7 +145,6 @@ const data = {
   ...stored
 };
 
-/* نرمال‌سازی NMSA */
 {
   const msaValue = Number(data.msa);
   data.msa = [9.5, 12.5, 19, 25].includes(msaValue)
@@ -168,7 +164,11 @@ if (!Array.isArray(data.aggregates)) {
   data.aggregates = [];
 }
 
-/* مهاجرت داده قدیمی (۱۱ الکی) به ساختار جدید (۱۲ الکی) */
+/*
+  مهاجرت داده‌ها:
+  - داده‌های ۱۱ الکی به ۱۲ الکی با خانه خالی در جای ۶٫۳۵ تبدیل می‌شوند
+  - خانه ۶٫۳۵ همیشه پاک می‌شود (چون در دانه‌بندی سنگدانه حذف شده)
+*/
 data.aggregates = data.aggregates.map((a, i) => {
   const base = defaultAggregate(i);
   let sourcePassing = Array.isArray(a.passing)
@@ -176,26 +176,14 @@ data.aggregates = data.aggregates.map((a, i) => {
     : [];
 
   if (sourcePassing.length === 11) {
-    sourcePassing = [
-      sourcePassing[0],
-      sourcePassing[1],
-      sourcePassing[2],
-      sourcePassing[3],
-      sourcePassing[4],
-      '',
-      sourcePassing[5],
-      sourcePassing[6],
-      sourcePassing[7],
-      sourcePassing[8],
-      sourcePassing[9],
-      sourcePassing[10]
-    ];
+    sourcePassing.splice(SIEVE_635_INDEX, 0, '');
   }
 
   return {
     ...base,
     ...a,
-    passing: sieves.map((_, j) => {
+    passing: sieves.map((sieve, j) => {
+      if (sieve.mm === 6.35) return '';
       const v = sourcePassing[j];
       return v === '' || v == null ? '' : Number(v);
     })
@@ -511,6 +499,9 @@ function validateAggregates() {
     let previous = null;
 
     for (let j = 0; j < sieves.length; j++) {
+      /* الک ۶٫۳۵ در دانه‌بندی سنگدانه استفاده نمی‌شود */
+      if (sieves[j].mm === 6.35) continue;
+
       const raw = a.passing[j];
 
       if (raw === '' || raw == null) {
@@ -946,25 +937,30 @@ function renderAggregateTable() {
     </tr>
   `;
 
-  const sieveRows = sieves.map((sieve, j) => `
-    <tr>
-      <th>درصد گذشته از الک ${sieve.label} mm</th>
-      ${Array.from({ length: count }, (_, i) => `
-        <td>
-          <input
-            class="table-input"
-            type="number"
-            min="0"
-            max="100"
-            step="0.1"
-            data-agg="${i}"
-            data-sieve="${j}"
-            value="${data.aggregates[i].passing[j] ?? ''}"
-          >
-        </td>
-      `).join('')}
-    </tr>
-  `).join('');
+  /* ردیف‌های الک — به‌جز ۶٫۳۵ */
+  const sieveRows = sieves.map((sieve, j) => {
+    if (sieve.mm === 6.35) return '';
+
+    return `
+      <tr>
+        <th>درصد گذشته از الک ${sieve.label} mm</th>
+        ${Array.from({ length: count }, (_, i) => `
+          <td>
+            <input
+              class="table-input"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              data-agg="${i}"
+              data-sieve="${j}"
+              value="${data.aggregates[i].passing[j] ?? ''}"
+            >
+          </td>
+        `).join('')}
+      </tr>
+    `;
+  }).join('');
 
   return `
     <h2>مشخصات سنگدانه‌ها</h2>
@@ -1067,6 +1063,10 @@ function getSharesInfo() {
   };
 }
 
+/*
+  منحنی مخلوط ترکیبی — فقط روی الک‌های دانه‌بندی
+  (بدون ۶٫۳۵). خروجی آرایه‌ای از { mm, value } است.
+*/
 function combinedGrading() {
   const info = getSharesInfo();
 
@@ -1078,7 +1078,7 @@ function combinedGrading() {
   );
 
   const allEntered = aggregates.every(a =>
-    sieves.every((_, j) => {
+    aggregateSieves.every(({ j }) => {
       const v = a.passing[j];
 
       return v !== '' &&
@@ -1091,7 +1091,7 @@ function combinedGrading() {
 
   if (!allEntered) return null;
 
-  return sieves.map((sieve, j) => ({
+  return aggregateSieves.map(({ sieve, j }) => ({
     mm: sieve.mm,
     value: aggregates.reduce(
       (sum, a, i) =>
@@ -1130,7 +1130,7 @@ function finenessModulus(points) {
    نکته کلیدی: فقط نقاطی رسم می‌شوند که
    mm <= NMSA. این باعث می‌شود منحنی از خود
    NMSA (۱۰۰٪) شروع شود و به سمت الک‌های ریزتر
-   پایین بیاید. دیگر تا ۳۷٫۵ کشیده نمی‌شود.
+   پایین بیاید. الک ۶٫۳۵ در منحنی مرجع باقی است.
 ========================================= */
 
 function getReferenceSeries() {
@@ -1151,7 +1151,6 @@ function getReferenceSeries() {
       continue;
     }
 
-    /* ساخت نقاط و فیلتر: فقط mm <= NMSA */
     const points = sieves
       .map((sieve, i) => ({
         mm: sieve.mm,
@@ -1161,7 +1160,6 @@ function getReferenceSeries() {
 
     if (!points.length) continue;
 
-    /* اعتبارسنجی مقادیر */
     if (!points.every(
       p => typeof p.value === 'number' &&
         Number.isFinite(p.value) &&
@@ -1171,7 +1169,6 @@ function getReferenceSeries() {
       continue;
     }
 
-    /* بررسی نزولی بودن */
     let monotonic = true;
     for (let i = 1; i < points.length; i++) {
       if (points[i].value > points[i - 1].value + 0.0001) {
@@ -1257,7 +1254,6 @@ function renderGradingChart(combined) {
       segments.push(current);
     }
 
-    /* رسم خط بین نقاط متوالی */
     const lines = segments.map(segment => {
       if (segment.length < 2) return '';
 
@@ -1277,7 +1273,6 @@ function renderGradingChart(combined) {
       `;
     }).join('');
 
-    /* نقطه‌ها — فقط یک نقطه در ۱۰۰٪ رسم شود */
     let drawn100 = false;
     const circles = valid.map(p => {
       const v = Number(p.value);
@@ -1364,7 +1359,6 @@ function renderGradingChart(combined) {
     >${value}</text>
   `).join('');
 
-  /* محور افقی شامل الک ۶٫۳۵ */
   const xTickValues = [
     0.075, 0.15, 0.3, 0.6,
     1.18, 2.36, 4.75, 6.35,
@@ -1999,4 +1993,4 @@ if ('serviceWorker' in navigator) {
         );
       });
   });
-}
+                                       }
