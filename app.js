@@ -3,8 +3,10 @@
 
 /* =========================================
    طرح ملی مخلوط بتن
-   فایل اصلی app.js
+   app.js
 ========================================= */
+
+const STORAGE_KEY = 'beton479';
 
 const defaults = {
   strength: 30,
@@ -32,21 +34,24 @@ const defaults = {
   targetMethod: 'manual',
   workshopRank: 'A',
   targetStrengthManual: '',
-  aggregateShares: ['', '', '', '']
+  aggregateShares: ['', '', '', ''],
+  showAggregateCurves: [true, true, true, true],
+  showMixCurve: true,
+  showReferenceCurves: true
 };
 
 const sieves = [
-  { mm: 37.5, label: 'درصد گذشته از الک ۳۷٫۵ mm' },
-  { mm: 25, label: 'درصد گذشته از الک ۲۵ mm' },
-  { mm: 19, label: 'درصد گذشته از الک ۱۹ mm' },
-  { mm: 12.5, label: 'درصد گذشته از الک ۱۲٫۵ mm' },
-  { mm: 9.5, label: 'درصد گذشته از الک ۹٫۵ mm' },
-  { mm: 4.75, label: 'درصد گذشته از الک ۴٫۷۵ mm' },
-  { mm: 2.36, label: 'درصد گذشته از الک ۲٫۳۶ mm' },
-  { mm: 1.18, label: 'درصد گذشته از الک ۱٫۱۸ mm' },
-  { mm: 0.6, label: 'درصد گذشته از الک ۰٫۶ mm ـ الک ۳۰' },
-  { mm: 0.3, label: 'درصد گذشته از الک ۰٫۳ mm ـ الک ۵۰' },
-  { mm: 0.15, label: 'درصد گذشته از الک ۰٫۱۵ mm ـ الک ۱۰۰' }
+  { mm: 37.5, label: '۳۷٫۵' },
+  { mm: 25, label: '۲۵' },
+  { mm: 19, label: '۱۹' },
+  { mm: 12.5, label: '۱۲٫۵' },
+  { mm: 9.5, label: '۹٫۵' },
+  { mm: 4.75, label: '۴٫۷۵' },
+  { mm: 2.36, label: '۲٫۳۶' },
+  { mm: 1.18, label: '۱٫۱۸' },
+  { mm: 0.6, label: '۰٫۶' },
+  { mm: 0.3, label: '۰٫۳' },
+  { mm: 0.15, label: '۰٫۱۵' }
 ];
 
 const slumpClasses = {
@@ -57,7 +62,8 @@ const slumpClasses = {
 };
 
 /*
-  جدول موقت؛ باید با مرجع معتبر کنترل شود.
+  جدول موقت انحراف معیار.
+  قبل از استفاده اجرایی باید با مرجع کنترل شود.
 */
 const standardDeviationTable = {
   16: { A: 2.5, B: 3.5, C: 4.0 },
@@ -66,6 +72,43 @@ const standardDeviationTable = {
   30: { A: 4.0, B: 5.0, C: 6.0 },
   35: { A: 4.0, B: 5.0, C: 6.0 },
   40: { A: 4.5, B: 5.5, C: 6.5 }
+};
+
+/*
+  داده‌های مرجع A/B/C
+
+  برای هر NMSA سه آرایه A و B و C وارد شود.
+
+  ترتیب مقادیر هر آرایه مطابق ترتیب sieves است:
+  37.5, 25, 19, 12.5, 9.5, 4.75,
+  2.36, 1.18, 0.6, 0.3, 0.15
+
+  هر مقدار باید درصد عبوری بین صفر و 100 باشد.
+
+  آرایه‌های خالی به معنی نبود داده تأییدشده‌اند.
+  تا ورود اعداد، منحنی مرجع نمایش داده نمی‌شود.
+*/
+const referenceCurves = {
+  '9.5': {
+    A: [],
+    B: [],
+    C: []
+  },
+  '12.5': {
+    A: [],
+    B: [],
+    C: []
+  },
+  '19': {
+    A: [],
+    B: [],
+    C: []
+  },
+  '25': {
+    A: [],
+    B: [],
+    C: []
+  }
 };
 
 const titles = [
@@ -91,20 +134,23 @@ const fields = {
 };
 
 /* =========================================
-   ذخیره و بازیابی اطلاعات
+   داده‌ها و ذخیره‌سازی
 ========================================= */
 
 let stored = {};
 
 try {
   stored = JSON.parse(
-    localStorage.getItem('beton479') || '{}'
+    localStorage.getItem(STORAGE_KEY) || '{}'
   ) || {};
-} catch (error) {
+} catch (_) {
   stored = {};
 }
 
-const data = { ...defaults, ...stored };
+const data = {
+  ...defaults,
+  ...stored
+};
 
 function defaultAggregate(index) {
   return {
@@ -115,10 +161,7 @@ function defaultAggregate(index) {
 }
 
 if (!Array.isArray(data.aggregates)) {
-  data.aggregates = [
-    defaultAggregate(0),
-    defaultAggregate(1)
-  ];
+  data.aggregates = [];
 }
 
 data.aggregates = data.aggregates.map((a, i) => ({
@@ -126,18 +169,13 @@ data.aggregates = data.aggregates.map((a, i) => ({
   ...a,
   passing: Array.isArray(a.passing)
     ? sieves.map((_, j) => {
-        const value = a.passing[j];
-        return value === '' || value == null
+        const v = a.passing[j];
+        return v === '' || v == null
           ? ''
-          : Number(value);
+          : Number(v);
       })
     : Array(sieves.length).fill('')
 }));
-
-data.aggregateCount = Math.max(
-  2,
-  Math.min(4, Number(data.aggregateCount) || 2)
-);
 
 while (data.aggregates.length < 4) {
   data.aggregates.push(
@@ -147,30 +185,48 @@ while (data.aggregates.length < 4) {
 
 data.aggregates = data.aggregates.slice(0, 4);
 
-if (!Array.isArray(data.aggregateShares)) {
-  data.aggregateShares = ['', '', '', ''];
-}
+data.aggregateCount = Math.max(
+  2,
+  Math.min(4, Number(data.aggregateCount) || 2)
+);
 
 data.aggregateShares = Array.from(
   { length: 4 },
   (_, i) => {
-    const value = data.aggregateShares[i];
-    return value === '' || value == null
+    const source = Array.isArray(data.aggregateShares)
+      ? data.aggregateShares[i]
+      : '';
+
+    return source === '' || source == null
       ? ''
-      : Number(value);
+      : Number(source);
   }
 );
+
+data.showAggregateCurves = Array.from(
+  { length: 4 },
+  (_, i) => {
+    const source = Array.isArray(data.showAggregateCurves)
+      ? data.showAggregateCurves[i]
+      : true;
+
+    return source !== false;
+  }
+);
+
+data.showMixCurve = data.showMixCurve !== false;
+data.showReferenceCurves = data.showReferenceCurves !== false;
 
 let page = 0;
 
 function save() {
   try {
     localStorage.setItem(
-      'beton479',
+      STORAGE_KEY,
       JSON.stringify(data)
     );
   } catch (error) {
-    console.warn('خطا در ذخیره اطلاعات', error);
+    console.warn('ذخیره اطلاعات ناموفق بود', error);
   }
 }
 
@@ -198,8 +254,6 @@ function selected(key, value) {
 }
 
 function numberInput(key, label, step, extra = '') {
-  const value = data[key] ?? '';
-
   return `
     <label class="field">
       ${label}
@@ -207,7 +261,7 @@ function numberInput(key, label, step, extra = '') {
         type="number"
         data-key="${key}"
         step="${step}"
-        value="${escapeHtml(value)}"
+        value="${escapeHtml(data[key] ?? '')}"
         ${extra}
       >
     </label>
@@ -219,13 +273,11 @@ function selectInput(key, label, options) {
     <label class="field">
       ${label}
       <select data-key="${key}">
-        ${options.map(option => `
+        ${options.map(o => `
           <option
-            value="${option.value}"
-            ${selected(key, option.value)}
-          >
-            ${option.label}
-          </option>
+            value="${o.value}"
+            ${selected(key, o.value)}
+          >${o.label}</option>
         `).join('')}
       </select>
     </label>
@@ -249,7 +301,7 @@ function table(rows) {
       <tbody>
         ${rows.map(([label, value]) => `
           <tr>
-            <td>${label}</td>
+            <td>${escapeHtml(label)}</td>
             <td>
               ${typeof value === 'number'
                 ? Number.isFinite(value)
@@ -274,34 +326,33 @@ function slumpRange() {
 }
 
 function requireNumber(key, label) {
-  const value = data[key];
+  const raw = data[key];
 
   if (
-    value === '' ||
-    value === null ||
-    value === undefined ||
-    !Number.isFinite(Number(value))
+    raw === '' ||
+    raw == null ||
+    !Number.isFinite(Number(raw))
   ) {
     throw Error(`${label} باید عدد معتبر باشد.`);
   }
 
-  return Number(value);
+  return Number(raw);
 }
 
 function effectiveWater() {
-  const base = num('water');
+  const water = num('water');
 
   if (data.admixture === 'water_reducer') {
-    return base * (
+    return water * (
       1 - num('admixturePct') / 100
     );
   }
 
-  return base;
+  return water;
 }
 
 function validate() {
-  const numericFields = {
+  const required = {
     strength: 'مقاومت مشخصه',
     slump: 'اسلامپ',
     msa: 'NMSA',
@@ -314,7 +365,7 @@ function validate() {
     sgGravel: 'چگالی شن'
   };
 
-  for (const [key, label] of Object.entries(numericFields)) {
+  for (const [key, label] of Object.entries(required)) {
     requireNumber(key, label);
   }
 
@@ -334,7 +385,7 @@ function validate() {
   }
 
   if (![9.5, 12.5, 19, 25].includes(num('msa'))) {
-    throw Error('مقدار NMSA معتبر نیست.');
+    throw Error('NMSA معتبر نیست.');
   }
 
   if (num('water') <= 0) {
@@ -342,9 +393,7 @@ function validate() {
   }
 
   if (num('wc') <= 0 || num('wc') >= 1) {
-    throw Error(
-      'نسبت آب به سیمان باید بین صفر و یک باشد.'
-    );
+    throw Error('نسبت آب به سیمان باید بین صفر و یک باشد.');
   }
 
   if (
@@ -375,79 +424,59 @@ function validate() {
     );
 
     if (pct < 0 || pct >= 100) {
-      throw Error(
-        'درصد افزودنی باید بین صفر و ۱۰۰ باشد.'
-      );
+      throw Error('درصد افزودنی باید بین صفر و ۱۰۰ باشد.');
     }
   }
 
   const cement = effectiveWater() / num('wc');
 
   if (data.limitMinCementOn) {
-    const min = requireNumber(
+    const minimum = requireNumber(
       'limitMinCement',
       'حداقل سیمان'
     );
 
-    if (min <= 0 || cement < min) {
-      throw Error(
-        'مقدار سیمان با حداقل تعیین‌شده سازگار نیست.'
-      );
+    if (minimum <= 0 || cement < minimum) {
+      throw Error('مقدار سیمان از حداقل تعیین‌شده کمتر است.');
     }
   }
 
   if (data.limitMaxCementOn) {
-    const max = requireNumber(
+    const maximum = requireNumber(
       'limitMaxCement',
       'حداکثر سیمان'
     );
 
-    if (max <= 0 || cement > max) {
-      throw Error(
-        'مقدار سیمان با حداکثر تعیین‌شده سازگار نیست.'
-      );
+    if (maximum <= 0 || cement > maximum) {
+      throw Error('مقدار سیمان از حداکثر تعیین‌شده بیشتر است.');
     }
   }
 
   if (data.limitWcOn) {
-    const maxWc = requireNumber(
+    const maximum = requireNumber(
       'limitWc',
       'حداکثر نسبت آب به سیمان'
     );
 
     if (
-      maxWc <= 0 ||
-      maxWc >= 1 ||
-      num('wc') > maxWc
+      maximum <= 0 ||
+      maximum >= 1 ||
+      num('wc') > maximum
     ) {
-      throw Error(
-        'نسبت آب به سیمان از حداکثر مجاز بیشتر است.'
-      );
+      throw Error('نسبت آب به سیمان از حداکثر مجاز بیشتر است.');
     }
   }
 }
 
 function validateAggregates() {
-  const count = Number(data.aggregateCount);
-
-  if (![2, 3, 4].includes(count)) {
-    throw Error('تعداد سنگدانه‌ها باید ۲ تا ۴ باشد.');
-  }
-
-  for (let i = 0; i < count; i++) {
-    const aggregate = data.aggregates[i];
-
-    if (!aggregate) {
-      throw Error('مشخصات سنگدانه موجود نیست.');
-    }
-
-    const fracture = Number(aggregate.fracture);
+  for (let i = 0; i < data.aggregateCount; i++) {
+    const a = data.aggregates[i];
 
     if (
-      aggregate.fracture === '' ||
-      !Number.isFinite(fracture) ||
-      fracture < 0 ||
-      fracture > 100
+      a.fracture === '' ||
+      !Number.isFinite(Number(a.fracture)) ||
+      Number(a.fracture) < 0 ||
+      Number(a.fracture) > 100
     ) {
       throw Error(
         `درصد شکستگی سنگدانه ${i + 1} نامعتبر است.`
@@ -457,44 +486,37 @@ function validateAggregates() {
     let previous = null;
 
     for (let j = 0; j < sieves.length; j++) {
-      const raw = aggregate.passing[j];
+      const raw = a.passing[j];
 
       if (raw === '' || raw == null) {
         continue;
       }
 
-      const passing = Number(raw);
+      const value = Number(raw);
 
       if (
-        !Number.isFinite(passing) ||
-        passing < 0 ||
-        passing > 100
+        !Number.isFinite(value) ||
+        value < 0 ||
+        value > 100
       ) {
         throw Error(
           `درصد عبوری سنگدانه ${i + 1} از الک ${sieves[j].mm} نامعتبر است.`
         );
       }
 
-      /*
-        الک‌ها از درشت به ریز مرتب شده‌اند.
-        درصد عبوری نباید با ریزتر شدن الک افزایش یابد.
-      */
-      if (
-        previous !== null &&
-        passing > previous
-      ) {
+      if (previous !== null && value > previous) {
         throw Error(
-          `در سنگدانه ${i + 1}، درصد عبوری الک ${sieves[j].mm} نباید از الک درشت‌تر بیشتر باشد.`
+          `در سنگدانه ${i + 1} درصد عبوری الک ${sieves[j].mm} از الک درشت‌تر بیشتر است.`
         );
       }
 
-      previous = passing;
+      previous = value;
     }
   }
 }
 
 /* =========================================
-   محاسبات طرح
+   محاسبات
 ========================================= */
 
 class Step1 {
@@ -509,8 +531,8 @@ class Step1 {
 class Step3 {
   run() {
     return {
-      water: effectiveWater(),
-      baseWater: num('water')
+      baseWater: num('water'),
+      water: effectiveWater()
     };
   }
 }
@@ -539,9 +561,7 @@ class Step5 {
     const aggregateVolume = 1 - vc - vw - va;
 
     if (aggregateVolume <= 0) {
-      throw Error(
-        'حجم باقی‌مانده برای سنگدانه مثبت نیست.'
-      );
+      throw Error('حجم باقی‌مانده برای سنگدانه مثبت نیست.');
     }
 
     const gravelVolume =
@@ -610,11 +630,7 @@ function renderHome() {
     <h2>اطلاعات اولیه طرح</h2>
 
     <div class="grid">
-      ${numberInput(
-        'strength',
-        fields.strength[0],
-        0.1
-      )}
+      ${numberInput('strength', fields.strength[0], 0.1)}
 
       ${selectInput(
         'slumpClass',
@@ -635,11 +651,7 @@ function renderHome() {
         `min="${range.min}" max="${range.max}"`
       )}
 
-      ${numberInput(
-        'air',
-        fields.air[0],
-        0.1
-      )}
+      ${numberInput('air', fields.air[0], 0.1)}
     </div>
 
     <p class="hint">
@@ -657,11 +669,7 @@ function renderHome() {
         ]
       )}
 
-      ${numberInput(
-        'sgCement',
-        fields.sgCement[0],
-        0.01
-      )}
+      ${numberInput('sgCement', fields.sgCement[0], 0.01)}
     </div>
 
     <div class="grid">
@@ -697,8 +705,8 @@ function renderHome() {
     </div>
 
     <p class="hint">
-      مدل کاهش آب فعلاً ساده‌سازی شده است و باید
-      با مشخصات فنی افزودنی کنترل شود.
+      مدل کاهش آب ساده‌سازی شده و باید با
+      مشخصات فنی افزودنی کنترل شود.
     </p>
 
     <h3>کنترل‌های اختیاری طرح</h3>
@@ -824,29 +832,22 @@ function renderTargetStrength() {
     }
 
     ${data.targetMethod === 'manual'
-      ? `
-        ${numberInput(
+      ? numberInput(
           'targetStrengthManual',
           'مقاومت هدف طرح (MPa)',
           0.1,
           'min="0"'
-        )}
-      `
+        )
       : result
         ? `
           <p>رابطه اول: fcm1 = fc + 1.34 × S</p>
-
           <p>
             ${fc.toFixed(2)} +
             1.34 × ${result.S.toFixed(2)}
             = ${result.fcm1.toFixed(2)} MPa
           </p>
 
-          <p>
-            رابطه دوم:
-            fcm2 = 0.9 × fc + 2.33 × S
-          </p>
-
+          <p>رابطه دوم: fcm2 = 0.9 × fc + 2.33 × S</p>
           <p>
             0.9 × ${fc.toFixed(2)} +
             2.33 × ${result.S.toFixed(2)}
@@ -855,9 +856,7 @@ function renderTargetStrength() {
 
           <p>
             مقاومت هدف انتخابی:
-            <strong>
-              ${result.target.toFixed(2)} MPa
-            </strong>
+            <strong>${result.target.toFixed(2)} MPa</strong>
           </p>
         `
         : `
@@ -868,14 +867,14 @@ function renderTargetStrength() {
     }
 
     <p class="hint">
-      جدول انحراف معیار موقت است و برای
-      استفاده مهندسی باید با مرجع اصلی تطبیق داده شود.
+      جدول انحراف معیار موقت است و باید
+      با مرجع اصلی کنترل شود.
     </p>
   `;
 }
 
 /* =========================================
-   صفحه دوم ـ مشخصات سنگدانه‌ها
+   صفحه دوم ـ سنگدانه‌ها
 ========================================= */
 
 function renderAggregateTable() {
@@ -889,7 +888,6 @@ function renderAggregateTable() {
   const nameRow = `
     <tr>
       <th>نام سنگدانه</th>
-
       ${Array.from({ length: count }, (_, i) => `
         <td>
           <input
@@ -907,7 +905,6 @@ function renderAggregateTable() {
   const fractureRow = `
     <tr>
       <th>درصد شکستگی (%)</th>
-
       ${Array.from({ length: count }, (_, i) => `
         <td>
           <input
@@ -927,8 +924,7 @@ function renderAggregateTable() {
 
   const sieveRows = sieves.map((sieve, j) => `
     <tr>
-      <th>${sieve.label}</th>
-
+      <th>درصد گذشته از الک ${sieve.label} mm</th>
       ${Array.from({ length: count }, (_, i) => `
         <td>
           <input
@@ -985,7 +981,6 @@ function renderAggregateTable() {
             ${headers}
           </tr>
         </thead>
-
         <tbody>
           ${nameRow}
           ${fractureRow}
@@ -997,17 +992,8 @@ function renderAggregateTable() {
     <h3>مشخصات تکمیلی مصالح</h3>
 
     <div class="grid">
-      ${numberInput(
-        'sgSand',
-        fields.sgSand[0],
-        0.01
-      )}
-
-      ${numberInput(
-        'sgGravel',
-        fields.sgGravel[0],
-        0.01
-      )}
+      ${numberInput('sgSand', fields.sgSand[0], 0.01)}
+      ${numberInput('sgGravel', fields.sgGravel[0], 0.01)}
     </div>
 
     <p class="hint">
@@ -1024,7 +1010,7 @@ function renderAggregateTable() {
 }
 
 /* =========================================
-   صفحه سوم ـ سهم‌بندی و دانه‌بندی
+   سهم‌بندی و محاسبه ترکیب
 ========================================= */
 
 function getSharesInfo() {
@@ -1081,27 +1067,18 @@ function combinedGrading() {
 
   if (!allEntered) return null;
 
-  return sieves.map((sieve, j) => {
-    const value = aggregates.reduce(
+  return sieves.map((sieve, j) => ({
+    mm: sieve.mm,
+    value: aggregates.reduce(
       (sum, a, i) =>
         sum +
         Number(a.passing[j]) *
         Number(info.shares[i]) / 100,
       0
-    );
-
-    return {
-      mm: sieve.mm,
-      value
-    };
-  });
+    )
+  }));
 }
 
-/*
-  مدول نرمی با الک‌های انتخابی محاسبه می‌شود.
-  الک‌های ۲۵ و ۱۲٫۵ در این مجموعه لحاظ نشده‌اند.
-  تعریف نهایی باید با روش آزمون مرجع کنترل شود.
-*/
 function finenessModulus(points) {
   if (!points) return null;
 
@@ -1110,27 +1087,84 @@ function finenessModulus(points) {
     2.36, 1.18, 0.6, 0.3, 0.15
   ];
 
-  let totalRetained = 0;
+  let total = 0;
 
   for (const mm of fmSieves) {
     const point = points.find(p => p.mm === mm);
 
     if (!point) return null;
 
-    totalRetained += 100 - point.value;
+    total += 100 - point.value;
   }
 
-  return totalRetained / 100;
+  return total / 100;
 }
 
-function renderGradingChart(combined) {
-  const width = 620;
-  const height = 350;
+/* =========================================
+   داده‌های مرجع A/B/C
+========================================= */
 
-  const left = 58;
-  const right = 22;
-  const top = 22;
-  const bottom = 67;
+function getReferenceSeries() {
+  const source = referenceCurves[String(data.msa)];
+
+  if (!source) return [];
+
+  const result = [];
+
+  for (const name of ['A', 'B', 'C']) {
+    const values = source[name];
+
+    if (
+      !Array.isArray(values) ||
+      values.length !== sieves.length
+    ) {
+      continue;
+    }
+
+    if (!values.every(
+      v => typeof v === 'number' &&
+        Number.isFinite(v) &&
+        v >= 0 &&
+        v <= 100
+    )) {
+      continue;
+    }
+
+    let monotonic = true;
+
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] > values[i - 1]) {
+        monotonic = false;
+        break;
+      }
+    }
+
+    if (!monotonic) continue;
+
+    result.push({
+      name,
+      points: sieves.map((sieve, i) => ({
+        mm: sieve.mm,
+        value: values[i]
+      }))
+    });
+  }
+
+  return result;
+}
+
+/* =========================================
+   نمودار دانه‌بندی
+========================================= */
+
+function renderGradingChart(combined) {
+  const width = 680;
+  const height = 390;
+
+  const left = 65;
+  const right = 25;
+  const top = 25;
+  const bottom = 75;
 
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
@@ -1138,40 +1172,80 @@ function renderGradingChart(combined) {
   const minLog = Math.log10(0.075);
   const maxLog = Math.log10(37.5);
 
-  function x(mm) {
-    return left +
-      (Math.log10(mm) - minLog) /
-      (maxLog - minLog) * plotWidth;
-  }
+  const x = mm =>
+    left +
+    (Math.log10(mm) - minLog) /
+    (maxLog - minLog) * plotWidth;
 
-  function y(value) {
-    return top +
-      (100 - value) / 100 * plotHeight;
-  }
+  const y = value =>
+    top +
+    (100 - value) / 100 * plotHeight;
 
-  function drawSeries(points, color, dash = '') {
+  function drawSeries(points, color, dash = '', thickness = 2.5) {
     const valid = points
       .filter(p =>
         p.value !== '' &&
         p.value != null &&
-        Number.isFinite(Number(p.value))
+        Number.isFinite(Number(p.value)) &&
+        Number(p.value) >= 0 &&
+        Number(p.value) <= 100
       )
       .sort((a, b) => a.mm - b.mm);
 
     if (!valid.length) return '';
 
-    const polyline = valid.map(
-      p => `${x(p.mm)},${y(Number(p.value))}`
-    ).join(' ');
+    /*
+      برای داده‌های ناقص، نقاط موجود نمایش داده می‌شوند.
+      اتصال بین الک‌های دارای داده خالی برقرار نمی‌شود.
+    */
+    const segments = [];
+    let current = [];
+
+    for (const p of valid) {
+      const originalIndex = sieves.findIndex(
+        s => s.mm === p.mm
+      );
+
+      if (
+        current.length &&
+        Math.abs(
+          originalIndex -
+          current[current.length - 1].index
+        ) !== 1
+      ) {
+        segments.push(current);
+        current = [];
+      }
+
+      current.push({
+        ...p,
+        index: originalIndex
+      });
+    }
+
+    if (current.length) {
+      segments.push(current);
+    }
 
     return `
-      <polyline
-        points="${polyline}"
-        fill="none"
-        stroke="${color}"
-        stroke-width="2.5"
-        stroke-dasharray="${dash}"
-      />
+      ${segments.map(segment => {
+        if (segment.length < 2) return '';
+
+        const coords = segment.map(
+          p => `${x(p.mm)},${y(Number(p.value))}`
+        ).join(' ');
+
+        return `
+          <polyline
+            points="${coords}"
+            fill="none"
+            stroke="${color}"
+            stroke-width="${thickness}"
+            stroke-dasharray="${dash}"
+            stroke-linejoin="round"
+          />
+        `;
+      }).join('')}
 
       ${valid.map(p => `
         <circle
@@ -1184,27 +1258,56 @@ function renderGradingChart(combined) {
     `;
   }
 
-  const colors = [
+  const aggregateColors = [
     '#2563eb',
     '#ea580c',
     '#16a34a',
     '#9333ea'
   ];
 
+  const referenceColors = {
+    A: '#dc2626',
+    B: '#7c3aed',
+    C: '#ca8a04'
+  };
+
   const aggregateLines = data.aggregates
     .slice(0, data.aggregateCount)
-    .map((a, i) => {
-      const points = sieves.map((s, j) => ({
-        mm: s.mm,
-        value: a.passing[j]
+    .map((aggregate, i) => {
+      if (!data.showAggregateCurves[i]) {
+        return '';
+      }
+
+      const points = sieves.map((sieve, j) => ({
+        mm: sieve.mm,
+        value: aggregate.passing[j]
       }));
 
-      return drawSeries(points, colors[i], '6 4');
+      return drawSeries(
+        points,
+        aggregateColors[i],
+        '6 4',
+        2.2
+      );
     }).join('');
 
-  const mixLine = combined
-    ? drawSeries(combined, '#087e8b')
+  const referenceSeries = getReferenceSeries();
+
+  const referenceLines = data.showReferenceCurves
+    ? referenceSeries.map(series =>
+        drawSeries(
+          series.points,
+          referenceColors[series.name],
+          '9 4',
+          2
+        )
+      ).join('')
     : '';
+
+  const mixLine =
+    data.showMixCurve && combined
+      ? drawSeries(combined, '#087e8b', '', 3.5)
+      : '';
 
   const horizontalGrid = [
     0, 20, 40, 60, 80, 100
@@ -1216,9 +1319,8 @@ function renderGradingChart(combined) {
       y2="${y(value)}"
       stroke="#d7e0e8"
     />
-
     <text
-      x="${left - 10}"
+      x="${left - 12}"
       y="${y(value) + 4}"
       text-anchor="end"
       font-size="12"
@@ -1228,8 +1330,8 @@ function renderGradingChart(combined) {
 
   const xTicks = [
     0.075, 0.15, 0.3, 0.6,
-    1.18, 2.36, 4.75, 9.5,
-    19, 37.5
+    1.18, 2.36, 4.75,
+    9.5, 19, 37.5
   ].map(mm => `
     <line
       x1="${x(mm)}"
@@ -1238,23 +1340,48 @@ function renderGradingChart(combined) {
       y2="${height - bottom}"
       stroke="#e2e8f0"
     />
-
     <text
       x="${x(mm)}"
-      y="${height - bottom + 18}"
+      y="${height - bottom + 20}"
       text-anchor="middle"
-      font-size="10"
+      font-size="11"
       fill="#334155"
     >${mm}</text>
   `).join('');
 
-  const legend = data.aggregates
+  const legendItems = [];
+
+  data.aggregates
     .slice(0, data.aggregateCount)
-    .map((a, i) => `
-      <span style="margin:5px;color:${colors[i]}">
-        ● ${escapeHtml(a.name)}
+    .forEach((aggregate, i) => {
+      if (data.showAggregateCurves[i]) {
+        legendItems.push(`
+          <span style="color:${aggregateColors[i]};margin:5px">
+            ● ${escapeHtml(aggregate.name)}
+          </span>
+        `);
+      }
+    });
+
+  if (data.showMixCurve && combined) {
+    legendItems.push(`
+      <span style="color:#087e8b;margin:5px">
+        ● مخلوط ترکیبی
       </span>
-    `).join('');
+    `);
+  }
+
+  if (data.showReferenceCurves) {
+    referenceSeries.forEach(series => {
+      legendItems.push(`
+        <span
+          style="color:${referenceColors[series.name]};margin:5px"
+        >
+          ━ مرجع ${series.name}
+        </span>
+      `);
+    });
+  }
 
   return `
     <h3>منحنی‌های دانه‌بندی</h3>
@@ -1263,8 +1390,8 @@ function renderGradingChart(combined) {
       <svg
         viewBox="0 0 ${width} ${height}"
         role="img"
-        aria-label="منحنی دانه‌بندی سنگدانه‌ها و مخلوط"
-        style="width:100%;max-width:850px;background:white"
+        aria-label="نمودار دانه‌بندی"
+        style="width:100%;max-width:900px;background:white"
       >
         ${horizontalGrid}
         ${xTicks}
@@ -1287,52 +1414,57 @@ function renderGradingChart(combined) {
           stroke-width="1.5"
         />
 
+        ${referenceLines}
         ${aggregateLines}
         ${mixLine}
 
         <text
           x="${width / 2}"
-          y="${height - 13}"
+          y="${height - 16}"
           text-anchor="middle"
           font-size="13"
           fill="#334155"
         >اندازه الک (mm) ـ مقیاس لگاریتمی</text>
 
         <text
-          x="15"
+          x="17"
           y="${height / 2}"
           text-anchor="middle"
           font-size="13"
           fill="#334155"
-          transform="rotate(-90 15 ${height / 2})"
+          transform="rotate(-90 17 ${height / 2})"
         >درصد عبوری</text>
       </svg>
     </div>
 
     <div class="hint">
-      ${legend}
-      ${combined
-        ? '<span style="color:#087e8b">● مخلوط ترکیبی</span>'
-        : ''}
+      ${legendItems.join('')}
     </div>
 
-    <p class="hint">
-      محور افقی از الک ۰٫۰۷۵ میلی‌متر آغاز می‌شود.
-      در صورت نبود داده برای این الک، نقطه‌ای
-      به‌صورت فرضی رسم نمی‌شود.
-    </p>
+    ${data.showReferenceCurves && referenceSeries.length === 0
+      ? `
+        <p class="hint">
+          اعداد تأییدشده منحنی‌های مرجع A/B/C
+          برای NMSA انتخاب‌شده هنوز در برنامه ثبت نشده‌اند.
+        </p>
+      `
+      : ''
+    }
   `;
 }
 
+/* =========================================
+   صفحه سوم
+========================================= */
+
 function renderShares() {
-  const info = getSharesInfo();
+  const count = data.aggregateCount;
 
   const shareInputs = Array.from(
-    { length: info.count },
+    { length: count },
     (_, i) => `
       <label class="field">
         سهم ${escapeHtml(data.aggregates[i].name)} (%)
-
         <input
           type="number"
           min="0"
@@ -1346,60 +1478,53 @@ function renderShares() {
   ).join('');
 
   const combined = combinedGrading();
-
-  const combinedRows = combined
-    ? combined.map(p => `
-        <tr>
-          <td>${p.mm} mm</td>
-          <td>${p.value.toFixed(2)}%</td>
-        </tr>
-      `).join('')
-    : `
-        <tr>
-          <td colspan="2">
-            برای محاسبه دانه‌بندی ترکیبی،
-            مجموع سهم‌ها باید ۱۰۰٪ باشد و
-            تمام درصدهای عبوری وارد شوند.
-          </td>
-        </tr>
-      `;
-
   const fm = finenessModulus(combined);
+
+  const curveCheckboxes = Array.from(
+    { length: count },
+    (_, i) => `
+      <label class="checkline" style="margin:8px 0">
+        <input
+          type="checkbox"
+          data-curve-aggregate="${i}"
+          ${data.showAggregateCurves[i] ? 'checked' : ''}
+        >
+        <span>
+          نمایش منحنی ${escapeHtml(data.aggregates[i].name)}
+        </span>
+      </label>
+    `
+  ).join('');
 
   return `
     <h2>سهم‌بندی سنگدانه‌ها</h2>
-
-    <p class="hint">
-      سهم هر سنگدانه را وارد کنید.
-      مجموع سهم‌ها باید ۱۰۰ درصد باشد.
-    </p>
 
     <div class="grid">
       ${shareInputs}
     </div>
 
-    <p>
-      مجموع سهم‌ها:
-      <strong>
-        ${info.total === null
-          ? '—'
-          : info.total.toFixed(2) + '%'}
-      </strong>
-    </p>
+    <h3>انتخاب منحنی‌های قابل نمایش</h3>
 
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>اندازه الک</th>
-            <th>درصد عبوری ترکیبی</th>
-          </tr>
-        </thead>
+    <div class="limit-box">
+      ${curveCheckboxes}
 
-        <tbody>
-          ${combinedRows}
-        </tbody>
-      </table>
+      <label class="checkline" style="margin:8px 0">
+        <input
+          type="checkbox"
+          data-curve-mix
+          ${data.showMixCurve ? 'checked' : ''}
+        >
+        <span>نمایش منحنی مخلوط ترکیبی</span>
+      </label>
+
+      <label class="checkline" style="margin:8px 0">
+        <input
+          type="checkbox"
+          data-curve-reference
+          ${data.showReferenceCurves ? 'checked' : ''}
+        >
+        <span>نمایش منحنی‌های مرجع A، B و C</span>
+      </label>
     </div>
 
     <p>
@@ -1410,13 +1535,6 @@ function renderShares() {
     </p>
 
     ${renderGradingChart(combined)}
-
-    <p class="hint">
-      دانه‌بندی ترکیبی از میانگین وزنی
-      درصدهای عبوری محاسبه شده است.
-      انطباق با محدوده استاندارد هنوز
-      به‌صورت خودکار بررسی نمی‌شود.
-    </p>
   `;
 }
 
@@ -1439,8 +1557,8 @@ function renderStep1() {
     ])}
 
     <p class="hint">
-      نسبت آب به سیمان فعلاً توسط کاربر انتخاب می‌شود
-      و باید با مقاومت و دوام موردنیاز کنترل شود.
+      نسبت آب به سیمان باید با توجه به
+      مقاومت و دوام موردنیاز کنترل شود.
     </p>
   `;
 }
@@ -1457,10 +1575,6 @@ function renderWater() {
       ['آب آزاد پایه (kg/m³)', result.baseWater],
       ['آب محاسباتی (kg/m³)', result.water]
     ])}
-
-    <p class="hint">
-      مقدار آب پایه باید با مرجع معتبر انتخاب شود.
-    </p>
   `;
 }
 
@@ -1484,7 +1598,7 @@ function renderCement() {
     ])}
 
     <p class="hint">
-      مقدار سیمان = آب محاسباتی ÷ نسبت آب به سیمان
+      سیمان = آب محاسباتی ÷ نسبت آب به سیمان
     </p>
   `;
 }
@@ -1521,21 +1635,21 @@ function renderReport() {
     </button>
 
     <p class="hint">
-      محاسبه وزن خشک ماسه و شن فعلاً با مدل
-      ساده دو سنگدانه‌ای انجام می‌شود.
+      وزن خشک ماسه و شن با مدل ساده
+      دو سنگدانه‌ای محاسبه شده است.
       سهم‌بندی چندسنگدانه‌ای هنوز به
       محاسبات وزن نهایی متصل نشده است.
     </p>
 
     <p class="hint">
-      پیش از استفاده اجرایی، تمام ورودی‌ها،
-      روابط و نتایج باید با مرجع معتبر کنترل شوند.
+      نتایج پیش از استفاده اجرایی باید
+      با مرجع معتبر کنترل شوند.
     </p>
   `;
 }
 
 /* =========================================
-   نمایش صفحات
+   نمایش و رویدادها
 ========================================= */
 
 function view() {
@@ -1545,9 +1659,7 @@ function view() {
   const next = document.getElementById('next');
 
   if (!tabs || !screen || !prev || !next) {
-    console.error(
-      'عناصر اصلی برنامه در index.html پیدا نشدند.'
-    );
+    console.error('عناصر اصلی صفحه پیدا نشدند.');
     return;
   }
 
@@ -1556,9 +1668,7 @@ function view() {
       type="button"
       data-page="${i}"
       class="${i === page ? 'active' : ''}"
-    >
-      ${title}
-    </button>
+    >${title}</button>
   `).join('');
 
   let html = '';
@@ -1568,31 +1678,24 @@ function view() {
       case 0:
         html = renderHome();
         break;
-
       case 1:
         html = renderAggregateTable();
         break;
-
       case 2:
         html = renderShares();
         break;
-
       case 3:
         html = renderStep1();
         break;
-
       case 4:
         html = renderWater();
         break;
-
       case 5:
         html = renderCement();
         break;
-
       case 6:
         html = renderReport();
         break;
-
       default:
         html = renderHome();
     }
@@ -1613,7 +1716,7 @@ function view() {
     </article>
   `;
 
-  /* تغییر صفحه */
+  /* دکمه‌های صفحات */
 
   document.querySelectorAll('[data-page]').forEach(
     button => {
@@ -1631,29 +1734,26 @@ function view() {
       element.onchange = () => {
         const key = element.dataset.key;
         const oldValue = data[key];
+        const oldSlump = data.slump;
+        const oldPct = data.admixturePct;
 
-        let value = element.value;
-
-        if (element.type === 'number') {
-          value = value === ''
+        const value = element.type === 'number'
+          ? element.value === ''
             ? ''
-            : Number(value);
-        }
+            : Number(element.value)
+          : element.value;
 
         data[key] = value;
 
         try {
           if (key === 'aggregateCount') {
-            data.aggregateCount = Number(value);
+            const count = Number(value);
 
-            while (
-              data.aggregates.length <
-              data.aggregateCount
-            ) {
-              data.aggregates.push(
-                defaultAggregate(data.aggregates.length)
-              );
+            if (![2, 3, 4].includes(count)) {
+              throw Error('تعداد سنگدانه نامعتبر است.');
             }
+
+            data.aggregateCount = count;
           }
 
           if (key === 'slumpClass') {
@@ -1671,37 +1771,29 @@ function view() {
             data.admixturePct = 0;
           }
 
-          /*
-            ورودی‌های غیرعددی مانند روش مقاومت هدف
-            نباید به علت مقدار نامعتبر یک فیلد
-            نامرتبط، مسدود شوند.
-          */
-
-          if (
-            key !== 'targetMethod' &&
-            key !== 'workshopRank' &&
-            key !== 'aggregateCount' &&
-            key !== 'targetStrengthManual'
-          ) {
-            validate();
-          }
-
           if (key === 'targetStrengthManual') {
             if (
               value !== '' &&
               (!Number.isFinite(Number(value)) ||
                 Number(value) <= 0)
             ) {
-              throw Error(
-                'مقاومت هدف باید عددی مثبت باشد.'
-              );
+              throw Error('مقاومت هدف باید مثبت باشد.');
             }
+          } else if (
+            key !== 'targetMethod' &&
+            key !== 'workshopRank' &&
+            key !== 'aggregateCount'
+          ) {
+            validate();
           }
 
           save();
           view();
         } catch (error) {
           data[key] = oldValue;
+          data.slump = oldSlump;
+          data.admixturePct = oldPct;
+
           view();
           alert(error.message);
         }
@@ -1709,7 +1801,7 @@ function view() {
     }
   );
 
-  /* کنترل‌های اختیاری */
+  /* محدودیت‌های اختیاری */
 
   document.querySelectorAll('[data-check]').forEach(
     element => {
@@ -1732,7 +1824,7 @@ function view() {
     }
   );
 
-  /* جدول مشخصات سنگدانه‌ها */
+  /* جدول سنگدانه‌ها */
 
   document.querySelectorAll('[data-agg]').forEach(
     element => {
@@ -1740,7 +1832,6 @@ function view() {
         const index = Number(element.dataset.agg);
         const field = element.dataset.aggField;
         const sieveIndex = Number(element.dataset.sieve);
-
         const aggregate = data.aggregates[index];
 
         let oldValue;
@@ -1751,7 +1842,6 @@ function view() {
 
         } else if (field === 'fracture') {
           oldValue = aggregate.fracture;
-
           aggregate.fracture =
             element.value === ''
               ? ''
@@ -1759,7 +1849,6 @@ function view() {
 
         } else {
           oldValue = aggregate.passing[sieveIndex];
-
           aggregate.passing[sieveIndex] =
             element.value === ''
               ? ''
@@ -1773,10 +1862,8 @@ function view() {
         } catch (error) {
           if (field === 'name') {
             aggregate.name = oldValue;
-
           } else if (field === 'fracture') {
             aggregate.fracture = oldValue;
-
           } else {
             aggregate.passing[sieveIndex] = oldValue;
           }
@@ -1788,7 +1875,7 @@ function view() {
     }
   );
 
-  /* سهم‌بندی سنگدانه‌ها */
+  /* سهم‌بندی */
 
   document.querySelectorAll('[data-share]').forEach(
     element => {
@@ -1809,9 +1896,7 @@ function view() {
           )
         ) {
           view();
-          alert(
-            'سهم سنگدانه باید بین صفر و ۱۰۰ باشد.'
-          );
+          alert('سهم سنگدانه باید بین صفر و ۱۰۰ باشد.');
           return;
         }
 
@@ -1819,16 +1904,57 @@ function view() {
 
         save();
         view();
-
-        /*
-          هنگام ورود تدریجی سهم‌ها،
-          مجموع الزاماً ۱۰۰ نیست.
-          بنابراین تا تکمیل ورودی‌ها
-          نباید تغییرات رد شوند.
-        */
       };
     }
   );
+
+  /* تیک نمایش منحنی سنگدانه‌ها */
+
+  document.querySelectorAll(
+    '[data-curve-aggregate]'
+  ).forEach(element => {
+    element.onchange = () => {
+      const index = Number(
+        element.dataset.curveAggregate
+      );
+
+      data.showAggregateCurves[index] =
+        element.checked;
+
+      save();
+      view();
+    };
+  });
+
+  /* تیک منحنی مخلوط */
+
+  const mixCheckbox = document.querySelector(
+    '[data-curve-mix]'
+  );
+
+  if (mixCheckbox) {
+    mixCheckbox.onchange = () => {
+      data.showMixCurve = mixCheckbox.checked;
+      save();
+      view();
+    };
+  }
+
+  /* تیک منحنی‌های مرجع */
+
+  const referenceCheckbox = document.querySelector(
+    '[data-curve-reference]'
+  );
+
+  if (referenceCheckbox) {
+    referenceCheckbox.onchange = () => {
+      data.showReferenceCurves =
+        referenceCheckbox.checked;
+
+      save();
+      view();
+    };
+  }
 
   /* چاپ */
 
@@ -1843,7 +1969,7 @@ function view() {
 }
 
 /* =========================================
-   راه‌اندازی برنامه
+   راه‌اندازی
 ========================================= */
 
 function startApp() {
@@ -1851,9 +1977,7 @@ function startApp() {
   const next = document.getElementById('next');
 
   if (!prev || !next) {
-    console.error(
-      'دکمه‌های قبلی و بعدی در HTML موجود نیستند.'
-    );
+    console.error('دکمه‌های پیمایش پیدا نشدند.');
     return;
   }
 
@@ -1867,7 +1991,6 @@ function startApp() {
       titles.length - 1,
       page + 1
     );
-
     view();
   };
 
