@@ -1189,3 +1189,39 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
 }
+
+function updateAdmixtureField() {
+  const admixtureSelect = document.querySelector(
+    '[data-key="admixture"]'
+  );
+
+  const admixtureInput = document.querySelector(
+    '[data-key="admixturePct"]'
+  );
+
+  if (!admixtureSelect || !admixtureInput) return;
+
+  const noAdmixture =
+    admixtureSelect.value === 'none';
+
+  admixtureInput.disabled = noAdmixture;
+
+  if (noAdmixture) {
+    admixtureInput.value = 0;
+    data.admixturePct = 0;
+  }
+}
+
+document.addEventListener('change', function(e) {
+  if (e.target.matches('[data-key="admixture"]')) {
+    updateAdmixtureField();
+  }
+});
+
+const originalUpdateAdmixtureView = view;
+
+view = function(...args) {
+  const result = originalUpdateAdmixtureView(...args);
+  updateAdmixtureField();
+  return result;
+};
