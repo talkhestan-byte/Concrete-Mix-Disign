@@ -453,15 +453,15 @@ function renderHome() {
       1
     )}
 
-    ${checkboxField(
+        ${checkboxField(
       'limitWcOn',
       'اعمال حداکثر نسبت آب به سیمان',
       'limitWc',
       'حداکثر نسبت آب به سیمان',
       0.001
     )}
+  `;
 }
-
 function renderTargetStrength() {
   const fc = num('strength');
   const rank = data.workshopRank;
@@ -525,8 +525,19 @@ function renderTargetStrength() {
         `
         : validS
           ? `
-            <p>رابطه اول: fcm1 = ${fcm1.toFixed(2)} MPa</p>
-            <p>رابطه دوم: fcm2 = ${fcm2.toFixed(2)} MPa</p>
+                        <p>رابطه اول: fcm1 = fc + 1.34 × S</p>
+            <p>
+              جایگذاری:
+              ${fc.toFixed(2)} + 1.34 × ${S.toFixed(2)}
+              = ${fcm1.toFixed(2)} MPa
+            </p>
+
+            <p>رابطه دوم: fcm2 = 0.9 × fc + 2.33 × S</p>
+            <p>
+              جایگذاری:
+              0.9 × ${fc.toFixed(2)} + 2.33 × ${S.toFixed(2)}
+              = ${fcm2.toFixed(2)} MPa
+            </p>
             <p>
               مقاومت هدف انتخابی:
               <strong>${targetAuto.toFixed(2)} MPa</strong>
@@ -630,6 +641,19 @@ function renderAggregateTable() {
         </tbody>
       </table>
     </div>
+
+    
+    <h3>مشخصات تکمیلی مصالح</h3>
+
+    <div class="grid">
+      ${numberInput('sgSand', fields.sgSand[0], 0.01)}
+      ${numberInput('sgGravel', fields.sgGravel[0], 0.01)}
+    </div>
+
+    <p class="hint">
+      وزن نهایی ماسه و شن بر مبنای وزن خشک محاسبه می‌شود.
+      چگالی نسبی را مطابق مشخصات مصالح وارد کنید.
+    </p>
 
     ${renderTargetStrength()}
 
