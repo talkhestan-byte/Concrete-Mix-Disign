@@ -104,6 +104,12 @@ const aggregateSieves = sieves
   .map((sieve, j) => ({ sieve, j }))
   .filter(({ sieve }) => sieve.mm !== 6.35);
 
+/*
+  لیست الک‌های مورد استفاده در رسم منحنی سنگدانه و مخلوط.
+  بدون ۶٫۳۵ تا خط ۴٫۷۵ مستقیم به ۹٫۵ وصل شود.
+*/
+const chartSieves = sieves.filter(s => s.mm !== 6.35);
+
 const titles = [
   'اطلاعات اولیه',
   'مشخصات سنگدانه‌ها',
@@ -499,7 +505,6 @@ function validateAggregates() {
     let previous = null;
 
     for (let j = 0; j < sieves.length; j++) {
-      /* الک ۶٫۳۵ در دانه‌بندی سنگدانه استفاده نمی‌شود */
       if (sieves[j].mm === 6.35) continue;
 
       const raw = a.passing[j];
@@ -937,7 +942,6 @@ function renderAggregateTable() {
     </tr>
   `;
 
-  /* ردیف‌های الک — به‌جز ۶٫۳۵ */
   const sieveRows = sieves.map((sieve, j) => {
     if (sieve.mm === 6.35) return '';
 
@@ -1063,10 +1067,6 @@ function getSharesInfo() {
   };
 }
 
-/*
-  منحنی مخلوط ترکیبی — فقط روی الک‌های دانه‌بندی
-  (بدون ۶٫۳۵). خروجی آرایه‌ای از { mm, value } است.
-*/
 function combinedGrading() {
   const info = getSharesInfo();
 
@@ -1126,11 +1126,6 @@ function finenessModulus(points) {
 
 /* =========================================
    داده‌های مرجع A/B/C
-
-   نکته کلیدی: فقط نقاطی رسم می‌شوند که
-   mm <= NMSA. این باعث می‌شود منحنی از خود
-   NMSA (۱۰۰٪) شروع شود و به سمت الک‌های ریزتر
-   پایین بیاید. الک ۶٫۳۵ در منحنی مرجع باقی است.
 ========================================= */
 
 function getReferenceSeries() {
@@ -1212,7 +1207,18 @@ function renderGradingChart(combined) {
     top +
     (100 - value) / 100 * plotHeight;
 
-  function drawSeries(points, color, dash = '', thickness = 2.5) {
+  /*
+    sieveList: لیست الک‌های پایه برای محاسبه پیوستگی خط.
+    برای منحنی سنگدانه و مخلوط، chartSieves (بدون ۶٫۳۵) پاس می‌شود
+    تا خط بدون شکست از ۹٫۵ به ۴٫۷۵ وصل شود.
+  */
+  function drawSeries(
+    points,
+    color,
+    dash = '',
+    thickness = 2.5,
+    sieveList = sieves
+  ) {
     const valid = points
       .filter(p =>
         p.value !== '' &&
@@ -1229,7 +1235,7 @@ function renderGradingChart(combined) {
     let current = [];
 
     for (const p of valid) {
-      const originalIndex = sieves.findIndex(
+      const originalIndex = sieveList.findIndex(
         s => Math.abs(s.mm - p.mm) < 0.0001
       );
 
@@ -1273,13 +1279,20 @@ function renderGradingChart(combined) {
       `;
     }).join('');
 
-    let drawn100 = false;
-    const circles = valid.map(p => {
+    /*
+      فقط یک نقطه ۱۰۰٪ رسم شود؛ آن هم در بزرگ‌ترین الک
+      (شروع پلاتوی ۱۰۰٪). چون valid بر اساس mm صعودی مرتب است،
+      آخرین نقطه ۱۰۰٪ همان بزرگ‌ترین الک است.
+    */
+    let last100Index = -1;
+    valid.forEach((p, idx) => {
+      if (Number(p.value) === 100) last100Index = idx;
+    });
+
+    const circles = valid.map((p, idx) => {
       const v = Number(p.value);
-      if (v === 100) {
-        if (drawn100) return '';
-        drawn100 = true;
-      }
+      if (v === 100 && idx !== last100Index) return '';
+
       return `
         <circle
           cx="${x(p.mm)}"
@@ -1318,7 +1331,8 @@ function renderGradingChart(combined) {
         points,
         aggregateColors[i],
         '6 4',
-        2.2
+        2.2,
+        chartSieves
       );
     }).join('');
 
@@ -1337,7 +1351,7 @@ function renderGradingChart(combined) {
 
   const mixLine =
     data.showMixCurve && combined
-      ? drawSeries(combined, '#087e8b', '', 3.5)
+      ? drawSeries(combined, '#087e8b', '', 3.5, chartSieves)
       : '';
 
   const horizontalGrid = [
@@ -1993,4 +2007,4 @@ if ('serviceWorker' in navigator) {
         );
       });
   });
-                                       }
+                       }
