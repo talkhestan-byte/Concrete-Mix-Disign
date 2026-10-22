@@ -108,57 +108,100 @@ function p3Init() {
 
 function p3Calculate() {
   const n = Number(data.aggregateCount);
-  const shares = data.aggregateShares.slice(0, n).map(Number);
-  const total = shares.reduce((a, b) => a + b, 0);
+  const aggregates = data.aggregates.slice(0, n);
+
+  const shares = data.aggregateShares
+    .slice(0, n)
+    .map(v => v === '' || v == null ? NaN : Number(v));
+
+  const total = shares.reduce(
+    (sum, v) => sum + (Number.isFinite(v) ? v : 0),
+    0
+  );
 
   const validShares =
-    shares.every(v => Number.isFinite(v) && v >= 0 && v <= 100) &&
+    shares.length === n &&
+    shares.every(v =>
+      Number.isFinite(v) && v >= 0 && v <= 100
+    ) &&
     Math.abs(total - 100) < 0.011;
 
+  const passingIndex = p3Sieves.map(mm =>
+    sieves.findIndex(s => Math.abs(s.mm - mm) < 0.02)
+  );
+
   const ready = validShares &&
-    data.aggregates.slice(0, n).every(a =>
-      p3Sieves.every(mm => {
-        const j = sieves.findIndex(s => Math.abs(s.mm - mm) < 0.02);
-        return j >= 0 &&
-          a.passing[j] !== '' &&
-          Number.isFinite(Number(a.passing[j]));
+    aggregates.length === n &&
+    passingIndex.every(j => j >= 0) &&
+    aggregates.every(a =>
+      passingIndex.every(j => {
+        const value = a.passing[j];
+        return value !== '' &&
+          value != null &&
+          Number.isFinite(Number(value)) &&
+          Number(value) >= 0 &&
+          Number(value) <= 100;
       })
     );
 
-  const combined = ready ? p3Sieves.map(mm => {
-    const j = sieves.findIndex(s => Math.abs(s.mm - mm) < 0.02);
-    return {
-      mm,
-      value: data.aggregates.slice(0, n).reduce(
-        (sum, a, i) =>
-          sum + Number(a.passing[j]) * shares[i] / 100,
-        0
-      )
-    };
-  }) : [];
+  const combined = ready
+    ? p3Sieves.map((mm, i) => ({
+        mm,
+        value: aggregates.reduce(
+          (sum, a, k) =>
+            sum + Number(a.passing[passingIndex[i]]) *
+              shares[k] / 100,
+          0
+        )
+      }))
+    : [];
 
-  const fracture = validShares &&
-    data.aggregates.slice(0, n).every(
-      a => Number.isFinite(Number(a.fracture))
-    )
-    ? data.aggregates.slice(0, n).reduce(
+  const fractureReady = validShares &&
+    aggregates.length === n &&
+    aggregates.every(a =>
+      a.fracture !== '' &&
+      a.fracture != null &&
+      Number.isFinite(Number(a.fracture)) &&
+      Number(a.fracture) >= 0 &&
+      Number(a.fracture) <= 100
+    );
+
+  const fracture = fractureReady
+    ? aggregates.reduce(
         (sum, a, i) =>
           sum + Number(a.fracture) * shares[i] / 100,
         0
       )
     : null;
 
-  const fmSizes = [4.75, 2.38, 1.19, 0.6, 0.3, 0.15];
+  const fmSizes = [
+    9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15
+  ];
+
   const fm = ready
-    ? fmSizes.reduce((sum, mm) => {
-        const p = combined.find(v => Math.abs(v.mm - mm) < 0.02);
-        return sum + (p ? 100 - p.value : 0);
-      }, 0) / 100
+    ? fmSizes.every(mm =>
+        combined.some(p => Math.abs(p.mm - mm) < 0.02)
+      )
+      ? fmSizes.reduce((sum, mm) => {
+          const p = combined.find(
+            v => Math.abs(v.mm - mm) < 0.02
+          );
+          return sum + 100 - p.value;
+        }, 0) / 100
+      : null
     : null;
 
-  return { n, shares, total, validShares, ready, combined, fracture, fm };
+  return {
+    n,
+    shares,
+    total,
+    validShares,
+    ready,
+    combined,
+    fracture,
+    fm
+  };
 }
-
 function p3Chart(r) {
   const W = 850, H = 420, L = 48, R = 20, T = 48, B = 42;
   const min = Math.log10(0.15), max = Math.log10(37.5);
