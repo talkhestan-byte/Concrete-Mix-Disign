@@ -45,6 +45,7 @@ const sieves = [
   { mm: 19, label: '۱۹' },
   { mm: 12.5, label: '۱۲٫۵' },
   { mm: 9.5, label: '۹٫۵' },
+  { mm: 6.35, label: '۶٫۳۵' },
   { mm: 4.75, label: '۴٫۷۵' },
   { mm: 2.36, label: '۲٫۳۶' },
   { mm: 1.18, label: '۱٫۱۸' },
@@ -62,7 +63,6 @@ const slumpClasses = {
 
 /*
   جدول موقت انحراف معیار.
-  قبل از استفاده اجرایی باید با مرجع کنترل شود.
 */
 const standardDeviationTable = {
   16: { A: 2.5, B: 3.5, C: 4.0 },
@@ -74,33 +74,36 @@ const standardDeviationTable = {
 };
 
 /*
-  داده‌های مرجع A/B/C
-  مقادیر درصد عبوری مستقیماً از جدول راهنمای
-  ملی طرح مخلوط بتن استخراج شده‌اند.
+  داده‌های مرجع A/B/C — دقیقاً مطابق جدول راهنمای
+  ملی طرح مخلوط بتن.
+
   ترتیب مقادیر مطابق آرایه sieves است:
-  37.5, 25, 19, 12.5, 9.5, 4.75,
+  37.5, 25, 19, 12.5, 9.5, 6.35, 4.75,
   2.36, 1.18, 0.6, 0.3, 0.15
+
+  نکته: مقدار ردیف 37.5 همیشه 100 گذاشته شده اما
+  در getReferenceSeries با فیلتر mm <= NMSA حذف می‌شود.
 */
 const referenceCurves = {
   '9.5': {
-    A: [100, 100, 100, 100, 100, 82, 68, 55, 41, 23, 13],
-    B: [100, 100, 100, 100, 100, 71, 58, 45, 32, 17, 8],
-    C: [100, 100, 100, 100, 100, 63, 52, 40, 28, 14, 6]
+    A: [100, 100, 100, 100, 100,  90, 83, 66, 51, 37, 27, 12],
+    B: [100, 100, 100, 100, 100,  84, 74, 52, 35, 24, 14,  6],
+    C: [100, 100, 100, 100, 100,  75, 61, 37, 22, 12,  6,  2]
   },
   '12.5': {
-    A: [100, 100, 100, 100, 91, 62, 50, 37, 25, 15, 10],
-    B: [100, 100, 100, 95, 80, 55, 42, 32, 20, 12, 5],
-    C: [100, 100, 100, 85, 71, 46, 34, 25, 14, 6, 2]
+    A: [100, 100, 100, 100, 93, 84, 77, 62, 48, 35, 24, 11],
+    B: [100, 100, 100, 100, 89, 75, 66, 47, 32, 21, 13,  6],
+    C: [100, 100, 100, 100, 82, 62, 51, 31, 18, 10,  5,  2]
   },
   '19': {
-    A: [100, 100, 95, 82, 70, 47, 35, 23, 15, 8, 5],
-    B: [100, 93, 83, 70, 60, 38, 25, 15, 9, 4, 2],
-    C: [100, 88, 74, 62, 50, 30, 20, 12, 6, 3, 1]
+    A: [100, 100, 100, 90, 84, 76, 70, 56, 44, 31, 20, 10],
+    B: [100, 100, 100, 85, 75, 62, 55, 40, 28, 18, 11,  5],
+    C: [100, 100, 100, 74, 62, 47, 38, 22, 13,  8,  4,  2]
   },
   '25': {
-    A: [100, 91, 77, 62, 51, 32, 21, 13, 8, 5, 2],
-    B: [100, 85, 68, 53, 43, 26, 17, 9, 4, 2, 1],
-    C: [100, 72, 56, 44, 35, 20, 13, 7, 3, 1, 0]
+    A: [100, 100, 94, 85, 79, 71, 65, 52, 41, 29, 19,  9],
+    B: [100, 100, 89, 75, 67, 56, 49, 36, 25, 16,  9,  4],
+    C: [100, 100, 82, 62, 51, 39, 32, 19, 11,  6,  3,  1]
   }
 };
 
@@ -145,7 +148,7 @@ const data = {
   ...stored
 };
 
-/* نرمال‌سازی NMSA تا همیشه یکی از چهار مقدار معتبر باشد */
+/* نرمال‌سازی NMSA */
 {
   const msaValue = Number(data.msa);
   data.msa = [9.5, 12.5, 19, 25].includes(msaValue)
@@ -165,18 +168,39 @@ if (!Array.isArray(data.aggregates)) {
   data.aggregates = [];
 }
 
-data.aggregates = data.aggregates.map((a, i) => ({
-  ...defaultAggregate(i),
-  ...a,
-  passing: Array.isArray(a.passing)
-    ? sieves.map((_, j) => {
-        const v = a.passing[j];
-        return v === '' || v == null
-          ? ''
-          : Number(v);
-      })
-    : Array(sieves.length).fill('')
-}));
+/* مهاجرت داده قدیمی (۱۱ الکی) به ساختار جدید (۱۲ الکی) */
+data.aggregates = data.aggregates.map((a, i) => {
+  const base = defaultAggregate(i);
+  let sourcePassing = Array.isArray(a.passing)
+    ? a.passing.slice()
+    : [];
+
+  if (sourcePassing.length === 11) {
+    sourcePassing = [
+      sourcePassing[0],
+      sourcePassing[1],
+      sourcePassing[2],
+      sourcePassing[3],
+      sourcePassing[4],
+      '',
+      sourcePassing[5],
+      sourcePassing[6],
+      sourcePassing[7],
+      sourcePassing[8],
+      sourcePassing[9],
+      sourcePassing[10]
+    ];
+  }
+
+  return {
+    ...base,
+    ...a,
+    passing: sieves.map((_, j) => {
+      const v = sourcePassing[j];
+      return v === '' || v == null ? '' : Number(v);
+    })
+  };
+});
 
 while (data.aggregates.length < 4) {
   data.aggregates.push(
@@ -541,7 +565,6 @@ class Step3 {
 class Step4 {
   run() {
     validate();
-
     return {
       cement: effectiveWater() / num('wc')
     };
@@ -1011,7 +1034,7 @@ function renderAggregateTable() {
 }
 
 /* =========================================
-   سهم‌بندی و محاسبه ترکیب
+   سهم‌بندی
 ========================================= */
 
 function getSharesInfo() {
@@ -1103,6 +1126,11 @@ function finenessModulus(points) {
 
 /* =========================================
    داده‌های مرجع A/B/C
+
+   نکته کلیدی: فقط نقاطی رسم می‌شوند که
+   mm <= NMSA. این باعث می‌شود منحنی از خود
+   NMSA (۱۰۰٪) شروع شود و به سمت الک‌های ریزتر
+   پایین بیاید. دیگر تا ۳۷٫۵ کشیده نمی‌شود.
 ========================================= */
 
 function getReferenceSeries() {
@@ -1123,33 +1151,37 @@ function getReferenceSeries() {
       continue;
     }
 
-    if (!values.every(
-      v => typeof v === 'number' &&
-        Number.isFinite(v) &&
-        v >= 0 &&
-        v <= 100
+    /* ساخت نقاط و فیلتر: فقط mm <= NMSA */
+    const points = sieves
+      .map((sieve, i) => ({
+        mm: sieve.mm,
+        value: values[i]
+      }))
+      .filter(p => p.mm <= msa + 0.001);
+
+    if (!points.length) continue;
+
+    /* اعتبارسنجی مقادیر */
+    if (!points.every(
+      p => typeof p.value === 'number' &&
+        Number.isFinite(p.value) &&
+        p.value >= 0 &&
+        p.value <= 100
     )) {
       continue;
     }
 
+    /* بررسی نزولی بودن */
     let monotonic = true;
-
-    for (let i = 1; i < values.length; i++) {
-      if (values[i] > values[i - 1]) {
+    for (let i = 1; i < points.length; i++) {
+      if (points[i].value > points[i - 1].value + 0.0001) {
         monotonic = false;
         break;
       }
     }
-
     if (!monotonic) continue;
 
-    result.push({
-      name,
-      points: sieves.map((sieve, i) => ({
-        mm: sieve.mm,
-        value: values[i]
-      }))
-    });
+    result.push({ name, points });
   }
 
   return result;
@@ -1201,7 +1233,7 @@ function renderGradingChart(combined) {
 
     for (const p of valid) {
       const originalIndex = sieves.findIndex(
-        s => s.mm === p.mm
+        s => Math.abs(s.mm - p.mm) < 0.0001
       );
 
       if (
@@ -1225,35 +1257,45 @@ function renderGradingChart(combined) {
       segments.push(current);
     }
 
-    return `
-      ${segments.map(segment => {
-        if (segment.length < 2) return '';
+    /* رسم خط بین نقاط متوالی */
+    const lines = segments.map(segment => {
+      if (segment.length < 2) return '';
 
-        const coords = segment.map(
-          p => `${x(p.mm)},${y(Number(p.value))}`
-        ).join(' ');
+      const coords = segment.map(
+        p => `${x(p.mm)},${y(Number(p.value))}`
+      ).join(' ');
 
-        return `
-          <polyline
-            points="${coords}"
-            fill="none"
-            stroke="${color}"
-            stroke-width="${thickness}"
-            stroke-dasharray="${dash}"
-            stroke-linejoin="round"
-          />
-        `;
-      }).join('')}
+      return `
+        <polyline
+          points="${coords}"
+          fill="none"
+          stroke="${color}"
+          stroke-width="${thickness}"
+          stroke-dasharray="${dash}"
+          stroke-linejoin="round"
+        />
+      `;
+    }).join('');
 
-      ${valid.map(p => `
+    /* نقطه‌ها — فقط یک نقطه در ۱۰۰٪ رسم شود */
+    let drawn100 = false;
+    const circles = valid.map(p => {
+      const v = Number(p.value);
+      if (v === 100) {
+        if (drawn100) return '';
+        drawn100 = true;
+      }
+      return `
         <circle
           cx="${x(p.mm)}"
-          cy="${y(Number(p.value))}"
+          cy="${y(v)}"
           r="3"
           fill="${color}"
         />
-      `).join('')}
-    `;
+      `;
+    }).join('');
+
+    return lines + circles;
   }
 
   const aggregateColors = [
@@ -1263,7 +1305,6 @@ function renderGradingChart(combined) {
     '#9333ea'
   ];
 
-  /* همه منحنی‌های مرجع با رنگ آبی آسمانی یکسان */
   const referenceColor = '#0ea5e9';
 
   const aggregateLines = data.aggregates
@@ -1293,7 +1334,7 @@ function renderGradingChart(combined) {
         drawSeries(
           series.points,
           referenceColor,
-          '',          // خط توپر بدون خط‌چین
+          '',
           2.8
         )
       ).join('')
@@ -1323,10 +1364,10 @@ function renderGradingChart(combined) {
     >${value}</text>
   `).join('');
 
-  /* محور افقی شامل تمام الک‌های جدول */
+  /* محور افقی شامل الک ۶٫۳۵ */
   const xTickValues = [
     0.075, 0.15, 0.3, 0.6,
-    1.18, 2.36, 4.75,
+    1.18, 2.36, 4.75, 6.35,
     9.5, 12.5, 19, 25, 37.5
   ];
 
