@@ -351,10 +351,35 @@ function p3Chart(r) {
     }
   }
 
-  if (r.ready) {
-    svg += `
-      <path d="${path(r.combined)}" fill="none"
-        stroke="#111111" stroke-width="3.2"/>`;
+  if (r.ready && Array.isArray(r.combined)) {
+    const mixPoints = r.combined.filter(p =>
+      Number.isFinite(p.mm) &&
+      p.mm > 0 &&
+      Number.isFinite(p.value) &&
+      p.value >= 0 &&
+      p.value <= 100
+    );
+
+    if (mixPoints.length >= 2) {
+      svg += `
+        <path d="${path(mixPoints)}"
+          fill="none"
+          stroke="#111111"
+          stroke-width="3.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>`;
+    }
+
+    for (const p of mixPoints) {
+      svg += `
+        <circle
+          cx="${x(p.mm)}"
+          cy="${y(p.value)}"
+          r="3.5"
+          fill="#111111"
+          stroke="#ffffff"
+          stroke-width="1"/>`;
+    }
   }
 
   svg += `
