@@ -296,7 +296,7 @@ function validateAggregates() {
       throw Error(`اطلاعات دانه‌بندی سنگدانه ${i + 1} معتبر نیست.`);
     }
 
-        let previousPassing = -1;
+    let previousPassing = -1;
 
     for (let j = 0; j < sieves.length; j++) {
       const v = a.passing[j];
@@ -322,7 +322,7 @@ function validateAggregates() {
       }
 
       previousPassing = passing;
-                               }
+   }
   }
 }
 
@@ -465,7 +465,7 @@ function renderHome() {
       1
     )}
 
-        ${checkboxField(
+    ${checkboxField(
       'limitWcOn',
       'اعمال حداکثر نسبت آب به سیمان',
       'limitWc',
@@ -703,7 +703,7 @@ function renderShares() {
   let chart = '';
 
   if (sharesValid) {
-        const allSieveDataEntered = sieves.every((_, j) =>
+    const allSieveDataEntered = sieves.every((_, j) =>
       data.aggregates.slice(0, count).every(a => {
         const v = a.passing[j];
 
@@ -842,7 +842,7 @@ function renderGradingChart(points) {
         <polyline points="${polyline}" fill="none"
           stroke="#087e8b" stroke-width="2.5" />
 
-                ${coords.map(p => `
+        ${coords.map(p => `
           <circle cx="${p.x}" cy="${p.y}" r="3" fill="#087e8b" />
         `).join('')}
 
