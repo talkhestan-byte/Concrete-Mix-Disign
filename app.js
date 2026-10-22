@@ -75,28 +75,32 @@ const standardDeviationTable = {
 
 /*
   داده‌های مرجع A/B/C
-  مقادیر درصد عبوری برای چهار NMSA.
+  مقادیر درصد عبوری مستقیماً از جدول راهنمای
+  ملی طرح مخلوط بتن استخراج شده‌اند.
+  ترتیب مقادیر مطابق آرایه sieves است:
+  37.5, 25, 19, 12.5, 9.5, 4.75,
+  2.36, 1.18, 0.6, 0.3, 0.15
 */
 const referenceCurves = {
   '9.5': {
-    A: [100, 100, 100, 100, 90, 75, 62, 50, 38, 24, 12],
-    B: [100, 100, 100, 100, 80, 65, 52, 41, 30, 18, 8],
-    C: [100, 100, 100, 100, 70, 55, 43, 33, 23, 13, 5]
+    A: [100, 100, 100, 100, 100, 82, 68, 55, 41, 23, 13],
+    B: [100, 100, 100, 100, 100, 71, 58, 45, 32, 17, 8],
+    C: [100, 100, 100, 100, 100, 63, 52, 40, 28, 14, 6]
   },
   '12.5': {
-    A: [100, 100, 100, 100, 92, 78, 64, 52, 39, 25, 12],
-    B: [100, 100, 100, 95, 82, 68, 55, 43, 32, 19, 8],
-    C: [100, 100, 100, 88, 74, 60, 47, 36, 25, 14, 5]
+    A: [100, 100, 100, 100, 91, 62, 50, 37, 25, 15, 10],
+    B: [100, 100, 100, 95, 80, 55, 42, 32, 20, 12, 5],
+    C: [100, 100, 100, 85, 71, 46, 34, 25, 14, 6, 2]
   },
   '19': {
-    A: [100, 100, 100, 100, 100, 95, 84, 70, 55, 36, 18],
-    B: [100, 100, 100, 100, 100, 85, 73, 60, 46, 29, 14],
-    C: [100, 100, 100, 100, 95, 75, 62, 50, 37, 23, 10]
+    A: [100, 100, 95, 82, 70, 47, 35, 23, 15, 8, 5],
+    B: [100, 93, 83, 70, 60, 38, 25, 15, 9, 4, 2],
+    C: [100, 88, 74, 62, 50, 30, 20, 12, 6, 3, 1]
   },
   '25': {
-    A: [100, 100, 100, 100, 100, 97, 88, 75, 60, 40, 20],
-    B: [100, 100, 100, 100, 100, 88, 77, 64, 50, 32, 15],
-    C: [100, 100, 100, 100, 100, 78, 66, 54, 40, 25, 11]
+    A: [100, 91, 77, 62, 51, 32, 21, 13, 8, 5, 2],
+    B: [100, 85, 68, 53, 43, 26, 17, 9, 4, 2, 1],
+    C: [100, 72, 56, 44, 35, 20, 13, 7, 3, 1, 0]
   }
 };
 
@@ -1289,7 +1293,7 @@ function renderGradingChart(combined) {
         drawSeries(
           series.points,
           referenceColor,
-          '',        // خط توپر بدون خط‌چین
+          '',          // خط توپر بدون خط‌چین
           2.8
         )
       ).join('')
@@ -1319,11 +1323,14 @@ function renderGradingChart(combined) {
     >${value}</text>
   `).join('');
 
-  const xTicks = [
+  /* محور افقی شامل تمام الک‌های جدول */
+  const xTickValues = [
     0.075, 0.15, 0.3, 0.6,
     1.18, 2.36, 4.75,
-    9.5, 19, 37.5
-  ].map(mm => `
+    9.5, 12.5, 19, 25, 37.5
+  ];
+
+  const xTicks = xTickValues.map(mm => `
     <line
       x1="${x(mm)}"
       y1="${top}"
@@ -1339,38 +1346,6 @@ function renderGradingChart(combined) {
       fill="#334155"
     >${mm}</text>
   `).join('');
-
-  const legendItems = [];
-
-  data.aggregates
-    .slice(0, data.aggregateCount)
-    .forEach((aggregate, i) => {
-      if (data.showAggregateCurves[i]) {
-        legendItems.push(`
-          <span style="color:${aggregateColors[i]};margin:5px">
-            ● ${escapeHtml(aggregate.name)}
-          </span>
-        `);
-      }
-    });
-
-  if (data.showMixCurve && combined) {
-    legendItems.push(`
-      <span style="color:#087e8b;margin:5px">
-        ● مخلوط ترکیبی
-      </span>
-    `);
-  }
-
-  if (data.showReferenceCurves) {
-    referenceSeries.forEach(series => {
-      legendItems.push(`
-        <span style="color:${referenceColor};margin:5px">
-          ━ مرجع ${series.name}
-        </span>
-      `);
-    });
-  }
 
   return `
     <h3>منحنی‌های دانه‌بندی</h3>
@@ -1424,10 +1399,6 @@ function renderGradingChart(combined) {
           transform="rotate(-90 17 ${height / 2})"
         >درصد عبوری</text>
       </svg>
-    </div>
-
-    <div class="hint">
-      ${legendItems.join('')}
     </div>
   `;
 }
@@ -1987,4 +1958,4 @@ if ('serviceWorker' in navigator) {
         );
       });
   });
-        }
+}
