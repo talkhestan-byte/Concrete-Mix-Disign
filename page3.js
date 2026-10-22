@@ -174,8 +174,10 @@ function p3Calculate() {
       )
     : null;
 
+  
+  
   const fmSizes = [
-    9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15
+    37.5, 19, 9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15
   ];
 
   const fm = ready
@@ -191,7 +193,6 @@ function p3Calculate() {
       : null
     : null;
 
-  return {
     n,
     shares,
     total,
@@ -321,38 +322,65 @@ function p3Chart(r) {
   return svg;
 }
 
+
 function p3Refresh() {
   const r = p3Calculate();
   const chart = document.getElementById('p3-chart');
   const summary = document.getElementById('p3-summary');
-  if (chart) chart.innerHTML = p3Chart(r);
+
+  if (chart) {
+    chart.innerHTML = p3Chart(r);
+  }
+
   if (!summary) return;
 
   const message = !r.validShares
-    ? 'مجموع سهم‌ها باید ۱۰۰٪ باشد.'
+    ? 'مجموع سهم سنگدانه‌ها باید دقیقاً ۱۰۰٪ باشد.'
     : !r.ready
-      ? 'برای رسم مخلوط، درصد عبوری الک‌ها را در صفحه دوم وارد کنید.'
-      : 'منحنی سیاه نشان‌دهنده دانه‌بندی ترکیبی است.';
+      ? 'برای محاسبه منحنی مخلوط، درصدهای عبوری تمام الک‌ها را در صفحه دوم تکمیل کنید.'
+      : 'منحنی سیاه، دانه‌بندی ترکیبی سنگدانه‌ها را نشان می‌دهد.';
 
   const rows = r.ready
-    ? r.combined.map(p => `<tr><td>${p.mm}</td>
-        <td>${p.value.toFixed(2)}٪</td></tr>`).join('')
+    ? r.combined.map(p => `
+        <tr>
+          <td>${p.mm}</td>
+          <td>${p.value.toFixed(2)}٪</td>
+        </tr>
+      `).join('')
     : '<tr><td colspan="2">اطلاعات دانه‌بندی کامل نیست.</td></tr>';
 
   summary.innerHTML = `
     <p><strong>مجموع سهم‌ها: ${r.total.toFixed(2)}٪</strong></p>
     <p>${message}</p>
+
     <div class="table-scroll">
-      <table><thead><tr><th>الک (mm)</th>
-        <th>درصد عبوری مخلوط</th></tr></thead>
-        <tbody>${rows}</tbody></table>
+      <table>
+        <thead>
+          <tr>
+            <th>الک (mm)</th>
+            <th>درصد عبوری مخلوط</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>
-    <p>درصد شکستگی معادل مخلوط:
-      <strong>${r.fracture == null ? '—' : r.fracture.toFixed(2) + '٪'}</strong>
+
+    <p>
+      درصد شکستگی معادل مخلوط:
+      <strong>
+        ${r.fracture == null ? '—' : r.fracture.toFixed(2) + '٪'}
+      </strong>
     </p>
-    <p>مدول نرمی محاسباتی:
+
+    <p>
+      مدول نرمی منحنی مخلوط:
       <strong>${r.fm == null ? '—' : r.fm.toFixed(2)}</strong>
-    </p>`;
+    </p>
+
+    <p class="muted">
+      مدول نرمی فقط زمانی نمایش داده می‌شود که داده‌های لازم برای محاسبه کامل باشند.
+    </p>
+  `;
 }
 
 renderShares = function () {
