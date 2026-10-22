@@ -280,30 +280,74 @@ function p3Chart(r) {
     });
   }
 
+  
   for (let i = 0; i < r.n; i++) {
     if (data.p3Visible[i] === false) continue;
 
     const a = data.aggregates[i];
+    if (!a || !Array.isArray(a.passing)) continue;
 
-    const pts = p3Sieves.map(mm => {
+    const points = p3Sieves.map(mm => {
       const j = sieves.findIndex(
         s => Math.abs(s.mm - mm) < 0.02
       );
 
-      return {
-        mm,
-        value: j >= 0 ? Number(a.passing[j]) : NaN
-      };
+      if (j < 0) return null;
+
+      const raw = a.passing[j];
+
+      if (raw === '' || raw == null) return null;
+
+      const value = Number(raw);
+
+      if (
+        !Number.isFinite(value) ||
+        value < 0 ||
+        value > 100
+      ) {
+        return null;
+      }
+
+      return { mm, value };
     });
 
-    if (pts.every(p =>
-      Number.isFinite(p.value) &&
-      p.value >= 0 &&
-      p.value <= 100
-    )) {
+    // فقط نقاط متوالی معتبر به یکدیگر وصل شوند.
+    let segment = [];
+
+    const drawSegment = () => {
+      if (segment.length >= 2) {
+        svg += `
+          <path d="${path(segment)}"
+            fill="none"
+            stroke="${p3Colors[i % p3Colors.length]}"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>`;
+      }
+
+      segment = [];
+    };
+
+    for (const point of points) {
+      if (point) {
+        segment.push(point);
+      } else {
+        drawSegment();
+      }
+    }
+
+    drawSegment();
+
+    // نقاط معتبر حتی در صورت ناقص بودن جدول نمایش داده شوند.
+    for (const point of points) {
+      if (!point) continue;
+
       svg += `
-        <path d="${path(pts)}" fill="none"
-          stroke="${p3Colors[i]}" stroke-width="2.3"/>`;
+        <circle
+          cx="${x(point.mm)}"
+          cy="${y(point.value)}"
+          r="3"
+          fill="${p3Colors[i % p3Colors.length]}"/>`;
     }
   }
 
