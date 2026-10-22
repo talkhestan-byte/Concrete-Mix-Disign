@@ -75,13 +75,7 @@ const standardDeviationTable = {
 
 /*
   داده‌های مرجع A/B/C
-
-  مقادیر درصد عبوری از جداول دانه‌بندی مطلوب
-  روش ملی طرح مخلوط بتن (مطابق استاندارد ملی ایران ۳۰۲) استخراج شده‌اند.
-
-  ترتیب مقادیر هر آرایه مطابق ترتیب sieves است:
-  37.5, 25, 19, 12.5, 9.5, 4.75,
-  2.36, 1.18, 0.6, 0.3, 0.15
+  مقادیر درصد عبوری برای چهار NMSA.
 */
 const referenceCurves = {
   '9.5': {
@@ -146,6 +140,14 @@ const data = {
   ...defaults,
   ...stored
 };
+
+/* نرمال‌سازی NMSA تا همیشه یکی از چهار مقدار معتبر باشد */
+{
+  const msaValue = Number(data.msa);
+  data.msa = [9.5, 12.5, 19, 25].includes(msaValue)
+    ? msaValue
+    : 19;
+}
 
 function defaultAggregate(index) {
   return {
@@ -1100,7 +1102,8 @@ function finenessModulus(points) {
 ========================================= */
 
 function getReferenceSeries() {
-  const source = referenceCurves[String(data.msa)];
+  const msa = Number(data.msa);
+  const source = referenceCurves[String(msa)];
 
   if (!source) return [];
 
@@ -1189,10 +1192,6 @@ function renderGradingChart(combined) {
 
     if (!valid.length) return '';
 
-    /*
-      برای داده‌های ناقص، نقاط موجود نمایش داده می‌شوند.
-      اتصال بین الک‌های دارای داده خالی برقرار نمی‌شود.
-    */
     const segments = [];
     let current = [];
 
@@ -1260,11 +1259,8 @@ function renderGradingChart(combined) {
     '#9333ea'
   ];
 
-  const referenceColors = {
-    A: '#0ea5e9', // آبی آسمانی
-    B: '#0284c7', // آبی کمی تیره‌تر
-    C: '#38bdf8'  // آبی روشن
-  };
+  /* همه منحنی‌های مرجع با رنگ آبی آسمانی یکسان */
+  const referenceColor = '#0ea5e9';
 
   const aggregateLines = data.aggregates
     .slice(0, data.aggregateCount)
@@ -1292,9 +1288,9 @@ function renderGradingChart(combined) {
     ? referenceSeries.map(series =>
         drawSeries(
           series.points,
-          referenceColors[series.name],
-          '9 4',
-          2.5
+          referenceColor,
+          '',        // خط توپر بدون خط‌چین
+          2.8
         )
       ).join('')
     : '';
@@ -1369,9 +1365,7 @@ function renderGradingChart(combined) {
   if (data.showReferenceCurves) {
     referenceSeries.forEach(series => {
       legendItems.push(`
-        <span
-          style="color:${referenceColors[series.name]};margin:5px"
-        >
+        <span style="color:${referenceColor};margin:5px">
           ━ مرجع ${series.name}
         </span>
       `);
@@ -1435,16 +1429,6 @@ function renderGradingChart(combined) {
     <div class="hint">
       ${legendItems.join('')}
     </div>
-
-    ${data.showReferenceCurves && referenceSeries.length === 0
-      ? `
-        <p class="hint">
-          اعداد تأییدشده منحنی‌های مرجع A/B/C
-          برای NMSA انتخاب‌شده هنوز در برنامه ثبت نشده‌اند.
-        </p>
-      `
-      : ''
-    }
   `;
 }
 
@@ -1711,8 +1695,6 @@ function view() {
     </article>
   `;
 
-  /* دکمه‌های صفحات */
-
   document.querySelectorAll('[data-page]').forEach(
     button => {
       button.onclick = () => {
@@ -1721,8 +1703,6 @@ function view() {
       };
     }
   );
-
-  /* ورودی‌های عمومی */
 
   document.querySelectorAll('[data-key]').forEach(
     element => {
@@ -1796,8 +1776,6 @@ function view() {
     }
   );
 
-  /* محدودیت‌های اختیاری */
-
   document.querySelectorAll('[data-check]').forEach(
     element => {
       element.onchange = () => {
@@ -1818,8 +1796,6 @@ function view() {
       };
     }
   );
-
-  /* جدول سنگدانه‌ها */
 
   document.querySelectorAll('[data-agg]').forEach(
     element => {
@@ -1870,8 +1846,6 @@ function view() {
     }
   );
 
-  /* سهم‌بندی */
-
   document.querySelectorAll('[data-share]').forEach(
     element => {
       element.onchange = () => {
@@ -1903,8 +1877,6 @@ function view() {
     }
   );
 
-  /* تیک نمایش منحنی سنگدانه‌ها */
-
   document.querySelectorAll(
     '[data-curve-aggregate]'
   ).forEach(element => {
@@ -1921,8 +1893,6 @@ function view() {
     };
   });
 
-  /* تیک منحنی مخلوط */
-
   const mixCheckbox = document.querySelector(
     '[data-curve-mix]'
   );
@@ -1934,8 +1904,6 @@ function view() {
       view();
     };
   }
-
-  /* تیک منحنی‌های مرجع */
 
   const referenceCheckbox = document.querySelector(
     '[data-curve-reference]'
@@ -1950,8 +1918,6 @@ function view() {
       view();
     };
   }
-
-  /* چاپ */
 
   const printButton = document.getElementById('print');
 
@@ -2021,4 +1987,4 @@ if ('serviceWorker' in navigator) {
         );
       });
   });
-  }
+        }
