@@ -1525,46 +1525,92 @@ function getActiveCurve() {
   }
   const type = isCrushed ? 'C' : 'R';
 
-  const curves = {
-    '32.5': {
-      R: { a: 62.5, b: -135, c: 75.875, name: '32.5-R', color: '#60a5fa', width: 1.5, dash: 'none' },
-      C: { a: 62.5, b: -140, c: 82.375, name: '32.5-C', color: '#2563eb', width: 2.5, dash: 'none' }
-    },
-    '42.5': {
-      R: { a: 50, b: -140, c: 91.5, name: '42.5-R', color: '#f87171', width: 1.5, dash: '6,4' },
-      C: { a: 37.5, b: -135, c: 97.965, name: '42.5-C', color: '#dc2626', width: 2.5, dash: 'none' }
-    },
-    '52.5': {
-      R: { a: 87.5, b: -170, c: 105.125, name: '52.5-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
-      C: { a: 100, b: -185, c: 114.5, name: '52.5-C', color: '#16a34a', width: 2.5, dash: 'none' }
-    }
-  };
+  const hasAdmixture = data.admixture && data.admixture !== 'none';
 
-  return curves[cement] ? curves[cement][type] : curves['42.5']['C'];
+  let curveSet;
+  if (hasAdmixture) {
+    // WITH superplasticizer (Cubic equations from Image 1)
+    curveSet = {
+      '32.5': {
+        R: { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
+        C: { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' }
+      },
+      '42.5': {
+        R: { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
+        C: { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' }
+      },
+      '52.5': {
+        R: { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+        C: { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
+      }
+    };
+  } else {
+    // WITHOUT superplasticizer (Quadratic equations from Image 2)
+    curveSet = {
+      '32.5': {
+        R: { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
+        C: { a: 126.73, b: -228.34, c: 116.36, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' }
+      },
+      '42.5': {
+        R: { a: 123.42, b: -234.33, c: 122.57, name: '425-R', color: '#f87171', width: 1.5, dash: '6,4' },
+        C: { a: 119.86, b: -240.12, c: 130.32, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' }
+      },
+      '52.5': {
+        R: { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+        C: { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
+      }
+    };
+  }
+
+  return curveSet[cement] ? curveSet[cement][type] : curveSet['42.5']['C'];
 }
 
 function calculateStrength(wc, curve) {
   if (!curve) return null;
-  let y = curve.a * wc * wc + curve.b * wc + curve.c;
+  let y;
+  if (curve.d !== undefined) {
+    y = curve.a * Math.pow(wc, 3) + curve.b * Math.pow(wc, 2) + curve.c * wc + curve.d;
+  } else {
+    y = curve.a * Math.pow(wc, 2) + curve.b * wc + curve.c;
+  }
   return Math.max(10, Math.min(70, y));
 }
 
 function calculateWc(strength, curve) {
   if (!curve) return null;
-  const a = curve.a;
-  const b = curve.b;
-  const c = curve.c - strength;
-  const disc = b * b - 4 * a * c;
-  if (disc < 0) return null;
-  const root = (-b - Math.sqrt(disc)) / (2 * a);
-  return Math.max(0.3, Math.min(0.75, root));
+  let low = 0.3;
+  let high = 0.75;
+  
+  function evalCurve(x) {
+    if (curve.d !== undefined) {
+      return curve.a * Math.pow(x, 3) + curve.b * Math.pow(x, 2) + curve.c * x + curve.d;
+    } else {
+      return curve.a * Math.pow(x, 2) + curve.b * x + curve.c;
+    }
+  }
+
+  let fLow = evalCurve(low);
+  let fHigh = evalCurve(high);
+
+  if (strength > fLow || strength < fHigh) return null;
+
+  for (let i = 0; i < 40; i++) {
+    let mid = (low + high) / 2;
+    let fMid = evalCurve(mid);
+    if (fMid > strength) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+  return (low + high) / 2;
 }
 
 function renderWCChart() {
   const width = 680;
   const height = 400;
   const left = 60;
-  const right = 20;
+  const right = 60; 
   const top = 20;
   const bottom = 60;
   const plotWidth = width - left - right;
@@ -1578,14 +1624,30 @@ function renderWCChart() {
   const x = val => left + (val - xMin) / (xMax - xMin) * plotWidth;
   const y = val => top + (yMax - val) / (yMax - yMin) * plotHeight;
 
-  const allCurves = [
-    { a: 100, b: -185, c: 114.5, name: '52.5-C', color: '#16a34a', width: 2.5, dash: 'none' },
-    { a: 87.5, b: -170, c: 105.125, name: '52.5-R', color: '#16a34a', width: 1.5, dash: '8,4,2,4' },
-    { a: 37.5, b: -135, c: 97.965, name: '42.5-C', color: '#dc2626', width: 2.5, dash: 'none' },
-    { a: 50, b: -140, c: 91.5, name: '42.5-R', color: '#dc2626', width: 1.5, dash: '6,4' },
-    { a: 62.5, b: -140, c: 82.375, name: '32.5-C', color: '#2563eb', width: 2.5, dash: 'none' },
-    { a: 62.5, b: -135, c: 75.875, name: '32.5-R', color: '#3b82f6', width: 1.5, dash: 'none' }
-  ];
+  const hasAdmixture = data.admixture && data.admixture !== 'none';
+
+  let allCurves;
+  if (hasAdmixture) {
+    // Cubic
+    allCurves = [
+      { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
+      { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+      { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' },
+      { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
+      { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
+      { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
+    ];
+  } else {
+    // Quadratic
+    allCurves = [
+      { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
+      { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+      { a: 119.86, b: -240.12, c: 130.32, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' },
+      { a: 123.42, b: -234.33, c: 122.57, name: '425-R', color: '#f87171', width: 1.5, dash: '6,4' },
+      { a: 126.73, b: -228.34, c: 116.36, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
+      { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
+    ];
+  }
 
   const activeCurve = getActiveCurve();
   const targetY = getTargetStrength();
@@ -1614,15 +1676,29 @@ function renderWCChart() {
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    for (let wc = 0.3; wc <= 0.7; wc += 0.01) {
-      const val = c.a * wc * wc + c.b * wc + c.c;
-      path += `${wc === 0.3 ? 'M' : 'L'} ${x(wc)} ${y(val)} `;
+    for (let wc = 0.3; wc <= 0.751; wc += 0.01) {
+      let val;
+      if (c.d !== undefined) {
+        val = c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d;
+      } else {
+        val = c.a * Math.pow(wc, 2) + c.b * wc + c.c;
+      }
+      if (val >= 10 && val <= 70) {
+          path += `${path === '' ? 'M' : 'L'} ${x(wc)} ${y(val)} `;
+      }
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
     
-    // افزودن برچسب نام منحنی در کنار آن
-    const labelY = c.a * 0.7 * 0.7 + c.b * 0.7 + c.c;
-    curveLines += `<text x="${x(0.7) + 5}" y="${y(labelY) - 2}" font-size="11" fill="${c.color}" font-weight="bold">${c.name}</text>`;
+    let labelVal;
+    if (c.d !== undefined) {
+        labelVal = c.a * Math.pow(0.7, 3) + c.b * Math.pow(0.7, 2) + c.c * 0.7 + c.d;
+    } else {
+        labelVal = c.a * Math.pow(0.7, 2) + c.b * 0.7 + c.c;
+    }
+    
+    if (labelVal >= 10 && labelVal <= 70) {
+        curveLines += `<text x="${x(0.7) + 5}" y="${y(labelVal) + 4}" font-size="11" fill="${c.color}" font-weight="bold">${c.name}</text>`;
+    }
   });
 
   let intersectionLines = '';
@@ -1933,7 +2009,7 @@ function view() {
               data.wc = x;
             }
             data.targetMethod = 'manual';
-          } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount') {
+          } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'admixture' || key === 'cementClass') {
             // نیازی به اعتبارسنجی سختگیرانه برای این کلیدها نیست
           } else {
             validate();
