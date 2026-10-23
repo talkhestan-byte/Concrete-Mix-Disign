@@ -1757,6 +1757,43 @@ function renderWCChart() {
 }
 
 /* =========================================
+   صفحات محاسبات (بازگردانده شد)
+========================================= */
+
+function renderStep1() {
+  return `
+    <h2>گام اول — تعیین نسبت آب به سیمان</h2>
+
+    <div class="grid" style="margin-bottom: 15px;">
+      <label class="field">
+        نسبت آب به سیمان انتخابی
+        <input
+          type="number"
+          data-key="wc"
+          step="0.001"
+          value="${data.wc}"
+        >
+      </label>
+      <label class="field">
+        مقاومت فشاری متوسط متناظر (MPa)
+        <input
+          type="number"
+          data-key="targetStrengthManual"
+          step="0.1"
+          value="${getTargetStrength() !== null ? getTargetStrength().toFixed(1) : ''}"
+        >
+      </label>
+    </div>
+
+    ${renderWCChart()}
+
+    <p class="hint" style="margin-top: 15px;">
+      توجه: با تغییر هر یک از ورودی‌های بالا (نسبت آب به سیمان یا مقاومت)، مقدار دیگری بر اساس منحنی فعال محاسبه شده و نقطه تقاطع روی نمودار جابجا می‌شود.
+    </p>
+  `;
+}
+
+/* =========================================
    نمودار آب آزاد (صفحه پنجم)
 ========================================= */
 
@@ -1816,7 +1853,6 @@ function renderWaterChart(fm, water, isCrushed) {
     ];
   }
 
-  // calculate active curve for intersection
   const activeEq = allCurves.find(c => c.name === data.slumpClass) || allCurves[0];
   const waterFromCurve = activeEq.a * fm * fm + activeEq.b * fm + activeEq.c;
 
