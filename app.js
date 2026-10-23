@@ -1529,23 +1529,7 @@ function getActiveCurve() {
 
   let curveSet;
   if (hasAdmixture) {
-    // WITH superplasticizer (Quadratic equations from Image 2)
-    curveSet = {
-      '32.5': {
-        R: { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
-        C: { a: 126.73, b: -228.34, c: 116.36, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' }
-      },
-      '42.5': {
-        R: { a: 123.42, b: -234.33, c: 122.57, name: '425-R', color: '#f87171', width: 1.5, dash: '6,4' },
-        C: { a: 119.86, b: -240.12, c: 130.32, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' }
-      },
-      '52.5': {
-        R: { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
-        C: { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
-      }
-    };
-  } else {
-    // WITHOUT superplasticizer (Cubic equations from Image 1)
+    // WITH superplasticizer (Cubic equations from Image 1)
     curveSet = {
       '32.5': {
         R: { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
@@ -1558,6 +1542,22 @@ function getActiveCurve() {
       '52.5': {
         R: { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
         C: { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
+      }
+    };
+  } else {
+    // WITHOUT superplasticizer (Quadratic equations from Image 2)
+    curveSet = {
+      '32.5': {
+        R: { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
+        C: { a: 126.73, b: -228.34, c: 116.36, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' }
+      },
+      '42.5': {
+        R: { a: 123.42, b: -234.33, c: 122.57, name: '425-R', color: '#f87171', width: 1.5, dash: '6,4' },
+        C: { a: 119.86, b: -240.12, c: 130.32, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' }
+      },
+      '52.5': {
+        R: { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+        C: { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
       }
     };
   }
@@ -1579,7 +1579,7 @@ function calculateStrength(wc, curve) {
 function calculateWc(strength, curve) {
   if (!curve) return null;
   let low = 0.3;
-  let high = 0.75;
+  let high = 0.9;
   
   function evalCurve(x) {
     if (curve.d !== undefined) {
@@ -1594,13 +1594,15 @@ function calculateWc(strength, curve) {
 
   if (strength > fLow || strength < fHigh) return null;
 
+  // Binary search for the root
   for (let i = 0; i < 40; i++) {
     let mid = (low + high) / 2;
     let fMid = evalCurve(mid);
+    // The curve is monotonically decreasing in this range
     if (fMid > strength) {
-      low = mid;
+      low = mid; // Need larger x to decrease strength
     } else {
-      high = mid;
+      high = mid; // Need smaller x to increase strength
     }
   }
   return (low + high) / 2;
@@ -1617,7 +1619,7 @@ function renderWCChart() {
   const plotHeight = height - top - bottom;
 
   const xMin = 0.3;
-  const xMax = 0.75;
+  const xMax = 0.9;
   const yMin = 10;
   const yMax = 70;
 
@@ -1628,17 +1630,7 @@ function renderWCChart() {
 
   let allCurves;
   if (hasAdmixture) {
-    // Quadratic (WITH superplasticizer)
-    allCurves = [
-      { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
-      { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
-      { a: 119.86, b: -240.12, c: 130.32, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' },
-      { a: 123.42, b: -234.33, c: 122.57, name: '425-R', color: '#f87171', width: 1.5, dash: '6,4' },
-      { a: 126.73, b: -228.34, c: 116.36, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
-      { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
-    ];
-  } else {
-    // Cubic (WITHOUT superplasticizer)
+    // Cubic (WITH superplasticizer)
     allCurves = [
       { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
       { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
@@ -1646,6 +1638,16 @@ function renderWCChart() {
       { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
       { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
       { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
+    ];
+  } else {
+    // Quadratic (WITHOUT superplasticizer)
+    allCurves = [
+      { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
+      { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+      { a: 119.86, b: -240.12, c: 130.32, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' },
+      { a: 123.42, b: -234.33, c: 122.57, name: '425-R', color: '#f87171', width: 1.5, dash: '6,4' },
+      { a: 126.73, b: -228.34, c: 116.36, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
+      { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
     ];
   }
 
@@ -1665,7 +1667,7 @@ function renderWCChart() {
     grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
     grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
   }
-  for (let i = 0; i <= 9; i++) {
+  for (let i = 0; i <= 12; i++) {
     const val = xMin + i * 0.05;
     if (val > xMax + 0.001) break;
     const px = x(val);
@@ -1676,13 +1678,12 @@ function renderWCChart() {
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    // Loop from 0.3 to 0.75 to match the axis limits
-    for (let wc = 0.3; wc <= 0.7501; wc += 0.005) {
+    // Start from 0.3 and end at 0.9 to match axis limits
+    for (let wc = 0.3; wc <= 0.9001; wc += 0.005) {
       let val = (c.d !== undefined) ? 
         (c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d) :
         (c.a * Math.pow(wc, 2) + c.b * wc + c.c);
       
-      // We don't restrict Y here, let the SVG clipPath handle it
       path += `${path === '' ? 'M' : 'L'} ${x(wc)} ${y(val)} `;
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
@@ -1693,7 +1694,6 @@ function renderWCChart() {
       (c.a * Math.pow(labelWc, 3) + c.b * Math.pow(labelWc, 2) + c.c * labelWc + c.d) :
       (c.a * Math.pow(labelWc, 2) + c.b * labelWc + c.c);
     
-    // Only draw label if it's within a reasonable visual range
     if (labelVal >= 5 && labelVal <= 75) {
         curveLines += `<text x="${x(labelWc)}" y="${y(labelVal) - 2}" font-size="11" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
     }
