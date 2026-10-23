@@ -1529,23 +1529,7 @@ function getActiveCurve() {
 
   let curveSet;
   if (hasAdmixture) {
-    // WITH superplasticizer (Cubic equations)
-    curveSet = {
-      '32.5': {
-        R: { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
-        C: { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' }
-      },
-      '42.5': {
-        R: { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
-        C: { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' }
-      },
-      '52.5': {
-        R: { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
-        C: { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
-      }
-    };
-  } else {
-    // WITHOUT superplasticizer (Quadratic equations)
+    // WITH superplasticizer (Quadratic equations from Image 2)
     curveSet = {
       '32.5': {
         R: { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
@@ -1558,6 +1542,22 @@ function getActiveCurve() {
       '52.5': {
         R: { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
         C: { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
+      }
+    };
+  } else {
+    // WITHOUT superplasticizer (Cubic equations from Image 1)
+    curveSet = {
+      '32.5': {
+        R: { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
+        C: { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' }
+      },
+      '42.5': {
+        R: { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
+        C: { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' }
+      },
+      '52.5': {
+        R: { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+        C: { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
       }
     };
   }
@@ -1594,15 +1594,15 @@ function calculateWc(strength, curve) {
 
   if (strength > fLow || strength < fHigh) return null;
 
-  // Binary search for the root
-  for (let i = 0; i < 40; i++) {
+  // Binary search with higher precision
+  for (let i = 0; i < 100; i++) {
     let mid = (low + high) / 2;
     let fMid = evalCurve(mid);
     // The curve is monotonically decreasing in this range
     if (fMid > strength) {
-      low = mid; // Need larger x to decrease strength
+      low = mid;
     } else {
-      high = mid; // Need smaller x to increase strength
+      high = mid;
     }
   }
   return (low + high) / 2;
@@ -1630,15 +1630,7 @@ function renderWCChart() {
 
   let allCurves;
   if (hasAdmixture) {
-    allCurves = [
-      { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
-      { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
-      { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' },
-      { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
-      { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
-      { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
-    ];
-  } else {
+    // Quadratic (WITH superplasticizer)
     allCurves = [
       { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
       { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
@@ -1646,6 +1638,16 @@ function renderWCChart() {
       { a: 123.42, b: -234.33, c: 122.57, name: '425-R', color: '#f87171', width: 1.5, dash: '6,4' },
       { a: 126.73, b: -228.34, c: 116.36, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
       { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
+    ];
+  } else {
+    // Cubic (WITHOUT superplasticizer)
+    allCurves = [
+      { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
+      { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+      { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' },
+      { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
+      { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
+      { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
     ];
   }
 
@@ -1676,7 +1678,7 @@ function renderWCChart() {
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    // Loop starts exactly at 0.35 to leave the gap from the Y axis (which is at 0.3)
+    // Start exactly at 0.35 to leave a bigger gap from the Y axis (which is at 0.3)
     for (let wc = 0.35; wc <= 0.7001; wc += 0.005) {
       let val = (c.d !== undefined) ? 
         (c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d) :
