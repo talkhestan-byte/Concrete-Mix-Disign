@@ -1514,14 +1514,14 @@ function renderShares() {
 }
 
 /* =========================================
-   نمودار نسبت آب به سیمان (صفحه چهارم)
+   نمودار نسبت آب به سیمان (اصلاح‌شده)
 ========================================= */
 
 function renderWCChart() {
   const width = 680;
   const height = 400;
   const left = 60;
-  const right = 20;
+  const right = 25;
   const top = 20;
   const bottom = 60;
   const plotWidth = width - left - right;
@@ -1535,18 +1535,19 @@ function renderWCChart() {
   const x = val => left + (val - xMin) / (xMax - xMin) * plotWidth;
   const y = val => top + (yMax - val) / (yMax - yMin) * plotHeight;
 
+  // معادلات درجه دو استخراج شده برای تطابق کامل با شکل منحنی‌های عکس
   const curves = {
     '32.5': {
-      R: { y0: 45.2, m: -69.5, color: '#3b82f6', width: 1.5, dash: 'none' },
-      C: { y0: 49.0, m: -76.5, color: '#2563eb', width: 2.5, dash: 'none' }
+      R: { a: 119.0, b: -187.8, c: 91.2, color: '#3b82f6', width: 1.5, dash: 'none' },
+      C: { a: 152.4, b: -232.8, c: 108.345, color: '#2563eb', width: 2.5, dash: 'none' }
     },
     '42.5': {
-      R: { y0: 53.3, m: -83.25, color: '#dc2626', width: 1.5, dash: '6,4' },
-      C: { y0: 58.0, m: -91.25, color: '#dc2626', width: 2.5, dash: 'none' }
+      R: { a: 123.9, b: -208.7, c: 107.4, color: '#dc2626', width: 1.5, dash: '6,4' },
+      C: { a: 152.4, b: -242.8, c: 120.4, color: '#dc2626', width: 2.5, dash: 'none' }
     },
     '52.5': {
-      R: { y0: 62.8, m: -99.5, color: '#16a34a', width: 1.5, dash: '8,4,2,4' },
-      C: { y0: 67.0, m: -106.25, color: '#16a34a', width: 2.5, dash: 'none' }
+      R: { a: 142.9, b: -241.5, c: 127.0, color: '#16a34a', width: 1.5, dash: '8,4,2,4' },
+      C: { a: 123.8, b: -218.6, c: 122.4, color: '#16a34a', width: 2.5, dash: 'none' }
     }
   };
 
@@ -1564,36 +1565,58 @@ function renderWCChart() {
   let targetX = null;
 
   if (targetY !== null && activeCurve) {
-    const b = activeCurve.y0 - activeCurve.m * 0.3;
-    const calcX = (targetY - b) / activeCurve.m;
-    if (calcX >= xMin && calcX <= xMax) {
-      targetX = calcX;
+    // حل معادله درجه دوم برای پیدا کردن نقطه تقاطع
+    const A = activeCurve.a;
+    const B = activeCurve.b;
+    const C = activeCurve.c - targetY;
+    const delta = B * B - 4 * A * C;
+
+    if (delta >= 0) {
+      const x1 = (-B - Math.sqrt(delta)) / (2 * A);
+      const x2 = (-B + Math.sqrt(delta)) / (2 * A);
+      const validX = [x1, x2].find(v => v >= xMin && v <= xMax);
+      if (validX !== undefined) {
+        targetX = validX;
+      }
     }
   }
 
   let grid = '';
+  // خطوط افقی (مقاومت)
   for (let i = 0; i <= 60; i += 5) {
     const val = yMin + i;
     if (val > yMax) break;
     const py = y(val);
     grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
-    grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
+    grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}/0</text>`;
   }
+  // خطوط عمودی (نسبت آب به سیمان)
   for (let i = 0; i <= 9; i++) {
     const val = xMin + i * 0.05;
     if (val > xMax + 0.001) break;
     const px = x(val);
     grid += `<line x1="${px}" y1="${top}" x2="${px}" y2="${height - bottom}" stroke="#d7e0e8" />`;
-    grid += `<text x="${px}" y="${height - bottom + 20}" text-anchor="middle" font-size="12" fill="#334155">${val.toFixed(2).replace(/\.?0+$/, '')}</text>`;
+    grid += `<text x="${px}" y="${height - bottom + 20}" text-anchor="middle" font-size="12" fill="#334155">${val.toFixed(2).replace('.', '/').replace('/00', '')}</text>`;
   }
 
-  let curveLines = '';
+  let curvePaths = '';
+  let labels = '';
+
   Object.keys(curves).forEach(cKey => {
     Object.keys(curves[cKey]).forEach(tKey => {
       const c = curves[cKey][tKey];
-      const yStart = c.y0;
-      const yEnd = c.y0 + c.m * (0.7 - 0.3);
-      curveLines += `<line x1="${x(0.3)}" y1="${y(yStart)}" x2="${x(0.7)}" y2="${y(yEnd)}" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
+      let pathData = '';
+      for (let i = 0; i <= 50; i++) {
+        const xVal = 0.35 + (0.7 - 0.35) * (i / 50);
+        const yVal = c.a * xVal * xVal + c.b * xVal + c.c;
+        pathData += `${i === 0 ? 'M' : 'L'} ${x(xVal)} ${y(yVal)} `;
+      }
+      curvePaths += `<path d="${pathData}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
+
+      // قرار دادن برچسب مشخصات سیمان و نوع سنگدانه در انتهای هر منحنی
+      const labelX = 0.71;
+      const labelY = c.a * labelX * labelX + c.b * labelX + c.c;
+      labels += `<text x="${x(labelX)}" y="${y(labelY)}" fill="${c.color}" font-size="11" font-weight="bold" text-anchor="start">${cKey}-${tKey}</text>`;
     });
   });
 
@@ -1634,7 +1657,8 @@ function renderWCChart() {
         <line x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
         <line x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
 
-        ${curveLines}
+        ${curvePaths}
+        ${labels}
         ${intersectionLines}
 
         <text x="${left - 40}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 40} ${height / 2})">مقاومت فشاری متوسط (N/mm²)</text>
