@@ -1757,7 +1757,7 @@ function renderWCChart() {
 }
 
 /* =========================================
-   صفحات محاسبات (بازگردانده شد)
+   صفحات محاسبات
 ========================================= */
 
 function renderStep1() {
@@ -2436,4 +2436,120 @@ if ('serviceWorker' in navigator) {
         );
       });
   });
+}
+
+/* =========================================
+   کدهای جدید: منوی سه نقطه‌ای (ذخیره، بازیابی، خروج)
+========================================= */
+
+function initNewMenu() {
+  // ساخت المان‌های منو و اضافه کردن به بدنه صفحه
+  const menuHTML = `
+    <div id="app-options-menu" style="position: fixed; bottom: 20px; left: 20px; z-index: 99999; direction: rtl; font-family: inherit;">
+      <button id="app-menu-btn" style="background: #2563eb; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 28px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; padding-bottom: 8px;">⋮</button>
+      <div id="app-menu-dropdown" style="display: none; position: absolute; bottom: 60px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 -4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
+        <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">💾 ذخیره طرح</button>
+        <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">📂 بازیابی طرح</button>
+        <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626;">🚪 خروج</button>
+      </div>
+    </div>
+    <input type="file" id="app-hidden-file-input" accept=".json" style="display: none;">
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', menuHTML);
+
+  const menuBtn = document.getElementById('app-menu-btn');
+  const menuDropdown = document.getElementById('app-menu-dropdown');
+  const menuSave = document.getElementById('app-menu-save');
+  const menuLoad = document.getElementById('app-menu-load');
+  const menuExit = document.getElementById('app-menu-exit');
+  const fileInput = document.getElementById('app-hidden-file-input');
+
+  // باز و بسته کردن منو
+  menuBtn.onclick = (e) => {
+    e.stopPropagation();
+    menuDropdown.style.display = menuDropdown.style.display === 'none' ? 'block' : 'none';
+  };
+
+  // بستن منو با کلیک در جای دیگر
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('app-options-menu').contains(e.target)) {
+      menuDropdown.style.display = 'none';
+    }
+  });
+
+  // عملیات ذخیره
+  menuSave.onclick = () => {
+    downloadProjectFile();
+    menuDropdown.style.display = 'none';
+  };
+
+  // عملیات بازیابی
+  menuLoad.onclick = () => {
+    fileInput.click();
+    menuDropdown.style.display = 'none';
+  };
+
+  // عملیات خروج
+  menuExit.onclick = () => {
+    menuDropdown.style.display = 'none';
+    const confirmSave = confirm('آیا مایل به ذخیره اطلاعات طرح قبل از خروج هستید؟');
+    if (confirmSave) {
+      downloadProjectFile();
+      setTimeout(() => {
+        window.close();
+        alert('در صورت عدم بسته شدن پنجره، می‌توانید آن را به صورت دستی ببندید.');
+      }, 800);
+    } else {
+      window.close();
+      alert('در صورت عدم بسته شدن پنجره، می‌توانید آن را به صورت دستی ببندید.');
+    }
+  };
+
+  // خواندن فایل انتخاب شده برای بازیابی
+  fileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const loadedData = JSON.parse(event.target.result);
+        if (loadedData && typeof loadedData === 'object') {
+          // جایگزینی داده‌های فعلی با داده‌های فایل
+          Object.assign(data, loadedData);
+          save(); // ذخیره در حافظه محلی
+          view(); // بازسازی صفحه
+          alert('طرح با موفقیت بازیابی شد.');
+        } else {
+          alert('فایل انتخاب شده معتبر نیست.');
+        }
+      } catch (err) {
+        alert('خطا در خواندن فایل: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    fileInput.value = ''; // پاک کردن مقدار برای انتخاب مجدد
+  };
+}
+
+// تابع کمکی برای دانلود فایل JSON
+function downloadProjectFile() {
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// راه‌اندازی منو پس از لود کامل صفحه
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initNewMenu);
+} else {
+  initNewMenu();
 }
