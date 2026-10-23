@@ -1667,7 +1667,6 @@ function renderWCChart() {
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    // Start exactly at 0.35 to leave a bigger gap from the Y axis (which is at 0.3)
     for (let wc = 0.35; wc <= 0.7001; wc += 0.005) {
       let val = (c.d !== undefined) ? 
         (c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d) :
@@ -1677,7 +1676,6 @@ function renderWCChart() {
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
     
-    // Labels placed at the start of the line (x=0.35)
     const labelWc = 0.35; 
     const labelVal = (c.d !== undefined) ? 
       (c.a * Math.pow(labelWc, 3) + c.b * Math.pow(labelWc, 2) + c.c * labelWc + c.d) :
@@ -1860,14 +1858,17 @@ function renderWaterChart(fm, water, isCrushed) {
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    for (let xv = 3.1; xv <= 8.01; xv += 0.1) {
+    // Start exactly at 3.35 to leave a bigger gap from the Y axis (which is at 3.0)
+    for (let xv = 3.35; xv <= 8.01; xv += 0.1) {
       let yv = c.a * xv * xv + c.b * xv + c.c;
       path += `${path === '' ? 'M' : 'L'} ${x(xv)} ${y(yv)} `;
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="2.5" />`;
-    const labelY = c.a * 3.1 * 3.1 + c.b * 3.1 + c.c;
+    
+    // Labels placed at the start of the line (x=3.35)
+    const labelY = c.a * 3.35 * 3.35 + c.b * 3.35 + c.c;
     if (labelY >= yMin && labelY <= yMax) {
-      curveLines += `<text x="${x(3.1)}" y="${y(labelY) - 5}" font-size="12" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
+      curveLines += `<text x="${x(3.35)}" y="${y(labelY) - 5}" font-size="12" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
     }
   });
 
@@ -2152,7 +2153,6 @@ function view() {
             data.admixturePct = 0;
           }
 
-          // محاسبه و بروزرسانی خودکار نسبت آب به سیمان و مقاومت
           if (key === 'wc') {
             const curve = getActiveCurve();
             const y = calculateStrength(num('wc'), curve);
@@ -2168,7 +2168,6 @@ function view() {
             }
             data.targetMethod = 'manual';
           } else if (['cementClass', 'admixture', 'admixturePct'].includes(key)) {
-            // If curve changing parameters are updated, recalculate wc
             const curve = getActiveCurve();
             const target = getTargetStrength();
             if (target !== null) {
@@ -2254,7 +2253,6 @@ function view() {
         try {
           validateAggregates();
           
-          // Recalculate wc if fracture changed (curve type C/R)
           if (field === 'fracture') {
             const curve = getActiveCurve();
             const target = getTargetStrength();
@@ -2432,11 +2430,10 @@ if ('serviceWorker' in navigator) {
 ========================================= */
 
 function initNewMenu() {
-  // تغییر موقعیت منو به گوشه بالا سمت راست
   const menuHTML = `
-    <div id="app-options-menu" style="position: fixed; top: 15px; right: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
-      <button id="app-menu-btn" style="background: #2563eb; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 28px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; padding-bottom: 8px;">⋮</button>
-      <div id="app-menu-dropdown" style="display: none; position: absolute; top: 60px; right: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
+    <div id="app-options-menu" style="position: fixed; top: 15px; left: 20px; z-index: 99999; direction: rtl; font-family: inherit;">
+      <button id="app-menu-btn" style="background: #2563eb; color: white; border: none; border-radius: 8px; padding: 8px 12px; font-size: 24px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1;">⋮</button>
+      <div id="app-menu-dropdown" style="display: none; position: absolute; top: 45px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
         <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">💾 ذخیره طرح</button>
         <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">📂 بازیابی طرح</button>
         <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626;">🚪 خروج</button>
@@ -2454,37 +2451,29 @@ function initNewMenu() {
   const menuExit = document.getElementById('app-menu-exit');
   const fileInput = document.getElementById('app-hidden-file-input');
 
-  // باز و بسته کردن منو
   menuBtn.onclick = (e) => {
     e.stopPropagation();
     menuDropdown.style.display = menuDropdown.style.display === 'none' ? 'block' : 'none';
   };
 
-  // بستن منو با کلیک در جای دیگر
   document.addEventListener('click', (e) => {
     if (!document.getElementById('app-options-menu').contains(e.target)) {
       menuDropdown.style.display = 'none';
     }
   });
 
-  // عملیات ذخیره
   menuSave.onclick = () => {
-    // بررسی وجود داده در localStorage
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      alert('داده‌ای برای ذخیره وجود ندارد. لطفاً ابتدا اطلاعاتی وارد کنید.');
-    } else {
+    menuDropdown.style.display = 'none';
+    if (confirm('آیا از ذخیره طرح اطمینان دارید؟')) {
       downloadProjectFile();
     }
-    menuDropdown.style.display = 'none';
   };
 
-  // عملیات بازیابی
   menuLoad.onclick = () => {
     fileInput.click();
     menuDropdown.style.display = 'none';
   };
 
-  // عملیات خروج
   menuExit.onclick = () => {
     menuDropdown.style.display = 'none';
     const confirmSave = confirm('آیا مایل به ذخیره اطلاعات طرح قبل از خروج هستید؟');
@@ -2492,17 +2481,14 @@ function initNewMenu() {
       downloadProjectFile();
       setTimeout(() => {
         window.close();
-        // اگر مرورگر اجازه بستن نداد، پیام هشدار نمایش داده شود
         setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
       }, 800);
     } else {
       window.close();
-      // اگر مرورگر اجازه بستن نداد، پیام هشدار نمایش داده شود
       setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
     }
   };
 
-  // خواندن فایل انتخاب شده برای بازیابی
   fileInput.onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -2512,10 +2498,9 @@ function initNewMenu() {
       try {
         const loadedData = JSON.parse(event.target.result);
         if (loadedData && typeof loadedData === 'object') {
-          // جایگزینی داده‌های فعلی با داده‌های فایل
           Object.assign(data, loadedData);
-          save(); // ذخیره در حافظه محلی
-          view(); // بازسازی صفحه
+          save();
+          view();
           alert('طرح با موفقیت بازیابی شد.');
         } else {
           alert('فایل انتخاب شده معتبر نیست.');
@@ -2525,11 +2510,10 @@ function initNewMenu() {
       }
     };
     reader.readAsText(file);
-    fileInput.value = ''; // پاک کردن مقدار برای انتخاب مجدد
+    fileInput.value = '';
   };
 }
 
-// تابع کمکی برای دانلود فایل JSON
 function downloadProjectFile() {
   const jsonStr = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
@@ -2541,13 +2525,11 @@ function downloadProjectFile() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  // نمایش پیام موفقیت پس از کمی تاخیر
   setTimeout(() => alert('فایل طرح با موفقیت ذخیره شد.'), 100);
 }
 
-// راه‌اندازی منو پس از لود کامل صفحه
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-     }
+         }
