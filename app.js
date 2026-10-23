@@ -1528,8 +1528,8 @@ function getActiveCurve() {
   const hasAdmixture = data.admixture && data.admixture !== 'none';
 
   let curveSet;
-  if (hasAdmixture) {
-    // WITH superplasticizer (Cubic equations from Image 1)
+  if (!hasAdmixture) {
+    // WITHOUT superplasticizer (Cubic equations from Image 1)
     curveSet = {
       '32.5': {
         R: { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
@@ -1545,7 +1545,7 @@ function getActiveCurve() {
       }
     };
   } else {
-    // WITHOUT superplasticizer (Quadratic equations from Image 2)
+    // WITH superplasticizer (Quadratic equations from Image 2)
     curveSet = {
       '32.5': {
         R: { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
@@ -1578,8 +1578,8 @@ function calculateStrength(wc, curve) {
 
 function calculateWc(strength, curve) {
   if (!curve) return null;
-  let low = 0.3;
-  let high = 0.75;
+  let low = 0;
+  let high = 1.0;
   
   function evalCurve(x) {
     if (curve.d !== undefined) {
@@ -1616,8 +1616,8 @@ function renderWCChart() {
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
 
-  const xMin = 0.3;
-  const xMax = 0.75;
+  const xMin = 0;
+  const xMax = 1.0;
   const yMin = 10;
   const yMax = 70;
 
@@ -1627,7 +1627,7 @@ function renderWCChart() {
   const hasAdmixture = data.admixture && data.admixture !== 'none';
 
   let allCurves;
-  if (hasAdmixture) {
+  if (!hasAdmixture) {
     // Cubic
     allCurves = [
       { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
@@ -1665,18 +1665,17 @@ function renderWCChart() {
     grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
     grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
   }
-  for (let i = 0; i <= 9; i++) {
-    const val = xMin + i * 0.05;
-    if (val > xMax + 0.001) break;
+  for (let i = 0; i <= 10; i++) {
+    const val = i * 0.1;
     const px = x(val);
     grid += `<line x1="${px}" y1="${top}" x2="${px}" y2="${height - bottom}" stroke="#d7e0e8" />`;
-    grid += `<text x="${px}" y="${height - bottom + 20}" text-anchor="middle" font-size="12" fill="#334155">${val.toFixed(2).replace(/\.?0+$/, '')}</text>`;
+    grid += `<text x="${px}" y="${height - bottom + 20}" text-anchor="middle" font-size="12" fill="#334155">${val.toFixed(1)}</text>`;
   }
 
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    for (let wc = 0.3; wc <= 0.751; wc += 0.01) {
+    for (let wc = 0.0; wc <= 1.01; wc += 0.01) {
       let val;
       if (c.d !== undefined) {
         val = c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d;
@@ -1689,15 +1688,17 @@ function renderWCChart() {
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
     
+    // Put label on the left side of the curve (at wc = 0.35)
+    const labelX = 0.35;
     let labelVal;
     if (c.d !== undefined) {
-        labelVal = c.a * Math.pow(0.7, 3) + c.b * Math.pow(0.7, 2) + c.c * 0.7 + c.d;
+        labelVal = c.a * Math.pow(labelX, 3) + c.b * Math.pow(labelX, 2) + c.c * labelX + c.d;
     } else {
-        labelVal = c.a * Math.pow(0.7, 2) + c.b * 0.7 + c.c;
+        labelVal = c.a * Math.pow(labelX, 2) + c.b * labelX + c.c;
     }
     
     if (labelVal >= 10 && labelVal <= 70) {
-        curveLines += `<text x="${x(0.7) + 5}" y="${y(labelVal) + 4}" font-size="11" fill="${c.color}" font-weight="bold">${c.name}</text>`;
+        curveLines += `<text x="${x(labelX) - 5}" y="${y(labelVal) + 4}" text-anchor="end" font-size="12" fill="${c.color}" font-weight="bold">${c.name}</text>`;
     }
   });
 
@@ -2146,7 +2147,7 @@ function view() {
 
       save();
       view();
-    };
+       };
   });
 
   const mixCheckbox = document.querySelector(
