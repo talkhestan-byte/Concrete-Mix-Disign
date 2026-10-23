@@ -1518,7 +1518,7 @@ function renderShares() {
 ========================================= */
 
 function getActiveCurve() {
-  const cement = data.cementClass || '42.5';
+  const cement = String(data.cementClass || '42.5');
   let isCrushed = false;
   if (data.aggregates && data.aggregates.length > 0) {
     isCrushed = data.aggregates.slice(0, data.aggregateCount).some(a => Number(a.fracture) > 0);
@@ -1594,13 +1594,15 @@ function calculateWc(strength, curve) {
 
   if (strength > fLow || strength < fHigh) return null;
 
+  // Binary search for the root
   for (let i = 0; i < 40; i++) {
     let mid = (low + high) / 2;
     let fMid = evalCurve(mid);
+    // The curve is monotonically decreasing in this range
     if (fMid > strength) {
-      low = mid;
+      low = mid; // Need larger x to decrease strength
     } else {
-      high = mid;
+      high = mid; // Need smaller x to increase strength
     }
   }
   return (low + high) / 2;
@@ -1674,8 +1676,8 @@ function renderWCChart() {
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    // Loop starts at 0.32 to leave a gap from the Y axis, and ends at 0.70 to prevent the cubic U-turn
-    for (let wc = 0.32; wc <= 0.7001; wc += 0.005) {
+    // Loop starts exactly at 0.35 to leave the gap from the Y axis (which is at 0.3)
+    for (let wc = 0.35; wc <= 0.7001; wc += 0.005) {
       let val = (c.d !== undefined) ? 
         (c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d) :
         (c.a * Math.pow(wc, 2) + c.b * wc + c.c);
@@ -1684,8 +1686,8 @@ function renderWCChart() {
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
     
-    // Labels placed at the start of the line (x=0.32)
-    const labelWc = 0.32; 
+    // Labels placed at the start of the line (x=0.35)
+    const labelWc = 0.35; 
     const labelVal = (c.d !== undefined) ? 
       (c.a * Math.pow(labelWc, 3) + c.b * Math.pow(labelWc, 2) + c.c * labelWc + c.d) :
       (c.a * Math.pow(labelWc, 2) + c.b * labelWc + c.c);
@@ -1841,409 +1843,4 @@ function renderReport() {
     <h2>گزارش نهایی — وزن خشک مصالح</h2>
 
     ${table([
-      ['رده مقاومتی سیمان', data.cementClass],
-      ['مقاومت مشخصه (MPa)', num('strength')],
-      [
-        'مقاومت هدف (MPa)',
-        target === null ? 'تعیین نشده' : target
-      ],
-      ['NMSA (mm)', num('msa')],
-      ['نسبت آب به سیمان', num('wc')],
-      ['آب مؤثر طرح (kg/m³)', result.water],
-      ['سیمان (kg/m³)', result.cement],
-      ['ماسه خشک (kg/m³)', result.drySand],
-      ['شن خشک (kg/m³)', result.dryGravel],
-      ['افزودنی (kg/m³)', result.admixtureMass],
-      ['حجم محاسباتی اجزا (m³)', result.volume]
-    ])}
-
-    <button type="button" id="print">
-      چاپ / ذخیره PDF
-    </button>
-
-    <p class="hint">
-      وزن خشک ماسه و شن با مدل ساده
-      دو سنگدانه‌ای محاسبه شده است.
-      سهم‌بندی چندسنگدانه‌ای هنوز به
-      محاسبات وزن نهایی متصل نشده است.
-    </p>
-
-    <p class="hint">
-      نتایج پیش از استفاده اجرایی باید
-      با مرجع معتبر کنترل شوند.
-    </p>
-  `;
-}
-
-/* =========================================
-   نمایش و رویدادها
-========================================= */
-
-function view() {
-  const tabs = document.getElementById('tabs');
-  const screen = document.getElementById('screen');
-  const prev = document.getElementById('prev');
-  const next = document.getElementById('next');
-
-  if (!tabs || !screen || !prev || !next) {
-    console.error('عناصر اصلی صفحه پیدا نشدند.');
-    return;
-  }
-
-  tabs.innerHTML = titles.map((title, i) => `
-    <button
-      type="button"
-      data-page="${i}"
-      class="${i === page ? 'active' : ''}"
-    >${title}</button>
-  `).join('');
-
-  let html = '';
-
-  try {
-    switch (page) {
-      case 0:
-        html = renderHome();
-        break;
-      case 1:
-        html = renderAggregateTable();
-        break;
-      case 2:
-        html = renderShares();
-        break;
-      case 3:
-        html = renderStep1();
-        break;
-      case 4:
-        html = renderWater();
-        break;
-      case 5:
-        html = renderCement();
-        break;
-      case 6:
-        html = renderReport();
-        break;
-      default:
-        html = renderHome();
-    }
-  } catch (error) {
-    console.error(error);
-
-    html = `
-      <p class="bad">
-        ${escapeHtml(error.message)}
-      </p>
-      <p>ورودی‌های این بخش را بررسی کنید.</p>
-    `;
-  }
-
-  screen.innerHTML = `
-    <article class="panel">
-      ${html}
-    </article>
-  `;
-
-  document.querySelectorAll('[data-page]').forEach(
-    button => {
-      button.onclick = () => {
-        page = Number(button.dataset.page);
-        view();
-      };
-    }
-  );
-
-  document.querySelectorAll('[data-key]').forEach(
-    element => {
-      element.onchange = () => {
-        const key = element.dataset.key;
-        const oldValue = data[key];
-        const oldSlump = data.slump;
-        const oldPct = data.admixturePct;
-        const oldWc = data.wc;
-        const oldTarget = data.targetStrengthManual;
-        const oldMethod = data.targetMethod;
-
-        const value = element.type === 'number'
-          ? element.value === ''
-            ? ''
-            : Number(element.value)
-          : element.value;
-
-        data[key] = value;
-
-        try {
-          if (key === 'aggregateCount') {
-            const count = Number(value);
-
-            if (![2, 3, 4].includes(count)) {
-              throw Error('تعداد سنگدانه نامعتبر است.');
-            }
-
-            data.aggregateCount = count;
-          }
-
-          if (key === 'slumpClass') {
-            const range = slumpRange();
-
-            if (
-              num('slump') < range.min ||
-              num('slump') > range.max
-            ) {
-              data.slump = range.min;
-            }
-          }
-
-          if (key === 'admixture' && value === 'none') {
-            data.admixturePct = 0;
-          }
-
-          // محاسبه و بروزرسانی خودکار نسبت آب به سیمان و مقاومت
-          if (key === 'wc') {
-            const curve = getActiveCurve();
-            const y = calculateStrength(num('wc'), curve);
-            if (y !== null) {
-              data.targetStrengthManual = y;
-              data.targetMethod = 'manual';
-            }
-          } else if (key === 'targetStrengthManual') {
-            const curve = getActiveCurve();
-            const x = calculateWc(num('targetStrengthManual'), curve);
-            if (x !== null) {
-              data.wc = x;
-            }
-            data.targetMethod = 'manual';
-          } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'admixture' || key === 'cementClass') {
-            // نیازی به اعتبارسنجی سختگیرانه برای این کلیدها نیست
-          } else {
-            validate();
-          }
-
-          save();
-          view();
-        } catch (error) {
-          data[key] = oldValue;
-          data.slump = oldSlump;
-          data.admixturePct = oldPct;
-          data.wc = oldWc;
-          data.targetStrengthManual = oldTarget;
-          data.targetMethod = oldMethod;
-
-          view();
-          alert(error.message);
-        }
-      };
-    }
-  );
-
-  document.querySelectorAll('[data-check]').forEach(
-    element => {
-      element.onchange = () => {
-        const key = element.dataset.check;
-        const oldValue = data[key];
-
-        data[key] = element.checked;
-
-        try {
-          validate();
-          save();
-          view();
-        } catch (error) {
-          data[key] = oldValue;
-          view();
-          alert(error.message);
-        }
-      };
-    }
-  );
-
-  document.querySelectorAll('[data-agg]').forEach(
-    element => {
-      element.onchange = () => {
-        const index = Number(element.dataset.agg);
-        const field = element.dataset.aggField;
-        const sieveIndex = Number(element.dataset.sieve);
-        const aggregate = data.aggregates[index];
-
-        let oldValue;
-
-        if (field === 'name') {
-          oldValue = aggregate.name;
-          aggregate.name = element.value;
-
-        } else if (field === 'fracture') {
-          oldValue = aggregate.fracture;
-          aggregate.fracture =
-            element.value === ''
-              ? ''
-              : Number(element.value);
-
-        } else {
-          oldValue = aggregate.passing[sieveIndex];
-          aggregate.passing[sieveIndex] =
-            element.value === ''
-              ? ''
-              : Number(element.value);
-        }
-
-        try {
-          validateAggregates();
-          save();
-          view();
-        } catch (error) {
-          if (field === 'name') {
-            aggregate.name = oldValue;
-          } else if (field === 'fracture') {
-            aggregate.fracture = oldValue;
-          } else {
-            aggregate.passing[sieveIndex] = oldValue;
-          }
-
-          view();
-          alert(error.message);
-        }
-      };
-    }
-  );
-
-  document.querySelectorAll('[data-share]').forEach(
-    element => {
-      element.onchange = () => {
-        const index = Number(element.dataset.share);
-        const raw = element.value;
-
-        const value = raw === ''
-          ? ''
-          : Number(raw);
-
-        if (
-          value !== '' &&
-          (
-            !Number.isFinite(value) ||
-            value < 0 ||
-            value > 100
-          )
-        ) {
-          view();
-          alert('سهم سنگدانه باید بین صفر و ۱۰۰ باشد.');
-          return;
-        }
-
-        data.aggregateShares[index] = value;
-
-        save();
-        view();
-      };
-    }
-  );
-
-  document.querySelectorAll(
-    '[data-curve-aggregate]'
-  ).forEach(element => {
-    element.onchange = () => {
-      const index = Number(
-        element.dataset.curveAggregate
-      );
-
-      data.showAggregateCurves[index] =
-        element.checked;
-
-      save();
-      view();
-    };
-  });
-
-  const mixCheckbox = document.querySelector(
-    '[data-curve-mix]'
-  );
-
-  if (mixCheckbox) {
-    mixCheckbox.onchange = () => {
-      data.showMixCurve = mixCheckbox.checked;
-      save();
-      view();
-    };
-  }
-
-  const referenceCheckbox = document.querySelector(
-    '[data-curve-reference]'
-  );
-
-  if (referenceCheckbox) {
-    referenceCheckbox.onchange = () => {
-      data.showReferenceCurves =
-        referenceCheckbox.checked;
-
-      save();
-      view();
-    };
-  }
-
-  const printButton = document.getElementById('print');
-
-  if (printButton) {
-    printButton.onclick = () => window.print();
-  }
-
-  prev.disabled = page === 0;
-  next.disabled = page === titles.length - 1;
-}
-
-/* =========================================
-   راه‌اندازی
-========================================= */
-
-function startApp() {
-  const prev = document.getElementById('prev');
-  const next = document.getElementById('next');
-
-  if (!prev || !next) {
-    console.error('دکمه‌های پیمایش پیدا نشدند.');
-    return;
-  }
-
-  prev.onclick = () => {
-    page = Math.max(0, page - 1);
-    view();
-  };
-
-  next.onclick = () => {
-    page = Math.min(
-      titles.length - 1,
-      page + 1
-    );
-    view();
-  };
-
-  if (data.admixture === 'none') {
-    data.admixturePct = 0;
-  }
-
-  save();
-  view();
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener(
-    'DOMContentLoaded',
-    startApp
-  );
-} else {
-  startApp();
-}
-
-/* =========================================
-   Service Worker
-========================================= */
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('./sw.js')
-      .catch(error => {
-        console.warn(
-          'Service Worker ثبت نشد:',
-          error
-        );
-      });
-  });
-}
+      ['رده مقاومتی سیم
