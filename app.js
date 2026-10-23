@@ -1529,7 +1529,7 @@ function getActiveCurve() {
 
   let curveSet;
   if (hasAdmixture) {
-    // WITH superplasticizer (Cubic equations from Image 1)
+    // WITH superplasticizer (Cubic equations)
     curveSet = {
       '32.5': {
         R: { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
@@ -1545,7 +1545,7 @@ function getActiveCurve() {
       }
     };
   } else {
-    // WITHOUT superplasticizer (Quadratic equations from Image 2)
+    // WITHOUT superplasticizer (Quadratic equations)
     curveSet = {
       '32.5': {
         R: { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
@@ -1579,7 +1579,7 @@ function calculateStrength(wc, curve) {
 function calculateWc(strength, curve) {
   if (!curve) return null;
   let low = 0.3;
-  let high = 0.9;
+  let high = 0.75;
   
   function evalCurve(x) {
     if (curve.d !== undefined) {
@@ -1594,15 +1594,13 @@ function calculateWc(strength, curve) {
 
   if (strength > fLow || strength < fHigh) return null;
 
-  // Binary search for the root
   for (let i = 0; i < 40; i++) {
     let mid = (low + high) / 2;
     let fMid = evalCurve(mid);
-    // The curve is monotonically decreasing in this range
     if (fMid > strength) {
-      low = mid; // Need larger x to decrease strength
+      low = mid;
     } else {
-      high = mid; // Need smaller x to increase strength
+      high = mid;
     }
   }
   return (low + high) / 2;
@@ -1619,7 +1617,7 @@ function renderWCChart() {
   const plotHeight = height - top - bottom;
 
   const xMin = 0.3;
-  const xMax = 0.9;
+  const xMax = 0.75;
   const yMin = 10;
   const yMax = 70;
 
@@ -1630,7 +1628,6 @@ function renderWCChart() {
 
   let allCurves;
   if (hasAdmixture) {
-    // Cubic (WITH superplasticizer)
     allCurves = [
       { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
       { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
@@ -1640,7 +1637,6 @@ function renderWCChart() {
       { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
     ];
   } else {
-    // Quadratic (WITHOUT superplasticizer)
     allCurves = [
       { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
       { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
@@ -1667,7 +1663,7 @@ function renderWCChart() {
     grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
     grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
   }
-  for (let i = 0; i <= 12; i++) {
+  for (let i = 0; i <= 9; i++) {
     const val = xMin + i * 0.05;
     if (val > xMax + 0.001) break;
     const px = x(val);
@@ -1678,8 +1674,8 @@ function renderWCChart() {
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    // Start from 0.3 and end at 0.9 to match axis limits
-    for (let wc = 0.3; wc <= 0.9001; wc += 0.005) {
+    // Loop starts at 0.32 to leave a gap from the Y axis, and ends at 0.70 to prevent the cubic U-turn
+    for (let wc = 0.32; wc <= 0.7001; wc += 0.005) {
       let val = (c.d !== undefined) ? 
         (c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d) :
         (c.a * Math.pow(wc, 2) + c.b * wc + c.c);
@@ -1688,14 +1684,14 @@ function renderWCChart() {
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
     
-    // Labels on the left
-    const labelWc = 0.315; 
+    // Labels placed at the start of the line (x=0.32)
+    const labelWc = 0.32; 
     const labelVal = (c.d !== undefined) ? 
       (c.a * Math.pow(labelWc, 3) + c.b * Math.pow(labelWc, 2) + c.c * labelWc + c.d) :
       (c.a * Math.pow(labelWc, 2) + c.b * labelWc + c.c);
     
     if (labelVal >= 5 && labelVal <= 75) {
-        curveLines += `<text x="${x(labelWc)}" y="${y(labelVal) - 2}" font-size="11" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
+        curveLines += `<text x="${x(labelWc)}" y="${y(labelVal) - 5}" font-size="11" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
     }
   });
 
