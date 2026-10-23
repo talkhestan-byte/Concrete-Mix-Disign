@@ -93,21 +93,12 @@ const referenceCurves = {
   }
 };
 
-/* شاخص الک ۶٫۳۵ در آرایه sieves */
 const SIEVE_635_INDEX = sieves.findIndex(s => s.mm === 6.35);
 
-/*
-  آرایه‌ای که فقط برای «دانه‌بندی سنگدانه» استفاده می‌شود
-  (همه الک‌ها به‌جز ۶٫۳۵). نگاشت هر عضو به شاخص واقعی sieves.
-*/
 const aggregateSieves = sieves
   .map((sieve, j) => ({ sieve, j }))
   .filter(({ sieve }) => sieve.mm !== 6.35);
 
-/*
-  لیست الک‌های مورد استفاده در رسم منحنی سنگدانه و مخلوط.
-  بدون ۶٫۳۵ تا خط ۴٫۷۵ مستقیم به ۹٫۵ وصل شود.
-*/
 const chartSieves = sieves.filter(s => s.mm !== 6.35);
 
 const titles = [
@@ -170,11 +161,6 @@ if (!Array.isArray(data.aggregates)) {
   data.aggregates = [];
 }
 
-/*
-  مهاجرت داده‌ها:
-  - داده‌های ۱۱ الکی به ۱۲ الکی با خانه خالی در جای ۶٫۳۵ تبدیل می‌شوند
-  - خانه ۶٫۳۵ همیشه پاک می‌شود (چون در دانه‌بندی سنگدانه حذف شده)
-*/
 data.aggregates = data.aggregates.map((a, i) => {
   const base = defaultAggregate(i);
   let sourcePassing = Array.isArray(a.passing)
@@ -1207,11 +1193,6 @@ function renderGradingChart(combined) {
     top +
     (100 - value) / 100 * plotHeight;
 
-  /*
-    sieveList: لیست الک‌های پایه برای محاسبه پیوستگی خط.
-    برای منحنی سنگدانه و مخلوط، chartSieves (بدون ۶٫۳۵) پاس می‌شود
-    تا خط بدون شکست از ۹٫۵ به ۴٫۷۵ وصل شود.
-  */
   function drawSeries(
     points,
     color,
@@ -1279,11 +1260,6 @@ function renderGradingChart(combined) {
       `;
     }).join('');
 
-    /*
-      فقط یک نقطه ۱۰۰٪ رسم شود؛ آن هم در بزرگ‌ترین الک
-      (شروع پلاتوی ۱۰۰٪). چون valid بر اساس mm صعودی مرتب است،
-      آخرین نقطه ۱۰۰٪ همان بزرگ‌ترین الک است.
-    */
     let last100Index = -1;
     valid.forEach((p, idx) => {
       if (Number(p.value) === 100) last100Index = idx;
@@ -1538,6 +1514,138 @@ function renderShares() {
 }
 
 /* =========================================
+   نمودار نسبت آب به سیمان (صفحه چهارم)
+========================================= */
+
+function renderWCChart() {
+  const width = 680;
+  const height = 400;
+  const left = 60;
+  const right = 20;
+  const top = 20;
+  const bottom = 60;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+
+  const xMin = 0.3;
+  const xMax = 0.75;
+  const yMin = 10;
+  const yMax = 70;
+
+  const x = val => left + (val - xMin) / (xMax - xMin) * plotWidth;
+  const y = val => top + (yMax - val) / (yMax - yMin) * plotHeight;
+
+  const curves = {
+    '32.5': {
+      R: { y0: 45.2, m: -69.5, color: '#3b82f6', width: 1.5, dash: 'none' },
+      C: { y0: 49.0, m: -76.5, color: '#2563eb', width: 2.5, dash: 'none' }
+    },
+    '42.5': {
+      R: { y0: 53.3, m: -83.25, color: '#dc2626', width: 1.5, dash: '6,4' },
+      C: { y0: 58.0, m: -91.25, color: '#dc2626', width: 2.5, dash: 'none' }
+    },
+    '52.5': {
+      R: { y0: 62.8, m: -99.5, color: '#16a34a', width: 1.5, dash: '8,4,2,4' },
+      C: { y0: 67.0, m: -106.25, color: '#16a34a', width: 2.5, dash: 'none' }
+    }
+  };
+
+  const cement = data.cementClass || '42.5';
+  let isCrushed = false;
+  if (data.aggregates && data.aggregates.length > 0) {
+    isCrushed = data.aggregates.slice(0, data.aggregateCount).some(a => Number(a.fracture) > 0);
+  }
+  const type = isCrushed ? 'C' : 'R';
+
+  const activeCement = curves[cement] || curves['42.5'];
+  const activeCurve = activeCement[type];
+
+  const targetY = getTargetStrength();
+  let targetX = null;
+
+  if (targetY !== null && activeCurve) {
+    const b = activeCurve.y0 - activeCurve.m * 0.3;
+    const calcX = (targetY - b) / activeCurve.m;
+    if (calcX >= xMin && calcX <= xMax) {
+      targetX = calcX;
+    }
+  }
+
+  let grid = '';
+  for (let i = 0; i <= 60; i += 5) {
+    const val = yMin + i;
+    if (val > yMax) break;
+    const py = y(val);
+    grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
+    grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
+  }
+  for (let i = 0; i <= 9; i++) {
+    const val = xMin + i * 0.05;
+    if (val > xMax + 0.001) break;
+    const px = x(val);
+    grid += `<line x1="${px}" y1="${top}" x2="${px}" y2="${height - bottom}" stroke="#d7e0e8" />`;
+    grid += `<text x="${px}" y="${height - bottom + 20}" text-anchor="middle" font-size="12" fill="#334155">${val.toFixed(2).replace(/\.?0+$/, '')}</text>`;
+  }
+
+  let curveLines = '';
+  Object.keys(curves).forEach(cKey => {
+    Object.keys(curves[cKey]).forEach(tKey => {
+      const c = curves[cKey][tKey];
+      const yStart = c.y0;
+      const yEnd = c.y0 + c.m * (0.7 - 0.3);
+      curveLines += `<line x1="${x(0.3)}" y1="${y(yStart)}" x2="${x(0.7)}" y2="${y(yEnd)}" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
+    });
+  });
+
+  let intersectionLines = '';
+  let intersectionText = '';
+  if (targetX !== null) {
+    const px = x(targetX);
+    const py = y(targetY);
+
+    intersectionLines += `<line x1="${left}" y1="${py}" x2="${px}" y2="${py}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
+    intersectionLines += `<line x1="${px}" y1="${py}" x2="${px}" y2="${height - bottom}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
+    intersectionLines += `<circle cx="${px}" cy="${py}" r="4" fill="#dc2626" />`;
+
+    intersectionText = `
+      <div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
+        نسبت آب به سیمان متناظر با مقاومت هدف: <strong>${targetX.toFixed(3)}</strong>
+      </div>
+    `;
+  } else if (targetY !== null) {
+     intersectionText = `
+      <div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
+        مقاومت هدف ${targetY.toFixed(1)} MPa خارج از محدوده نمودار است.
+      </div>
+    `;
+  } else {
+    intersectionText = `
+      <div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
+        لطفاً مقاومت هدف را در صفحه مشخصات سنگدانه‌ها تعیین کنید.
+      </div>
+    `;
+  }
+
+  return `
+    <h3>نمودار نسبت آب به سیمان و مقاومت فشاری</h3>
+    <div class="table-scroll">
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="نمودار نسبت آب به سیمان" style="width:100%;max-width:900px;background:white">
+        ${grid}
+        <line x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
+        <line x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
+
+        ${curveLines}
+        ${intersectionLines}
+
+        <text x="${left - 40}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 40} ${height / 2})">مقاومت فشاری متوسط (N/mm²)</text>
+        <text x="${width / 2}" y="${height - 10}" text-anchor="middle" font-size="13" fill="#334155">نسبت آب به سیمان</text>
+      </svg>
+    </div>
+    ${intersectionText}
+  `;
+}
+
+/* =========================================
    صفحات محاسبات
 ========================================= */
 
@@ -1554,6 +1662,8 @@ function renderStep1() {
       ['رده مقاومتی سیمان', data.cementClass],
       ['نسبت آب به سیمان', result.wc]
     ])}
+
+    ${renderWCChart()}
 
     <p class="hint">
       نسبت آب به سیمان باید با توجه به
@@ -2007,4 +2117,4 @@ if ('serviceWorker' in navigator) {
         );
       });
   });
-                       }
+}
