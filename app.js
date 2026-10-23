@@ -1528,23 +1528,7 @@ function getActiveCurve() {
   const hasAdmixture = data.admixture && data.admixture !== 'none';
 
   let curveSet;
-  if (!hasAdmixture) {
-    // WITHOUT superplasticizer (Cubic equations from Image 1)
-    curveSet = {
-      '32.5': {
-        R: { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
-        C: { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' }
-      },
-      '42.5': {
-        R: { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
-        C: { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' }
-      },
-      '52.5': {
-        R: { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
-        C: { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
-      }
-    };
-  } else {
+  if (hasAdmixture) {
     // WITH superplasticizer (Quadratic equations from Image 2)
     curveSet = {
       '32.5': {
@@ -1558,6 +1542,22 @@ function getActiveCurve() {
       '52.5': {
         R: { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
         C: { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
+      }
+    };
+  } else {
+    // WITHOUT superplasticizer (Cubic equations from Image 1)
+    curveSet = {
+      '32.5': {
+        R: { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
+        C: { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' }
+      },
+      '42.5': {
+        R: { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
+        C: { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' }
+      },
+      '52.5': {
+        R: { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+        C: { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' }
       }
     };
   }
@@ -1578,8 +1578,8 @@ function calculateStrength(wc, curve) {
 
 function calculateWc(strength, curve) {
   if (!curve) return null;
-  let low = 0;
-  let high = 1.0;
+  let low = 0.3;
+  let high = 0.75;
   
   function evalCurve(x) {
     if (curve.d !== undefined) {
@@ -1616,8 +1616,8 @@ function renderWCChart() {
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
 
-  const xMin = 0;
-  const xMax = 1.0;
+  const xMin = 0.3;
+  const xMax = 0.75;
   const yMin = 10;
   const yMax = 70;
 
@@ -1627,18 +1627,8 @@ function renderWCChart() {
   const hasAdmixture = data.admixture && data.admixture !== 'none';
 
   let allCurves;
-  if (!hasAdmixture) {
-    // Cubic
-    allCurves = [
-      { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
-      { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
-      { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' },
-      { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
-      { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
-      { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
-    ];
-  } else {
-    // Quadratic
+  if (hasAdmixture) {
+    // Quadratic (WITH superplasticizer)
     allCurves = [
       { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
       { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
@@ -1646,6 +1636,16 @@ function renderWCChart() {
       { a: 123.42, b: -234.33, c: 122.57, name: '425-R', color: '#f87171', width: 1.5, dash: '6,4' },
       { a: 126.73, b: -228.34, c: 116.36, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
       { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
+    ];
+  } else {
+    // Cubic (WITHOUT superplasticizer)
+    allCurves = [
+      { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
+      { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
+      { a: 525.25, b: -817.75, c: 313.6, d: 22.121, name: '425-C', color: '#dc2626', width: 2.5, dash: 'none' },
+      { a: 707.07, b: -1087.4, c: 450.57, d: -5.6061, name: '425-R', color: '#f87171', width: 1.5, dash: '2,4' },
+      { a: 545.45, b: -823.38, c: 319.24, d: 11.818, name: '325-C', color: '#2563eb', width: 2.5, dash: 'none' },
+      { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
     ];
   }
 
@@ -1665,40 +1665,37 @@ function renderWCChart() {
     grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
     grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
   }
-  for (let i = 0; i <= 10; i++) {
-    const val = i * 0.1;
+  for (let i = 0; i <= 9; i++) {
+    const val = xMin + i * 0.05;
+    if (val > xMax + 0.001) break;
     const px = x(val);
     grid += `<line x1="${px}" y1="${top}" x2="${px}" y2="${height - bottom}" stroke="#d7e0e8" />`;
-    grid += `<text x="${px}" y="${height - bottom + 20}" text-anchor="middle" font-size="12" fill="#334155">${val.toFixed(1)}</text>`;
+    grid += `<text x="${px}" y="${height - bottom + 20}" text-anchor="middle" font-size="12" fill="#334155">${val.toFixed(2).replace(/\.?0+$/, '')}</text>`;
   }
 
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    for (let wc = 0.0; wc <= 1.01; wc += 0.01) {
-      let val;
-      if (c.d !== undefined) {
-        val = c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d;
-      } else {
-        val = c.a * Math.pow(wc, 2) + c.b * wc + c.c;
-      }
-      if (val >= 10 && val <= 70) {
-          path += `${path === '' ? 'M' : 'L'} ${x(wc)} ${y(val)} `;
-      }
+    // Loop from 0.3 to 0.75 to match the axis limits
+    for (let wc = 0.3; wc <= 0.7501; wc += 0.005) {
+      let val = (c.d !== undefined) ? 
+        (c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d) :
+        (c.a * Math.pow(wc, 2) + c.b * wc + c.c);
+      
+      // We don't restrict Y here, let the SVG clipPath handle it
+      path += `${path === '' ? 'M' : 'L'} ${x(wc)} ${y(val)} `;
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
     
-    // Put label on the left side of the curve (at wc = 0.35)
-    const labelX = 0.35;
-    let labelVal;
-    if (c.d !== undefined) {
-        labelVal = c.a * Math.pow(labelX, 3) + c.b * Math.pow(labelX, 2) + c.c * labelX + c.d;
-    } else {
-        labelVal = c.a * Math.pow(labelX, 2) + c.b * labelX + c.c;
-    }
+    // Labels on the left
+    const labelWc = 0.315; 
+    const labelVal = (c.d !== undefined) ? 
+      (c.a * Math.pow(labelWc, 3) + c.b * Math.pow(labelWc, 2) + c.c * labelWc + c.d) :
+      (c.a * Math.pow(labelWc, 2) + c.b * labelWc + c.c);
     
-    if (labelVal >= 10 && labelVal <= 70) {
-        curveLines += `<text x="${x(labelX) - 5}" y="${y(labelVal) + 4}" text-anchor="end" font-size="12" fill="${c.color}" font-weight="bold">${c.name}</text>`;
+    // Only draw label if it's within a reasonable visual range
+    if (labelVal >= 5 && labelVal <= 75) {
+        curveLines += `<text x="${x(labelWc)}" y="${y(labelVal) - 2}" font-size="11" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
     }
   });
 
@@ -1735,12 +1732,21 @@ function renderWCChart() {
     <h3>نمودار نسبت آب به سیمان و مقاومت فشاری</h3>
     <div class="table-scroll">
       <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="نمودار نسبت آب به سیمان" style="width:100%;max-width:900px;background:white">
+        <defs>
+          <clipPath id="plot-area-clip">
+            <rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}" />
+          </clipPath>
+        </defs>
+
         ${grid}
+        
         <line x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
         <line x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
 
-        ${curveLines}
-        ${intersectionLines}
+        <g clip-path="url(#plot-area-clip)">
+          ${curveLines}
+          ${intersectionLines}
+        </g>
 
         <text x="${left - 40}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 40} ${height / 2})">مقاومت فشاری متوسط (N/mm²)</text>
         <text x="${width / 2}" y="${height - 10}" text-anchor="middle" font-size="13" fill="#334155">نسبت آب به سیمان</text>
@@ -2147,7 +2153,7 @@ function view() {
 
       save();
       view();
-       };
+    };
   });
 
   const mixCheckbox = document.querySelector(
