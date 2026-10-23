@@ -1757,54 +1757,179 @@ function renderWCChart() {
 }
 
 /* =========================================
-   صفحات محاسبات
+   نمودار آب آزاد (صفحه پنجم)
 ========================================= */
 
-function renderStep1() {
+function syncWater() {
+  const combined = combinedGrading();
+  const fm = finenessModulus(combined) || 4.5;
+  const activeAggs = data.aggregates.slice(0, data.aggregateCount);
+  const avgFracture = activeAggs.length > 0 ? activeAggs.reduce((sum, a) => sum + Number(a.fracture || 0), 0) / activeAggs.length : 0;
+  const isCrushed = avgFracture > 0;
+
+  const eqs = isCrushed ? {
+    S3: [4.4766, -76.242, 473.31],
+    S2: [3.922, -68.531, 433.0],
+    S1: [3.2682, -56.602, 355.02]
+  } : {
+    S3: [3.3593, -62.257, 408.7],
+    S2: [2.9217, -55.384, 372.47],
+    S1: [2.4397, -45.811, 305.64]
+  };
+  const activeEq = eqs[data.slumpClass] || eqs['S3'];
+  const waterFromCurve = activeEq[0] * fm * fm + activeEq[1] * fm + activeEq[2];
+  if (waterFromCurve) {
+    data.water = Math.round(waterFromCurve * 10) / 10;
+  }
+}
+
+function renderWaterChart(fm, water, isCrushed) {
+  const width = 680;
+  const height = 400;
+  const left = 60;
+  const right = 60; 
+  const top = 20;
+  const bottom = 60;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
+
+  const xMin = 3.0;
+  const xMax = 8.5;
+  const yMin = 100;
+  const yMax = 320;
+
+  const x = val => left + (val - xMin) / (xMax - xMin) * plotWidth;
+  const y = val => top + (yMax - val) / (yMax - yMin) * plotHeight;
+
+  let allCurves;
+  if (isCrushed) {
+    allCurves = [
+      { a: 4.4766, b: -76.242, c: 473.31, name: 'S3', color: '#991b1b' },
+      { a: 3.922, b: -68.531, c: 433.0, name: 'S2', color: '#ec4899' },
+      { a: 3.2682, b: -56.602, c: 355.02, name: 'S1', color: '#2563eb' }
+    ];
+  } else {
+    allCurves = [
+      { a: 3.3593, b: -62.257, c: 408.7, name: 'S3', color: '#991b1b' },
+      { a: 2.9217, b: -55.384, c: 372.47, name: 'S2', color: '#ec4899' },
+      { a: 2.4397, b: -45.811, c: 305.64, name: 'S1', color: '#2563eb' }
+    ];
+  }
+
+  // calculate active curve for intersection
+  const activeEq = allCurves.find(c => c.name === data.slumpClass) || allCurves[0];
+  const waterFromCurve = activeEq.a * fm * fm + activeEq.b * fm + activeEq.c;
+
+  let grid = '';
+  for (let i = 100; i <= 320; i += 20) {
+    const py = y(i);
+    grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
+    grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${i}</text>`;
+  }
+  for (let i = 3.0; i <= 8.5; i += 0.5) {
+    const px = x(i);
+    grid += `<line x1="${px}" y1="${top}" x2="${px}" y2="${height - bottom}" stroke="#d7e0e8" />`;
+    grid += `<text x="${px}" y="${height - bottom + 20}" text-anchor="middle" font-size="12" fill="#334155">${i.toFixed(2)}</text>`;
+  }
+
+  let curveLines = '';
+  allCurves.forEach(c => {
+    let path = '';
+    for (let xv = 3.1; xv <= 8.01; xv += 0.1) {
+      let yv = c.a * xv * xv + c.b * xv + c.c;
+      path += `${path === '' ? 'M' : 'L'} ${x(xv)} ${y(yv)} `;
+    }
+    curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="2.5" />`;
+    const labelY = c.a * 3.1 * 3.1 + c.b * 3.1 + c.c;
+    if (labelY >= yMin && labelY <= yMax) {
+      curveLines += `<text x="${x(3.1)}" y="${y(labelY) - 5}" font-size="12" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
+    }
+  });
+
+  let intersectionLines = '';
+  if (fm >= xMin && fm <= xMax && water >= yMin && water <= yMax) {
+    const px = x(fm);
+    const py = y(water);
+    intersectionLines += `<line x1="${left}" y1="${py}" x2="${px}" y2="${py}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
+    intersectionLines += `<line x1="${px}" y1="${py}" x2="${px}" y2="${height - bottom}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
+    intersectionLines += `<circle cx="${px}" cy="${py}" r="4" fill="#dc2626" />`;
+  }
+
   return `
-    <h2>گام اول — تعیین نسبت آب به سیمان</h2>
-
-    <div class="grid" style="margin-bottom: 15px;">
-      <label class="field">
-        نسبت آب به سیمان انتخابی
-        <input
-          type="number"
-          data-key="wc"
-          step="0.001"
-          value="${data.wc}"
-        >
-      </label>
-      <label class="field">
-        مقاومت فشاری متوسط متناظر (MPa)
-        <input
-          type="number"
-          data-key="targetStrengthManual"
-          step="0.1"
-          value="${getTargetStrength() !== null ? getTargetStrength().toFixed(1) : ''}"
-        >
-      </label>
+    <h3>نمودار تعیین آب آزاد بر اساس مدول نرمی</h3>
+    <div class="table-scroll">
+      <svg viewBox="0 0 ${width} ${height}" style="width:100%;max-width:900px;background:white">
+        <defs>
+          <clipPath id="water-plot-area">
+            <rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}" />
+          </clipPath>
+        </defs>
+        ${grid}
+        <line x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
+        <line x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
+        <g clip-path="url(#water-plot-area)">
+          ${curveLines}
+          ${intersectionLines}
+        </g>
+        <text x="${left - 40}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 40} ${height / 2})">آب آزاد (kg/m³)</text>
+        <text x="${width / 2}" y="${height - 10}" text-anchor="middle" font-size="13" fill="#334155">مدول نرمی (F.M.)</text>
+      </svg>
     </div>
-
-    ${renderWCChart()}
-
-    <p class="hint" style="margin-top: 15px;">
-      توجه: با تغییر هر یک از ورودی‌های بالا (نسبت آب به سیمان یا مقاومت)، مقدار دیگری بر اساس منحنی فعال محاسبه شده و نقطه تقاطع روی نمودار جابجا می‌شود.
-    </p>
   `;
 }
 
 function renderWater() {
-  const result = new Step3().run();
+  const combined = combinedGrading();
+  const fm = finenessModulus(combined) || 4.5;
+  
+  const activeAggs = data.aggregates.slice(0, data.aggregateCount);
+  const avgFracture = activeAggs.length > 0 ? activeAggs.reduce((sum, a) => sum + Number(a.fracture || 0), 0) / activeAggs.length : 0;
+  const isCrushed = avgFracture > 0;
+
+  let waterFromCurve = null;
+  const eqs = isCrushed ? {
+    S3: [4.4766, -76.242, 473.31],
+    S2: [3.922, -68.531, 433.0],
+    S1: [3.2682, -56.602, 355.02]
+  } : {
+    S3: [3.3593, -62.257, 408.7],
+    S2: [2.9217, -55.384, 372.47],
+    S1: [2.4397, -45.811, 305.64]
+  };
+  const activeEq = eqs[data.slumpClass] || eqs['S3'];
+  waterFromCurve = activeEq[0] * fm * fm + activeEq[1] * fm + activeEq[2];
+
+  const reduction = data.admixture === 'water_reducer' ? (data.water * num('admixturePct') / 100) : 0;
+  const reductionPct = data.admixture === 'water_reducer' ? num('admixturePct') : 0;
 
   return `
     <h2>گام دوم — تعیین آب آزاد</h2>
+    
+    <div class="grid" style="margin-bottom: 15px;">
+      <label class="field">
+        مدول نرمی مخلوط (F.M.)
+        <input type="number" readonly value="${fm.toFixed(2)}">
+      </label>
+      <label class="field">
+        میزان آب آزاد انتخابی (kg/m³)
+        <input type="number" data-key="water" step="0.1" value="${data.water}">
+      </label>
+    </div>
 
-    ${group(['water'])}
+    ${renderWaterChart(fm, data.water, isCrushed)}
 
-    ${table([
-      ['آب آزاد پایه (kg/m³)', result.baseWater],
-      ['آب محاسباتی (kg/m³)', result.water]
-    ])}
+    <h3 style="margin-top: 20px;">پارامترهای محاسباتی</h3>
+    <table>
+      <tbody>
+        <tr><td>۱. مدول نرمی مخلوط سنگدانه</td><td>${fm.toFixed(2)}</td></tr>
+        <tr><td>۲. اسلامپ مشخصه</td><td>${data.slumpClass} (${data.slump} mm)</td></tr>
+        <tr><td>۳. درصد شکستگی متوسط معادل برای مخلوط سنگدانه</td><td>${avgFracture.toFixed(1)}٪ (${isCrushed ? 'تیزگوشه' : 'گردگوشه'})</td></tr>
+        <tr><td>۴. میزان آب آزاد مورد نیاز حاصل از منحنی (kg/m³)</td><td>${waterFromCurve ? waterFromCurve.toFixed(1) : 'نامشخص'}</td></tr>
+        <tr><td>۵. میزان آب آزاد مورد نیاز محاسبه شده (kg/m³)</td><td>${Number(data.water).toFixed(1)}</td></tr>
+        <tr><td>۶. مقدار کاهش آب آزاد (kg/m³)</td><td>${reduction.toFixed(1)}</td></tr>
+        <tr><td>۷. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده</td><td>${reductionPct}٪</td></tr>
+      </tbody>
+    </table>
   `;
 }
 
@@ -1995,6 +2120,7 @@ function view() {
             ) {
               data.slump = range.min;
             }
+            syncWater();
           }
 
           if (key === 'admixture' && value === 'none') {
@@ -2027,6 +2153,8 @@ function view() {
             validate();
           } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount') {
             // No strict validation needed for these keys
+          } else if (key === 'water') {
+            validate();
           } else {
             validate();
           }
@@ -2109,6 +2237,7 @@ function view() {
               const newWc = calculateWc(target, curve);
               if (newWc !== null) data.wc = newWc;
             }
+            syncWater();
           }
 
           save();
@@ -2153,6 +2282,7 @@ function view() {
         }
 
         data.aggregateShares[index] = value;
+        syncWater();
 
         save();
         view();
