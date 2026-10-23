@@ -680,17 +680,6 @@ function renderHome() {
 
     <div class="grid">
       ${selectInput(
-        'grading',
-        'نوع دانه‌بندی',
-        [
-          { value: 'continuous', label: 'پیوسته' },
-          { value: 'fine_gap', label: 'کمبود ریزدانه' },
-          { value: 'coarse_gap', label: 'کمبود درشت‌دانه' },
-          { value: 'gap', label: 'گسسته' }
-        ]
-      )}
-
-      ${selectInput(
         'admixture',
         'نوع افزودنی',
         [
@@ -2439,15 +2428,15 @@ if ('serviceWorker' in navigator) {
 }
 
 /* =========================================
-   کدهای جدید: منوی سه نقطه‌ای (ذخیره، بازیابی، خروج)
+   کدهای جدید: منوی سه نقطه‌ای
 ========================================= */
 
 function initNewMenu() {
-  // ساخت المان‌های منو و اضافه کردن به بدنه صفحه
+  // تغییر موقعیت منو به گوشه بالا سمت راست
   const menuHTML = `
-    <div id="app-options-menu" style="position: fixed; bottom: 20px; left: 20px; z-index: 99999; direction: rtl; font-family: inherit;">
+    <div id="app-options-menu" style="position: fixed; top: 15px; right: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
       <button id="app-menu-btn" style="background: #2563eb; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 28px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; padding-bottom: 8px;">⋮</button>
-      <div id="app-menu-dropdown" style="display: none; position: absolute; bottom: 60px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 -4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
+      <div id="app-menu-dropdown" style="display: none; position: absolute; top: 60px; right: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
         <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">💾 ذخیره طرح</button>
         <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">📂 بازیابی طرح</button>
         <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626;">🚪 خروج</button>
@@ -2480,7 +2469,12 @@ function initNewMenu() {
 
   // عملیات ذخیره
   menuSave.onclick = () => {
-    downloadProjectFile();
+    // بررسی وجود داده در localStorage
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      alert('داده‌ای برای ذخیره وجود ندارد. لطفاً ابتدا اطلاعاتی وارد کنید.');
+    } else {
+      downloadProjectFile();
+    }
     menuDropdown.style.display = 'none';
   };
 
@@ -2498,11 +2492,13 @@ function initNewMenu() {
       downloadProjectFile();
       setTimeout(() => {
         window.close();
-        alert('در صورت عدم بسته شدن پنجره، می‌توانید آن را به صورت دستی ببندید.');
+        // اگر مرورگر اجازه بستن نداد، پیام هشدار نمایش داده شود
+        setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
       }, 800);
     } else {
       window.close();
-      alert('در صورت عدم بسته شدن پنجره، می‌توانید آن را به صورت دستی ببندید.');
+      // اگر مرورگر اجازه بستن نداد، پیام هشدار نمایش داده شود
+      setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
     }
   };
 
@@ -2545,6 +2541,8 @@ function downloadProjectFile() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  // نمایش پیام موفقیت پس از کمی تاخیر
+  setTimeout(() => alert('فایل طرح با موفقیت ذخیره شد.'), 100);
 }
 
 // راه‌اندازی منو پس از لود کامل صفحه
@@ -2552,4 +2550,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-}
+     }
