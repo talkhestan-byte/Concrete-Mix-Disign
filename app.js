@@ -1518,7 +1518,6 @@ function getActiveCurve() {
 
   let curveSet;
   if (hasAdmixture) {
-    // WITH superplasticizer (Quadratic equations from Image 2)
     curveSet = {
       '32.5': {
         R: { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
@@ -1534,7 +1533,6 @@ function getActiveCurve() {
       }
     };
   } else {
-    // WITHOUT superplasticizer (Cubic equations from Image 1)
     curveSet = {
       '32.5': {
         R: { a: 505.05, b: -769.26, c: 305.34, d: 6.9242, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' },
@@ -1583,11 +1581,9 @@ function calculateWc(strength, curve) {
 
   if (strength > fLow || strength < fHigh) return null;
 
-  // Binary search with higher precision
   for (let i = 0; i < 100; i++) {
     let mid = (low + high) / 2;
     let fMid = evalCurve(mid);
-    // The curve is monotonically decreasing in this range
     if (fMid > strength) {
       low = mid;
     } else {
@@ -1619,7 +1615,6 @@ function renderWCChart() {
 
   let allCurves;
   if (hasAdmixture) {
-    // Quadratic (WITH superplasticizer)
     allCurves = [
       { a: 43.589, b: -173.59, c: 124.01, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
       { a: 80.04, b: -207, c: 126.63, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
@@ -1629,7 +1624,6 @@ function renderWCChart() {
       { a: 107.59, b: -198.24, c: 102.72, name: '325-R', color: '#3b82f6', width: 1.5, dash: 'none' }
     ];
   } else {
-    // Cubic (WITHOUT superplasticizer)
     allCurves = [
       { a: 573.91, b: -984.34, c: 435.71, d: 4.4767, name: '525-C', color: '#16a34a', width: 2.5, dash: 'none' },
       { a: 545.45, b: -894.81, c: 369.48, d: 13.818, name: '525-R', color: '#4ade80', width: 1.5, dash: '8,4,2,4' },
@@ -1654,7 +1648,7 @@ function renderWCChart() {
     if (val > yMax) break;
     const py = y(val);
     grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
-    grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
+    grid += `<text x="${left - 15}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
   }
   for (let i = 0; i <= 9; i++) {
     const val = xMin + i * 0.05;
@@ -1735,7 +1729,7 @@ function renderWCChart() {
           ${intersectionLines}
         </g>
 
-        <text x="${left - 40}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 40} ${height / 2})">مقاومت فشاری متوسط (N/mm²)</text>
+        <text x="${left - 45}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 45} ${height / 2})">مقاومت فشاری متوسط (N/mm²)</text>
         <text x="${width / 2}" y="${height - 10}" text-anchor="middle" font-size="13" fill="#334155">نسبت آب به سیمان</text>
       </svg>
     </div>
@@ -1847,7 +1841,7 @@ function renderWaterChart(fm, water, isCrushed) {
   for (let i = 100; i <= 320; i += 20) {
     const py = y(i);
     grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
-    grid += `<text x="${left - 10}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${i}</text>`;
+    grid += `<text x="${left - 15}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${i}</text>`;
   }
   for (let i = 3.0; i <= 8.5; i += 0.5) {
     const px = x(i);
@@ -1858,14 +1852,12 @@ function renderWaterChart(fm, water, isCrushed) {
   let curveLines = '';
   allCurves.forEach(c => {
     let path = '';
-    // Start exactly at 3.35 to leave a bigger gap from the Y axis (which is at 3.0)
     for (let xv = 3.35; xv <= 8.01; xv += 0.1) {
       let yv = c.a * xv * xv + c.b * xv + c.c;
       path += `${path === '' ? 'M' : 'L'} ${x(xv)} ${y(yv)} `;
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="2.5" />`;
     
-    // Labels placed at the start of the line (x=3.35)
     const labelY = c.a * 3.35 * 3.35 + c.b * 3.35 + c.c;
     if (labelY >= yMin && labelY <= yMax) {
       curveLines += `<text x="${x(3.35)}" y="${y(labelY) - 5}" font-size="12" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
@@ -1897,7 +1889,7 @@ function renderWaterChart(fm, water, isCrushed) {
           ${curveLines}
           ${intersectionLines}
         </g>
-        <text x="${left - 40}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 40} ${height / 2})">آب آزاد (kg/m³)</text>
+        <text x="${left - 45}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 45} ${height / 2})">آب آزاد (kg/m³)</text>
         <text x="${width / 2}" y="${height - 10}" text-anchor="middle" font-size="13" fill="#334155">مدول نرمی (F.M.)</text>
       </svg>
     </div>
@@ -1925,8 +1917,9 @@ function renderWater() {
   const activeEq = eqs[data.slumpClass] || eqs['S3'];
   waterFromCurve = activeEq[0] * fm * fm + activeEq[1] * fm + activeEq[2];
 
-  const reduction = data.admixture === 'water_reducer' ? (data.water * num('admixturePct') / 100) : 0;
+  const reduction = data.admixture === 'water_reducer' ? (waterFromCurve * num('admixturePct') / 100) : 0;
   const reductionPct = data.admixture === 'water_reducer' ? num('admixturePct') : 0;
+  const calculatedWater = waterFromCurve - reduction;
 
   return `
     <h2>گام دوم — تعیین آب آزاد</h2>
@@ -1951,9 +1944,14 @@ function renderWater() {
         <tr><td>۲. اسلامپ مشخصه</td><td>${data.slumpClass} (${data.slump} mm)</td></tr>
         <tr><td>۳. درصد شکستگی متوسط معادل برای مخلوط سنگدانه</td><td>${avgFracture.toFixed(1)}٪ (${isCrushed ? 'تیزگوشه' : 'گردگوشه'})</td></tr>
         <tr><td>۴. میزان آب آزاد مورد نیاز حاصل از منحنی (kg/m³)</td><td>${waterFromCurve ? waterFromCurve.toFixed(1) : 'نامشخص'}</td></tr>
-        <tr><td>۵. میزان آب آزاد مورد نیاز محاسبه شده (kg/m³)</td><td>${Number(data.water).toFixed(1)}</td></tr>
+        <tr>
+          <td>۵. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده (%)</td>
+          <td>
+            <input type="number" data-key="admixturePct" step="0.1" value="${data.admixture === 'water_reducer' ? data.admixturePct : 0}" ${data.admixture !== 'water_reducer' ? 'disabled' : ''} style="width: 80px; padding: 4px;">
+          </td>
+        </tr>
         <tr><td>۶. مقدار کاهش آب آزاد (kg/m³)</td><td>${reduction.toFixed(1)}</td></tr>
-        <tr><td>۷. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده</td><td>${reductionPct}٪</td></tr>
+        <tr><td>۷. میزان آب آزاد مورد نیاز محاسبه شده (kg/m³)</td><td>${calculatedWater.toFixed(1)}</td></tr>
       </tbody>
     </table>
   `;
@@ -2431,8 +2429,8 @@ if ('serviceWorker' in navigator) {
 
 function initNewMenu() {
   const menuHTML = `
-    <div id="app-options-menu" style="position: fixed; top: 15px; left: 20px; z-index: 99999; direction: rtl; font-family: inherit;">
-      <button id="app-menu-btn" style="background: #2563eb; color: white; border: none; border-radius: 8px; padding: 8px 12px; font-size: 24px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1;">⋮</button>
+    <div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
+      <button id="app-menu-btn" style="background: #2563eb; color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1;">⋮</button>
       <div id="app-menu-dropdown" style="display: none; position: absolute; top: 45px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
         <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">💾 ذخیره طرح</button>
         <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">📂 بازیابی طرح</button>
@@ -2465,7 +2463,17 @@ function initNewMenu() {
   menuSave.onclick = () => {
     menuDropdown.style.display = 'none';
     if (confirm('آیا از ذخیره طرح اطمینان دارید؟')) {
-      downloadProjectFile();
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert('فایل طرح با موفقیت ذخیره شد.');
     }
   };
 
@@ -2478,7 +2486,16 @@ function initNewMenu() {
     menuDropdown.style.display = 'none';
     const confirmSave = confirm('آیا مایل به ذخیره اطلاعات طرح قبل از خروج هستید؟');
     if (confirmSave) {
-      downloadProjectFile();
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       setTimeout(() => {
         window.close();
         setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
@@ -2514,22 +2531,8 @@ function initNewMenu() {
   };
 }
 
-function downloadProjectFile() {
-  const jsonStr = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonStr], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  setTimeout(() => alert('فایل طرح با موفقیت ذخیره شد.'), 100);
-}
-
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-         }
+}
