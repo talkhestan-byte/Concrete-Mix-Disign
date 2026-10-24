@@ -261,7 +261,7 @@ function selected(key, value) {
 function numberInput(key, label, step, extra = '') {
   return `
     <label class="field">
-      ${label}
+      <span>${label}</span>
       <input
         type="number"
         data-key="${key}"
@@ -276,7 +276,7 @@ function numberInput(key, label, step, extra = '') {
 function selectInput(key, label, options) {
   return `
     <label class="field">
-      ${label}
+      <span>${label}</span>
       <select data-key="${key}">
         ${options.map(o => `
           <option
@@ -660,10 +660,6 @@ function renderHome() {
       ${numberInput('air', fields.air[0], 0.1)}
     </div>
 
-    <p class="hint">
-      محدوده‌های اسلامپ باید با مرجع معتبر کنترل شوند.
-    </p>
-
     <div class="grid">
       ${selectInput(
         'cementClass',
@@ -698,11 +694,6 @@ function renderHome() {
           : 'min="0" max="99.9"'
       )}
     </div>
-
-    <p class="hint">
-      مدل کاهش آب ساده‌سازی شده و باید با
-      مشخصات فنی افزودنی کنترل شود.
-    </p>
 
     <h3>کنترل‌های اختیاری طرح</h3>
 
@@ -860,11 +851,6 @@ function renderTargetStrength() {
           </p>
         `
     }
-
-    <p class="hint">
-      جدول انحراف معیار موقت است و باید
-      با مرجع اصلی کنترل شود.
-    </p>
   `;
 }
 
@@ -967,11 +953,6 @@ function renderAggregateTable() {
       )}
     </div>
 
-    <p class="hint">
-      خانه‌های خالی به معنی داده واردنشده‌اند،
-      نه درصد عبوری صفر.
-    </p>
-
     <div class="table-scroll">
       <table class="aggregate-table">
         <thead>
@@ -995,16 +976,7 @@ function renderAggregateTable() {
       ${numberInput('sgGravel', fields.sgGravel[0], 0.01)}
     </div>
 
-    <p class="hint">
-      وزن نهایی مصالح بر مبنای وزن خشک محاسبه می‌شود.
-    </p>
-
     ${renderTargetStrength()}
-
-    <p class="hint">
-      سری الک‌ها باید با نسخه معتبر
-      استاندارد ملی ایران ۳۰۲ تطبیق داده شود.
-    </p>
   `;
 }
 
@@ -1330,7 +1302,7 @@ function renderGradingChart(combined) {
       stroke="#d7e0e8"
     />
     <text
-      x="${left - 12}"
+      x="${left - 25}"
       y="${y(value) + 4}"
       text-anchor="end"
       font-size="12"
@@ -1428,7 +1400,7 @@ function renderShares() {
     { length: count },
     (_, i) => `
       <label class="field">
-        سهم ${escapeHtml(data.aggregates[i].name)} (%)
+        <span>سهم ${escapeHtml(data.aggregates[i].name)} (%)</span>
         <input
           type="number"
           min="0"
@@ -1648,7 +1620,7 @@ function renderWCChart() {
     if (val > yMax) break;
     const py = y(val);
     grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
-    grid += `<text x="${left - 15}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
+    grid += `<text x="${left - 25}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${val}</text>`;
   }
   for (let i = 0; i <= 9; i++) {
     const val = xMin + i * 0.05;
@@ -1747,7 +1719,7 @@ function renderStep1() {
 
     <div class="grid" style="margin-bottom: 15px;">
       <label class="field">
-        نسبت آب به سیمان انتخابی
+        <span>نسبت آب به سیمان انتخابی</span>
         <input
           type="number"
           data-key="wc"
@@ -1756,7 +1728,7 @@ function renderStep1() {
         >
       </label>
       <label class="field">
-        مقاومت فشاری متوسط متناظر (MPa)
+        <span>مقاومت فشاری متوسط متناظر (MPa)</span>
         <input
           type="number"
           data-key="targetStrengthManual"
@@ -1767,10 +1739,6 @@ function renderStep1() {
     </div>
 
     ${renderWCChart()}
-
-    <p class="hint" style="margin-top: 15px;">
-      توجه: با تغییر هر یک از ورودی‌های بالا (نسبت آب به سیمان یا مقاومت)، مقدار دیگری بر اساس منحنی فعال محاسبه شده و نقطه تقاطع روی نمودار جابجا می‌شود.
-    </p>
   `;
 }
 
@@ -1841,7 +1809,7 @@ function renderWaterChart(fm, water, isCrushed) {
   for (let i = 100; i <= 320; i += 20) {
     const py = y(i);
     grid += `<line x1="${left}" y1="${py}" x2="${width - right}" y2="${py}" stroke="#d7e0e8" />`;
-    grid += `<text x="${left - 15}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${i}</text>`;
+    grid += `<text x="${left - 25}" y="${py + 4}" text-anchor="end" font-size="12" fill="#334155">${i}</text>`;
   }
   for (let i = 3.0; i <= 8.5; i += 0.5) {
     const px = x(i);
@@ -1926,11 +1894,11 @@ function renderWater() {
     
     <div class="grid" style="margin-bottom: 15px;">
       <label class="field">
-        مدول نرمی مخلوط (F.M.)
+        <span>مدول نرمی مخلوط (F.M.)</span>
         <input type="number" readonly value="${fm.toFixed(2)}">
       </label>
       <label class="field">
-        میزان آب آزاد انتخابی (kg/m³)
+        <span>میزان آب آزاد انتخابی (kg/m³)</span>
         <input type="number" data-key="water" step="0.1" value="${data.water}">
       </label>
     </div>
@@ -2079,18 +2047,6 @@ function renderReport() {
     <button type="button" id="print">
       چاپ / ذخیره PDF
     </button>
-
-    <p class="hint">
-      وزن خشک ماسه و شن با مدل ساده
-      دو سنگدانه‌ای محاسبه شده است.
-      سهم‌بندی چندسنگدانه‌ای هنوز به
-      محاسبات وزن نهایی متصل نشده است.
-    </p>
-
-    <p class="hint">
-      نتایج پیش از استفاده اجرایی باید
-      با مرجع معتبر کنترل شوند.
-    </p>
   `;
 }
 
@@ -2436,88 +2392,124 @@ function view() {
 function injectWindowsTheme() {
   const style = document.createElement('style');
   style.innerHTML = `
-    /* Windows-like OS Theme */
+    /* Modern Fluent / Windows 11 Theme */
     :root {
-      --win-bg: #f3f3f3;
-      --win-window: #ffffff;
-      --win-border: #cccccc;
-      --win-blue: #0078d7;
-      --win-blue-hover: #e5f1fb;
+      --primary: #0078d4;
+      --primary-hover: #106ebe;
+      --bg: #f3f2f1;
+      --panel-bg: #ffffff;
+      --border: #e1dfdd;
+      --text: #323130;
+      --text-muted: #605e5c;
     }
     
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--win-bg);
-      color: #000;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+      background: #f0f2f5;
+      background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
+      background-size: 20px 20px;
+      color: var(--text);
       margin: 0;
       padding: 20px;
       direction: rtl;
     }
 
-    /* The App Container (Main Window) */
     #app {
-      background: var(--win-window);
-      border: 1px solid var(--win-border);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      border-radius: 8px;
-      max-width: 1000px;
-      margin: 0 auto;
+      background: var(--panel-bg);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      max-width: 1100px;
+      margin: 20px auto;
       overflow: hidden;
+      border: 1px solid var(--border);
     }
 
-    /* Tabs (Title bar) */
+    /* Tabs exactly 2 rows (4 + 3) */
     #tabs {
-      background: #e6e6e6;
-      border-bottom: 1px solid var(--win-border);
-      padding: 8px 8px 0 8px;
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: #f8f9fa;
+      border-bottom: 1px solid var(--border);
       gap: 4px;
+      padding: 8px 8px 0 8px;
     }
 
     #tabs button {
-      background: #f0f0f0;
-      border: 1px solid var(--win-border);
-      border-bottom: none;
-      border-radius: 6px 6px 0 0;
-      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      padding: 10px;
       cursor: pointer;
       font-size: 14px;
-      color: #333;
-      transition: background 0.2s;
+      font-weight: 600;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
       font-family: inherit;
     }
 
     #tabs button:hover {
-      background: #e0e0e0;
+      background: #edebe9;
+      color: var(--primary);
     }
 
     #tabs button.active {
-      background: var(--win-window);
-      border-bottom: 1px solid var(--win-window);
-      margin-bottom: -1px;
-      font-weight: bold;
-      color: var(--win-blue);
+      background: var(--panel-bg);
+      color: var(--primary);
+      border-bottom: 3px solid var(--primary);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
     }
 
-    /* Main Panel Content */
     .panel {
       padding: 24px;
     }
 
-    /* Inputs - Restricted to 6 characters/digits */
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    /* Inputs next to labels */
+    .field {
+      display: inline-flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      background: #f8f9fa;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text);
+      transition: box-shadow 0.2s ease;
+    }
+
+    .field:hover {
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+
     input[type="number"],
     input[type="text"],
     select {
-      width: 85px !important; /* Fits ~6 digits */
-      padding: 4px 6px;
-      border: 1px solid #7a7a7a;
+      width: 85px !important; 
+      padding: 6px;
+      border: 1px solid #c8c6c4;
       border-radius: 4px;
       font-family: inherit;
       font-size: 13px;
-      box-sizing: border-box;
       background: #fff;
       text-align: center;
+      transition: border-color 0.2s;
+      box-sizing: border-box;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus,
+    select:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0,120,212,0.2);
     }
 
     input.table-input[type="text"] {
@@ -2525,77 +2517,50 @@ function injectWindowsTheme() {
       text-align: right;
     }
 
-    input[type="number"]:focus,
-    input[type="text"]:focus,
-    select:focus {
-      outline: none;
-      border-color: var(--win-blue);
-      box-shadow: 0 0 0 1px var(--win-blue);
-    }
-
-    /* Grid Layout for fields */
-    .grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      font-size: 13px;
-      color: #333;
-    }
-
-    /* Buttons */
     button {
-      background: #e1e1e1;
-      border: 1px solid #adadad;
-      border-radius: 4px;
-      padding: 6px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
       font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
-      font-family: inherit;
       transition: background 0.2s;
-    }
-    button:hover {
-      background: var(--win-blue-hover);
-      border-color: var(--win-blue);
-    }
-    button:active {
-      background: #cce4f7;
+      font-family: inherit;
     }
 
-    /* Tables */
+    button:hover {
+      background: var(--primary-hover);
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 16px;
     }
+
     th, td {
-      border: 1px solid #e0e0e0;
-      padding: 8px 12px;
+      border: 1px solid var(--border);
+      padding: 10px;
       text-align: right;
       font-size: 13px;
     }
+
     th {
-      background: #f9f9f9;
+      background: #f3f2f1;
       font-weight: 600;
+      color: var(--text);
     }
 
-    /* Hint Text */
-    .hint {
-      font-size: 12px;
-      color: #666;
-      margin-top: 8px;
+    tr:nth-child(even) {
+      background: #faf9f8;
     }
 
-    /* Responsive Overrides */
     @media (max-width: 600px) {
-      #tabs button { font-size: 12px; padding: 6px 10px; }
+      #tabs button { font-size: 12px; padding: 8px 4px; }
       .panel { padding: 12px; }
+      .field { width: 100%; justify-content: space-between; }
     }
   `;
   document.head.appendChild(style);
@@ -2666,11 +2631,11 @@ if ('serviceWorker' in navigator) {
 function initNewMenu() {
   const menuHTML = `
     <div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
-      <button id="app-menu-btn" style="background: #2563eb; color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1;">⋮</button>
+      <button id="app-menu-btn" style="background: #0078d4; color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: background 0.2s;">⋮</button>
       <div id="app-menu-dropdown" style="display: none; position: absolute; top: 45px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
-        <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">💾 ذخیره طرح</button>
-        <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">📂 بازیابی طرح</button>
-        <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626;">🚪 خروج</button>
+        <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">💾 ذخیره طرح</button>
+        <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">📂 بازیابی طرح</button>
+        <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626; transition: background 0.2s;">🚪 خروج</button>
       </div>
     </div>
     <input type="file" id="app-hidden-file-input" accept=".json" style="display: none;">
@@ -2771,4 +2736,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-}
+   }
