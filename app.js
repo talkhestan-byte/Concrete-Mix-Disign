@@ -107,9 +107,9 @@ const titles = [
   'اطلاعات اولیه',
   'مشخصات سنگدانه‌ها',
   'سهم‌بندی سنگدانه‌ها',
-  '۱. آب به سیمان',
-  '۲. آب آزاد',
-  '۳. مقدار سیمان',
+  '1. آب به سیمان',
+  '2. آب آزاد',
+  '3. مقدار سیمان',
   'گزارش نهایی'
 ];
 
@@ -1966,18 +1966,18 @@ function renderWater() {
     <h3 style="margin-top: 20px;">پارامترهای محاسباتی</h3>
     <table>
       <tbody>
-        <tr><td>۱. مدول نرمی مخلوط سنگدانه</td><td>${fm.toFixed(2)}</td></tr>
-        <tr><td>۲. اسلامپ مشخصه</td><td>${data.slump} mm</td></tr>
-        <tr><td>۳. درصد شکستگی متوسط معادل برای مخلوط سنگدانه</td><td>${avgFracture.toFixed(1)}٪ (${isCrushed ? 'تیزگوشه' : 'گردگوشه'})</td></tr>
-        <tr><td>۴. میزان آب آزاد مورد نیاز حاصل از منحنی (kg/m³)</td><td>${waterFromCurve ? waterFromCurve.toFixed(1) : 'نامشخص'}</td></tr>
+        <tr><td>1. مدول نرمی مخلوط سنگدانه</td><td>${fm.toFixed(2)}</td></tr>
+        <tr><td>2. اسلامپ مشخصه</td><td>${data.slump} mm</td></tr>
+        <tr><td>3. درصد شکستگی متوسط معادل برای مخلوط سنگدانه</td><td>${avgFracture.toFixed(1)}٪ (${isCrushed ? 'تیزگوشه' : 'گردگوشه'})</td></tr>
+        <tr><td>4. میزان آب آزاد مورد نیاز حاصل از منحنی (kg/m³)</td><td>${waterFromCurve ? waterFromCurve.toFixed(1) : 'نامشخص'}</td></tr>
         <tr>
-          <td>۵. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده (%)</td>
+          <td>5. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده (%)</td>
           <td>
             <input type="number" inputmode="decimal" enterkeyhint="next" data-key="admixturePct" step="0.1" value="${data.admixture !== 'none' ? data.admixturePct : 0}" ${data.admixture === 'none' ? 'disabled' : ''} style="width: 80px; padding: 4px;">
           </td>
         </tr>
-        <tr><td>۶. مقدار کاهش آب آزاد (kg/m³)</td><td>${reduction.toFixed(1)}</td></tr>
-        <tr><td>۷. میزان آب آزاد مورد نیاز محاسبه شده (kg/m³)</td><td>${calculatedWater.toFixed(1)}</td></tr>
+        <tr><td>6. مقدار کاهش آب آزاد (kg/m³)</td><td>${reduction.toFixed(1)}</td></tr>
+        <tr><td>7. میزان آب آزاد مورد نیاز محاسبه شده (kg/m³)</td><td>${calculatedWater.toFixed(1)}</td></tr>
       </tbody>
     </table>
   `;
@@ -2010,15 +2010,20 @@ function renderCement() {
   }
 
   let formulaBox = `
-    <div class="formula-box" style="display:flex; align-items:center; gap:15px; font-size:0.95em; padding:15px; background:#f8fafc; border-radius:8px; margin-bottom:20px; border:1px solid #e2e8f0; direction:ltr;">
-      <div style="font-weight:bold; font-family:monospace;">C = Wf / (W/C)</div>
-      <div style="display:flex; flex-direction:column; align-items:center;">
+    <div class="compact-formula" style="display:flex; align-items:center; gap:10px; padding:10px; background:#f8fafc; border-radius:6px; margin-bottom:15px; border:1px solid #e2e8f0; direction:ltr; font-size:13px;">
+      <span style="font-weight:bold;">C =</span>
+      <div style="display:flex; flex-direction:column; align-items:center; font-size:11px;">
+        <span style="border-bottom:1px solid #333; padding:0 5px;">Wf</span>
+        <span style="padding:0 5px;">W/C</span>
+      </div>
+      <span style="font-weight:bold;">=</span>
+      <div style="display:flex; flex-direction:column; align-items:center; font-size:11px;">
         <span style="border-bottom:1px solid #333; padding:0 5px;">${wf.toFixed(2)}</span>
         <span style="padding:0 5px;">${wc.toFixed(3)}</span>
       </div>
-      <div style="font-weight:bold; font-size:1.5em;">=</div>
-      <div style="background:#f1f5f9; padding:6px 15px; border:1px solid #cbd5e1; font-weight:bold; font-size:1.1em; border-radius:4px;">${cement.toFixed(2)}</div>
-      <div>kg/m³</div>
+      <span style="font-weight:bold;">=</span>
+      <span style="background:#e2e8f0; padding:4px 10px; border-radius:4px; font-weight:bold;">${cement.toFixed(2)}</span>
+      <span>kg/m³</span>
     </div>
   `;
 
@@ -2026,50 +2031,45 @@ function renderCement() {
 
   if (!isLimited) {
     contentHtml = `
-      <div class="success-card" style="background:#ecfdf5; border:1px solid #10b981; color:#065f46; padding:20px; border-radius:8px; text-align:center;">
-        <h3 style="margin-top:0;">مقدار سیمان محاسبه شده در محدوده مجاز است.</h3>
-        <p>مقدار سیمان (${cement.toFixed(2)} kg/m³) کمتر از حد مجاز (${maxC} kg/m³) است.</p>
+      <div style="background:#ecfdf5; border:1px solid #10b981; color:#065f46; padding:12px; border-radius:6px; text-align:center; font-size:13px;">
+        <strong>مقدار سیمان در محدوده مجاز است.</strong>
+        <div style="font-size:11px; margin-top:5px;">(${cement.toFixed(2)} kg/m³ < ${maxC} kg/m³)</div>
       </div>
     `;
   } else {
     contentHtml = `
-      <div class="warning-card" style="background:#fffbeb; border:1px solid #f59e0b; color:#92400e; padding:20px; border-radius:8px;">
-        <h3 style="margin-top:0;">هشدار: مقدار سیمان بیش از حد مجاز است.</h3>
-        <p>مقدار سیمان محاسبه شده (${cement.toFixed(2)} kg/m³) بیشتر از حد مجاز (${maxC} kg/m³) است.</p>
+      <div style="background:#fffbeb; border:1px solid #f59e0b; color:#92400e; padding:12px; border-radius:6px; font-size:13px;">
+        <strong>هشدار:</strong> مقدار سیمان (${cement.toFixed(2)}) بیش از حد مجاز (${maxC}) است.
         
-        <div style="background:white; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #fcd34d;">
-          <h4 style="margin-top:0; color:#92400e;">اصلاح مقدار آب و محاسبه مجدد مقدار سیمان</h4>
+        <div style="background:white; padding:10px; border-radius:6px; margin-top:10px; border:1px solid #fcd34d;">
           
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
-            <span style="font-size:0.95em;">ضریب اصلاح آب (به ازای هر 10 کیلو سیمان):</span>
-            <input type="number" data-key="correctionFactor" min="1" max="2" step="0.1" value="${factor}" style="width:70px; padding:4px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
-            <span style="font-size:0.95em;">kg</span>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:12px;">
+            <span>ضریب اصلاح آب (kg/10kg):</span>
+            <input type="number" data-key="correctionFactor" min="1" max="2" step="0.1" value="${factor}" style="width:60px; padding:2px 4px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
           </div>
           
-          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:0.95em; margin-bottom:15px;">
+          <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:11px; margin-bottom:10px;">
             <div>سیمان اضافی: <strong>${extraC.toFixed(2)}</strong> kg</div>
             <div>آب اضافی: <strong>${extraW.toFixed(2)}</strong> kg</div>
           </div>
           
-          <div class="formula-box" style="display:flex; align-items:center; gap:15px; font-size:0.95em; padding:10px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0; direction:ltr;">
-            <div style="font-weight:bold; font-family:monospace;">C_new = Wf_new / (W/C)</div>
-            <div style="display:flex; flex-direction:column; align-items:center;">
+          <div class="compact-formula" style="display:flex; align-items:center; gap:10px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0; direction:ltr; font-size:12px;">
+            <span style="font-weight:bold;">C_new =</span>
+            <div style="display:flex; flex-direction:column; align-items:center; font-size:11px;">
               <span style="border-bottom:1px solid #333; padding:0 5px;">${wfNew.toFixed(2)}</span>
               <span style="padding:0 5px;">${wc.toFixed(3)}</span>
             </div>
-            <div style="font-weight:bold; font-size:1.5em;">=</div>
-            <div style="background:#f1f5f9; padding:6px 15px; border:1px solid #cbd5e1; font-weight:bold; font-size:1.1em; border-radius:4px;">${cNew.toFixed(2)}</div>
-            <div>kg/m³</div>
+            <span style="font-weight:bold;">=</span>
+            <span style="background:#e2e8f0; padding:4px 8px; border-radius:4px; font-weight:bold;">${cNew.toFixed(2)}</span>
           </div>
         </div>
 
-        <div style="margin-top:20px;">
-          <label style="font-weight:bold; margin-bottom:10px; display:block;">لطفاً یک گزینه را انتخاب کنید:</label>
-          <select id="cement-action" style="width:100%; padding:10px; border-radius:8px; border:1px solid #fcd34d; font-family:inherit; font-size:0.95em; background:white; color:#92400e; cursor:pointer; outline:none;">
+        <div style="margin-top:12px;">
+          <select id="cement-action" style="width:100%; padding:8px; border-radius:6px; border:1px solid #fcd34d; font-family:inherit; font-size:12px; background:white; color:#92400e; cursor:pointer; outline:none;">
             <option value="" disabled ${data.cementAction === '' ? 'selected' : ''}>--- انتخاب کنید ---</option>
-            <option value="proceed" ${data.cementAction === 'proceed' ? 'selected' : ''}>۱. نادیده گرفتن مقدار سیمان و ادامه</option>
-            <option value="grading" ${data.cementAction === 'grading' ? 'selected' : ''}>۲. اصلاح بافت دانه‌بندی</option>
-            <option value="wc" ${data.cementAction === 'wc' ? 'selected' : ''}>۳. اصلاح نسبت آب به سیمان</option>
+            <option value="proceed" ${data.cementAction === 'proceed' ? 'selected' : ''}>1. نادیده گرفتن مقدار سیمان و ادامه</option>
+            <option value="grading" ${data.cementAction === 'grading' ? 'selected' : ''}>2. اصلاح بافت دانه‌بندی</option>
+            <option value="wc" ${data.cementAction === 'wc' ? 'selected' : ''}>3. اصلاح نسبت آب به سیمان</option>
           </select>
         </div>
       </div>
@@ -2263,7 +2263,7 @@ function view() {
             }
             syncWater();
             validate();
-          } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount') {
+          } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'cementAction') {
             // No strict validation needed for these keys
           } else if (key === 'water') {
             validate();
@@ -2886,4 +2886,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-   }
+}
