@@ -2840,4 +2840,187 @@ function injectWindowsTheme() {
       height: 8px;
     }
     .table-scroll::-webkit-scrollbar-thumb {
-      background: #c1c
+      background: #c1c1c1;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 600px) {
+      #tabs button { font-size: 11px; padding: 6px 2px; }
+      .panel { padding: 12px; }
+      .field { width: 100%; justify-content: space-between; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function startApp() {
+  injectWindowsTheme();
+  
+  const prev = document.getElementById('prev');
+  const next = document.getElementById('next');
+
+  if (!prev || !next) {
+    console.error('دکمه‌های پیمایش پیدا نشدند.');
+    return;
+  }
+
+  prev.onclick = () => {
+    page = Math.max(0, page - 1);
+    view();
+  };
+
+  next.onclick = () => {
+    page = Math.min(
+      titles.length - 1,
+      page + 1
+    );
+    view();
+  };
+
+  if (data.admixture === 'none') {
+    data.admixturePct = 0;
+  }
+
+  save();
+  view();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener(
+    'DOMContentLoaded',
+    startApp
+  );
+} else {
+  startApp();
+}
+
+/* =========================================
+   Service Worker
+========================================= */
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('./sw.js')
+      .catch(error => {
+        console.warn(
+          'Service Worker ثبت نشد:',
+          error
+        );
+      });
+  });
+}
+
+/* =========================================
+   کدهای جدید: منوی سه نقطه‌ای
+========================================= */
+
+function initNewMenu() {
+  const menuHTML = `
+    <div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
+      <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
+      <div id="app-menu-dropdown" style="display: none; position: absolute; top: 45px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
+        <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">💾 ذخیره طرح</button>
+        <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">📂 بازیابی طرح</button>
+        <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626; transition: background 0.2s;">🚪 خروج</button>
+      </div>
+    </div>
+    <input type="file" id="app-hidden-file-input" accept=".json" style="display: none;">
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', menuHTML);
+
+  const menuBtn = document.getElementById('app-menu-btn');
+  const menuDropdown = document.getElementById('app-menu-dropdown');
+  const menuSave = document.getElementById('app-menu-save');
+  const menuLoad = document.getElementById('app-menu-load');
+  const menuExit = document.getElementById('app-menu-exit');
+  const fileInput = document.getElementById('app-hidden-file-input');
+
+  menuBtn.onclick = (e) => {
+    e.stopPropagation();
+    menuDropdown.style.display = menuDropdown.style.display === 'none' ? 'block' : 'none';
+  };
+
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('app-options-menu').contains(e.target)) {
+      menuDropdown.style.display = 'none';
+    }
+  });
+
+  menuSave.onclick = () => {
+    menuDropdown.style.display = 'none';
+    if (confirm('آیا از ذخیره طرح اطمینان دارید؟')) {
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert('فایل طرح با موفقیت ذخیره شد.');
+    }
+  };
+
+  menuLoad.onclick = () => {
+    fileInput.click();
+    menuDropdown.style.display = 'none';
+  };
+
+  menuExit.onclick = () => {
+    menuDropdown.style.display = 'none';
+    const confirmSave = confirm('آیا مایل به ذخیره اطلاعات طرح قبل از خروج هستید؟');
+    if (confirmSave) {
+      const jsonStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setTimeout(() => {
+        window.close();
+        setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
+      }, 800);
+    } else {
+      window.close();
+      setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
+    }
+  };
+
+  fileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const loadedData = JSON.parse(event.target.result);
+        if (loadedData && typeof loadedData === 'object') {
+          Object.assign(data, loadedData);
+          save();
+          view();
+          alert('طرح با موفقیت بازیابی شد.');
+        } else {
+          alert('فایل انتخاب شده معتبر نیست.');
+        }
+      } catch (err) {
+        alert('خطا در خواندن فایل: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    fileInput.value = '';
+  };
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initNewMenu);
+} else {
+  initNewMenu();
+}
