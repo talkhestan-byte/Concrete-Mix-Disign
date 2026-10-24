@@ -20,6 +20,7 @@ const defaults = {
   grading: 'continuous',
   admixture: 'none',
   admixturePct: 0,
+  sgAdmixture: 1.1,
   limitMinCementOn: false,
   limitMinCement: 280,
   limitMaxCementOn: false,
@@ -29,7 +30,9 @@ const defaults = {
   air: 2,
   sgCement: 3.15,
   sgSand: 2.65,
+  waterAbsSand: 0.5,
   sgGravel: 2.70,
+  waterAbsGravel: 0.5,
   targetMethod: 'manual',
   workshopRank: 'A',
   targetStrengthManual: '',
@@ -122,7 +125,10 @@ const fields = {
   air: ['هوای بتن (%)', 0.1],
   sgCement: ['چگالی نسبی سیمان', 0.01],
   sgSand: ['چگالی نسبی ماسه', 0.01],
-  sgGravel: ['چگالی نسبی شن', 0.01]
+  waterAbsSand: ['درصد جذب آب ماسه (%)', 0.1],
+  sgGravel: ['چگالی نسبی شن', 0.01],
+  waterAbsGravel: ['درصد جذب آب شن (%)', 0.1],
+  sgAdmixture: ['چگالی نسبی افزودنی', 0.01]
 };
 
 /* =========================================
@@ -367,11 +373,17 @@ function validate() {
     air: 'درصد هوا',
     sgCement: 'چگالی سیمان',
     sgSand: 'چگالی ماسه',
-    sgGravel: 'چگالی شن'
+    waterAbsSand: 'درصد جذب آب ماسه',
+    sgGravel: 'چگالی شن',
+    waterAbsGravel: 'درصد جذب آب شن'
   };
 
   for (const [key, label] of Object.entries(required)) {
     requireNumber(key, label);
+  }
+
+  if (data.admixture !== 'none') {
+    requireNumber('sgAdmixture', 'چگالی افزودنی');
   }
 
   if (num('strength') <= 0) {
@@ -422,6 +434,10 @@ function validate() {
     }
   }
 
+  if (num('waterAbsSand') < 0 || num('waterAbsGravel') < 0) {
+    throw Error('درصد جذب آب نمی‌تواند منفی باشد.');
+  }
+
   if (data.admixture !== 'none') {
     const pct = requireNumber(
       'admixturePct',
@@ -430,6 +446,10 @@ function validate() {
 
     if (pct < 0 || pct >= 100) {
       throw Error('درصد افزودنی باید بین صفر و ۱۰۰ باشد.');
+    }
+    
+    if (num('sgAdmixture') <= 0) {
+       throw Error('چگالی افزودنی باید مثبت باشد.');
     }
   }
 
@@ -559,49 +579,44 @@ class Step5 {
 
     const cement = new Step4().run().cement;
     const water = effectiveWater();
-
+    const admixtureMass = data.admixture === 'none' ? 0 : cement * num('admixturePct') / 100;
+    const sgAdm = num('sgAdmixture') || 1.1;
+    
     const vc = cement / (num('sgCement') * 1000);
     const vw = water / 1000;
     const va = num('air') / 100;
+    const va_adm = data.admixture === 'none' ? 0 : admixtureMass / (sgAdm * 1000);
 
-    const aggregateVolume = 1 - vc - vw - va;
+    const aggregateVolume = 1 - vc - vw - va - va_adm;
 
     if (aggregateVolume <= 0) {
       throw Error('حجم باقی‌مانده برای سنگدانه مثبت نیست.');
     }
 
-    const gravelVolume =
-      aggregateVolume * num('coarseShare');
+    const gravelVolume = aggregateVolume * num('coarseShare');
+    const sandVolume = aggregateVolume - gravelVolume;
 
-    const sandVolume =
-      aggregateVolume - gravelVolume;
+    const ssdSand = sandVolume * num('sgSand') * 1000;
+    const ssdGravel = gravelVolume * num('sgGravel') * 1000;
 
-    const drySand =
-      sandVolume * num('sgSand') * 1000;
-
-    const dryGravel =
-      gravelVolume * num('sgGravel') * 1000;
-
-    const admixtureMass =
-      data.admixture === 'none'
-        ? 0
-        : cement * num('admixturePct') / 100;
+    const drySand = ssdSand / (1 + num('waterAbsSand') / 100);
+    const dryGravel = ssdGravel / (1 + num('waterAbsGravel') / 100);
 
     return {
       cement,
       water,
-      vc,
-      vw,
-      va,
-      aggregateVolume,
-      sandVolume,
-      gravelVolume,
+      ssdSand,
+      ssdGravel,
       drySand,
       dryGravel,
       admixtureMass,
-      volume:
-        vc + vw + va +
-        sandVolume + gravelVolume
+      vc,
+      vw,
+      va,
+      va_adm,
+      aggregateVolume,
+      sandVolume,
+      gravelVolume
     };
   }
 }
@@ -697,6 +712,15 @@ function renderHome() {
         data.admixture === 'none'
           ? 'min="0" max="99.9" disabled'
           : 'min="0" max="99.9"'
+      )}
+
+      ${numberInput(
+        'sgAdmixture',
+        'چگالی افزودنی',
+        0.01,
+        data.admixture === 'none'
+          ? 'disabled'
+          : ''
       )}
     </div>
 
@@ -981,7 +1005,9 @@ function renderAggregateTable() {
 
     <div class="grid">
       ${numberInput('sgSand', fields.sgSand[0], 0.01)}
+      ${numberInput('waterAbsSand', fields.waterAbsSand[0], 0.1)}
       ${numberInput('sgGravel', fields.sgGravel[0], 0.01)}
+      ${numberInput('waterAbsGravel', fields.waterAbsGravel[0], 0.1)}
     </div>
 
     ${renderTargetStrength()}
@@ -2085,26 +2111,29 @@ function renderReport() {
   const w = result.water;
   const air = data.air / 100;
   
-  const vc = c / (data.sgCement * 1000);
-  const vw = w / 1000;
-  const vAgg = 1 - vc - vw - air;
+  const vc = result.vc;
+  const vw = result.vw;
+  const va = result.va;
+  const va_adm = result.va_adm;
+  const vAgg = result.aggregateVolume;
   
   const shareGravel = data.coarseShare;
   const shareSand = 1 - shareGravel;
   
-  const volGravel = vAgg * shareGravel;
-  const volSand = vAgg * shareSand;
+  const volGravel = result.gravelVolume;
+  const volSand = result.sandVolume;
   
-  const massGravelSSD = volGravel * data.sgGravel * 1000;
-  const massSandSSD = volSand * data.sgSand * 1000;
+  const ssdGravel = result.ssdGravel;
+  const ssdSand = result.ssdSand;
   
-  const massGravelDry = massGravelSSD / (1 + 0); 
-  const massSandDry = massSandSSD / (1 + 0); 
+  const dryGravel = result.dryGravel;
+  const drySand = result.drySand;
   
-  const totalSSD = massGravelSSD + massSandSSD;
-  const totalDry = massGravelDry + massSandDry;
+  const totalSSD = ssdGravel + ssdSand;
+  const totalDry = dryGravel + drySand;
   
-  const finalDensity = c + w + totalSSD;
+  const finalDensitySSD = c + w + totalSSD;
+  const finalDensityDry = c + w + totalDry;
 
   return `
     <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1;">
@@ -2135,6 +2164,12 @@ function renderReport() {
             </div>
             <span>+</span>
             <span>${(air).toFixed(3)}</span>
+            ${data.admixture !== 'none' ? `
+            <span>+</span>
+            <div style="display: flex; flex-direction: column; align-items: center; font-size: 11px;">
+              <span style="border-bottom: 1px solid #333; padding: 0 5px;">${result.admixtureMass.toFixed(2)}</span>
+              <span style="padding: 0 5px;">${(data.sgAdmixture * 1000).toFixed(0)}</span>
+            </div>` : ''}
             <span style="font-weight: bold;">) =</span>
             <strong style="color: #2563eb;">${vAgg.toFixed(3)} m³</strong>
           </div>
@@ -2166,8 +2201,8 @@ function renderReport() {
               </tr>
               <tr>
                 <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">درصد جذب آب (%)</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">0</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">0</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${data.waterAbsSand}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${data.waterAbsGravel}</td>
               </tr>
               <tr style="background: #f8fafc;">
                 <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">درصد شکستگی</td>
@@ -2186,13 +2221,13 @@ function renderReport() {
               </tr>
               <tr>
                 <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">جرم SSD (kg)</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${massSandSSD.toFixed(0)}</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${massGravelSSD.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${ssdSand.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${ssdGravel.toFixed(0)}</td>
               </tr>
               <tr style="background: #f8fafc;">
                 <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">جرم خشک (kg)</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${massSandDry.toFixed(0)}</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${massGravelDry.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${drySand.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${dryGravel.toFixed(0)}</td>
               </tr>
             </tbody>
           </table>
@@ -2201,7 +2236,7 @@ function renderReport() {
 
       <!-- Section 3: Summary -->
       <div style="background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-        <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">خلاصه مقادیر نهایی</h3>
+        <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">خلاصه مقادیر نهایی (بر مبنای وزن خشک)</h3>
         <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; justify-content: space-between;">
           <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;">
             <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">جرم کل SSD (Assd)</div>
@@ -2212,12 +2247,12 @@ function renderReport() {
             <strong style="font-size: 16px; color: #0f172a;">${totalDry.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
           </div>
           <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #bae6fd;">
-            <div style="font-size: 11px; color: #0369a1; margin-bottom: 4px;">چگالی نهایی بتن (G)</div>
-            <strong style="font-size: 16px; color: #0284c7;">${finalDensity.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
+            <div style="font-size: 11px; color: #0369a1; margin-bottom: 4px;">چگالی نهایی بتن (G_SSD)</div>
+            <strong style="font-size: 16px; color: #0284c7;">${finalDensitySSD.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
           </div>
         </div>
         <div style="margin-top: 10px; font-size: 11px; color: #64748b; text-align: center; direction: ltr;">
-          G = C + Wf + Assd = ${c.toFixed(2)} + ${w.toFixed(2)} + ${totalSSD.toFixed(0)} = ${finalDensity.toFixed(2)} kg/m³
+          G_Dry = C + Wf + Ad = ${c.toFixed(2)} + ${w.toFixed(2)} + ${totalDry.toFixed(0)} = ${finalDensityDry.toFixed(0)} kg/m³
         </div>
       </div>
     </div>
@@ -2239,7 +2274,6 @@ function view() {
     return;
   }
 
-  // Remove unwanted text if it exists
   document.querySelectorAll('p, div, span').forEach(el => {
     if (el.textContent && el.textContent.includes('نسخه محاسبات مقدماتی است')) {
       el.remove();
@@ -2376,7 +2410,7 @@ function view() {
             }
             syncWater();
             validate();
-          } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'cementAction') {
+          } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'cementAction' || key === 'sgAdmixture') {
             // No strict validation needed for these keys
           } else if (key === 'water') {
             validate();
@@ -3023,4 +3057,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-}
+             }
