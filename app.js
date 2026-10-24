@@ -2,61 +2,34 @@
 
 /* =========================================
    طرح ملی مخلوط بتن
-   app.js  (اصلاح‌شده)
+   app.js  (نسخه نهایی با ۶ اصلاح تکمیلی)
 ========================================= */
 
 const STORAGE_KEY = 'beton479';
 
 const defaults = {
-  strength: 30,
-  slumpClass: 'S3',
-  slump: 125,
-  msa: 19,
-  aggregateCount: 2,
-  cementClass: '42.5',
-  water: 185,
-  wc: 0.50,
-  coarseShare: 0.60,
-  grading: 'continuous',
-  admixture: 'none',
-  admixturePct: 0,
-  sgAdmixture: 1.1,
-  limitMinCementOn: false,
-  limitMinCement: 280,
-  limitMaxCementOn: false,
-  limitMaxCement: 450,
-  limitWcOn: false,
-  limitWc: 0.50,
-  air: 2,
-  sgCement: 3.15,
-  sgSand: 2.65,
-  waterAbsSand: 0.5,
-  sgGravel: 2.70,
-  waterAbsGravel: 0.5,
-  targetMethod: 'manual',
-  workshopRank: 'A',
-  targetStrengthManual: '',
+  strength: 30, slumpClass: 'S3', slump: 125, msa: 19, aggregateCount: 2,
+  cementClass: '42.5', water: 185, wc: 0.50, coarseShare: 0.60,
+  grading: 'continuous', admixture: 'none', admixturePct: 0, sgAdmixture: 1.1,
+  limitMinCementOn: false, limitMinCement: 280,
+  limitMaxCementOn: false, limitMaxCement: 450,
+  limitWcOn: false, limitWc: 0.50,
+  air: 2, sgCement: 3.15, sgSand: 2.65, waterAbsSand: 0.5,
+  sgGravel: 2.70, waterAbsGravel: 0.5,
+  targetMethod: 'manual', workshopRank: 'A', targetStrengthManual: '',
   aggregateShares: ['', '', '', ''],
   showAggregateCurves: [true, true, true, true],
-  showMixCurve: true,
-  showReferenceCurves: true,
-  correctionFactor: 1.5,
-  cementAction: ''
+  showMixCurve: true, showReferenceCurves: true,
+  correctionFactor: 1.5, cementAction: ''
 };
 
 const sieves = [
-  { mm: 37.5, label: '37.5' },
-  { mm: 25, label: '25' },
-  { mm: 19, label: '19' },
-  { mm: 12.5, label: '12.5' },
-  { mm: 9.5, label: '9.5' },
-  { mm: 6.35, label: '6.35' },
-  { mm: 4.75, label: '4.75' },
-  { mm: 2.36, label: '2.36' },
-  { mm: 1.18, label: '1.18' },
-  { mm: 0.6, label: '0.6' },
-  { mm: 0.3, label: '0.3' },
-  { mm: 0.15, label: '0.15' }
+  { mm: 37.5, label: '37.5' }, { mm: 25, label: '25' },
+  { mm: 19, label: '19' }, { mm: 12.5, label: '12.5' },
+  { mm: 9.5, label: '9.5' }, { mm: 6.35, label: '6.35' },
+  { mm: 4.75, label: '4.75' }, { mm: 2.36, label: '2.36' },
+  { mm: 1.18, label: '1.18' }, { mm: 0.6, label: '0.6' },
+  { mm: 0.3, label: '0.3' }, { mm: 0.15, label: '0.15' }
 ];
 
 const slumpClasses = {
@@ -67,61 +40,46 @@ const slumpClasses = {
 };
 
 const standardDeviationTable = {
-  16: { A: 2.5, B: 3.5, C: 4.0 },
-  20: { A: 3.0, B: 4.0, C: 5.0 },
-  25: { A: 3.5, B: 4.5, C: 5.5 },
-  30: { A: 4.0, B: 5.0, C: 6.0 },
-  35: { A: 4.0, B: 5.0, C: 6.0 },
-  40: { A: 4.5, B: 5.5, C: 6.5 }
+  16: { A: 2.5, B: 3.5, C: 4.0 }, 20: { A: 3.0, B: 4.0, C: 5.0 },
+  25: { A: 3.5, B: 4.5, C: 5.5 }, 30: { A: 4.0, B: 5.0, C: 6.0 },
+  35: { A: 4.0, B: 5.0, C: 6.0 }, 40: { A: 4.5, B: 5.5, C: 6.5 }
 };
 
 const referenceCurves = {
   '9.5': {
-    A: [100, 100, 100, 100, 100,  90, 83, 66, 51, 37, 27, 12],
-    B: [100, 100, 100, 100, 100,  84, 74, 52, 35, 24, 14,  6],
-    C: [100, 100, 100, 100, 100,  75, 61, 37, 22, 12,  6,  2]
+    A: [100,100,100,100,100,90,83,66,51,37,27,12],
+    B: [100,100,100,100,100,84,74,52,35,24,14,6],
+    C: [100,100,100,100,100,75,61,37,22,12,6,2]
   },
   '12.5': {
-    A: [100, 100, 100, 100, 93, 84, 77, 62, 48, 35, 24, 11],
-    B: [100, 100, 100, 100, 89, 75, 66, 47, 32, 21, 13,  6],
-    C: [100, 100, 100, 100, 82, 62, 51, 31, 18, 10,  5,  2]
+    A: [100,100,100,100,93,84,77,62,48,35,24,11],
+    B: [100,100,100,100,89,75,66,47,32,21,13,6],
+    C: [100,100,100,100,82,62,51,31,18,10,5,2]
   },
   '19': {
-    A: [100, 100, 100, 90, 84, 76, 70, 56, 44, 31, 20, 10],
-    B: [100, 100, 100, 85, 75, 62, 55, 40, 28, 18, 11,  5],
-    C: [100, 100, 100, 74, 62, 47, 38, 22, 13,  8,  4,  2]
+    A: [100,100,100,90,84,76,70,56,44,31,20,10],
+    B: [100,100,100,85,75,62,55,40,28,18,11,5],
+    C: [100,100,100,74,62,47,38,22,13,8,4,2]
   },
   '25': {
-    A: [100, 100, 94, 85, 79, 71, 65, 52, 41, 29, 19,  9],
-    B: [100, 100, 89, 75, 67, 56, 49, 36, 25, 16,  9,  4],
-    C: [100, 100, 82, 62, 51, 39, 32, 19, 11,  6,  3,  1]
+    A: [100,100,94,85,79,71,65,52,41,29,19,9],
+    B: [100,100,89,75,67,56,49,36,25,16,9,4],
+    C: [100,100,82,62,51,39,32,19,11,6,3,1]
   }
 };
 
 const SIEVE_635_INDEX = sieves.findIndex(s => s.mm === 6.35);
-
-const aggregateSieves = sieves
-  .map((sieve, j) => ({ sieve, j }))
-  .filter(({ sieve }) => sieve.mm !== 6.35);
-
+const aggregateSieves = sieves.map((sieve, j) => ({ sieve, j })).filter(({ sieve }) => sieve.mm !== 6.35);
 const chartSieves = sieves.filter(s => s.mm !== 6.35);
 
-const titles = [
-  'اطلاعات اولیه',
-  'مشخصات سنگدانه‌ها',
-  'سهم‌بندی سنگدانه‌ها',
-  '1. آب به سیمان',
-  '2. آب آزاد',
-  '3. مقدار سیمان',
-  'گزارش نهایی'
-];
+const titles = ['اطلاعات اولیه','مشخصات سنگدانه‌ها','سهم‌بندی سنگدانه‌ها','1. آب به سیمان','2. آب آزاد','3. مقدار سیمان','گزارش نهایی'];
 
 const fields = {
   strength: ['مقاومت مشخصه استوانه‌ای (MPa)', 0.1],
   slump: ['اسلامپ (mm)', 1],
   water: ['آب آزاد پایه (kg/m³)', 0.1],
   wc: ['نسبت آب به سیمان', 0.001],
-  coarseShare: ['سهم حجمی شن از کل سنگدانه', 0.001],
+  coarseShare: ['سهم حجمی شن از کل سنگدانه (بین 0 و 1)', 0.01],
   air: ['هوای بتن (%)', 0.1],
   sgCement: ['چگالی نسبی سیمان', 0.01],
   sgSand: ['چگالی نسبی ماسه', 0.01],
@@ -138,9 +96,7 @@ const fields = {
 let stored = {};
 try {
   stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {};
-} catch (_) {
-  stored = {};
-}
+} catch (_) { stored = {}; }
 
 const data = { ...defaults, ...stored };
 
@@ -152,38 +108,25 @@ function defaultAggregate(index) {
   };
 }
 
-/* ---- نرمال‌سازی (قابل فراخوانی مجدد پس از بارگذاری JSON) ---- */
-
 function sanitizeData() {
-  if (!['S1', 'S2', 'S3', 'S4'].includes(data.slumpClass)) {
-    data.slumpClass = 'S3';
-  }
-  if (!['none', 'slump', 'water_reducer'].includes(data.admixture)) {
-    data.admixture = 'none';
-  }
-  if (!['manual', 'auto'].includes(data.targetMethod)) {
-    data.targetMethod = 'manual';
-  }
-  if (!['A', 'B', 'C'].includes(data.workshopRank)) {
-    data.workshopRank = 'A';
-  }
-  if (!['32.5', '42.5', '52.5'].includes(String(data.cementClass))) {
-    data.cementClass = '42.5';
-  }
-  if (!['continuous', 'gap_graded'].includes(data.grading)) {
-    data.grading = 'continuous';
-  }
+  if (!['S1','S2','S3','S4'].includes(data.slumpClass)) data.slumpClass = 'S3';
+  if (!['none','slump','water_reducer'].includes(data.admixture)) data.admixture = 'none';
+  if (!['manual','auto'].includes(data.targetMethod)) data.targetMethod = 'manual';
+  if (!['A','B','C'].includes(data.workshopRank)) data.workshopRank = 'A';
+  if (!['32.5','42.5','52.5'].includes(String(data.cementClass))) data.cementClass = '42.5';
+  if (!['continuous','gap_graded'].includes(data.grading)) data.grading = 'continuous';
+  if (!['','proceed','grading','wc'].includes(data.cementAction)) data.cementAction = '';
 
   data.limitMinCementOn = data.limitMinCementOn === true;
   data.limitMaxCementOn = data.limitMaxCementOn === true;
   data.limitWcOn = data.limitWcOn === true;
 
   const numericFallbacks = {
-    strength: 30, slump: 125, water: 185, wc: 0.5,
-    coarseShare: 0.6, air: 2, sgCement: 3.15, sgSand: 2.65,
-    sgGravel: 2.7, waterAbsSand: 0.5, waterAbsGravel: 0.5,
-    sgAdmixture: 1.1, admixturePct: 0, limitMinCement: 280,
-    limitMaxCement: 450, limitWc: 0.5, correctionFactor: 1.5
+    strength: 30, slump: 125, water: 185, wc: 0.5, coarseShare: 0.6,
+    air: 2, sgCement: 3.15, sgSand: 2.65, sgGravel: 2.7,
+    waterAbsSand: 0.5, waterAbsGravel: 0.5, sgAdmixture: 1.1,
+    admixturePct: 0, limitMinCement: 280, limitMaxCement: 450,
+    limitWc: 0.5, correctionFactor: 1.5
   };
   for (const [k, fb] of Object.entries(numericFallbacks)) {
     if (!Number.isFinite(Number(data[k]))) data[k] = fb;
@@ -199,12 +142,9 @@ function normalizeData() {
   data.aggregates = data.aggregates.map((a, i) => {
     const base = defaultAggregate(i);
     const sourcePassing = Array.isArray(a.passing) ? a.passing.slice() : [];
-    if (sourcePassing.length === 11) {
-      sourcePassing.splice(SIEVE_635_INDEX, 0, '');
-    }
+    if (sourcePassing.length === 11) sourcePassing.splice(SIEVE_635_INDEX, 0, '');
     return {
-      ...base,
-      ...a,
+      ...base, ...a,
       passing: sieves.map((sieve, j) => {
         if (sieve.mm === 6.35) return '';
         const v = sourcePassing[j];
@@ -213,9 +153,7 @@ function normalizeData() {
     };
   });
 
-  while (data.aggregates.length < 4) {
-    data.aggregates.push(defaultAggregate(data.aggregates.length));
-  }
+  while (data.aggregates.length < 4) data.aggregates.push(defaultAggregate(data.aggregates.length));
   data.aggregates = data.aggregates.slice(0, 4);
 
   data.aggregateCount = Math.max(2, Math.min(4, Number(data.aggregateCount) || 2));
@@ -241,20 +179,15 @@ normalizeData();
 let page = 0;
 
 function save() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch (error) {
-    console.warn('ذخیره اطلاعات ناموفق بود', error);
-  }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  catch (error) { console.warn('ذخیره اطلاعات ناموفق بود', error); }
 }
 
-function num(key) {
-  return Number(data[key]);
-}
+function num(key) { return Number(data[key]); }
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   })[ch]);
 }
 
@@ -266,15 +199,9 @@ function numberInput(key, label, step, extra = '') {
   return `
     <label class="field">
       <span>${label}</span>
-      <input
-        type="text"
-        inputmode="decimal"
-        enterkeyhint="next"
-        data-key="${key}"
-        data-step="${step}"
-        value="${escapeHtml(data[key] ?? '')}"
-        ${extra}
-      >
+      <input type="text" inputmode="decimal" enterkeyhint="next"
+        data-key="${key}" data-step="${step}"
+        value="${escapeHtml(data[key] ?? '')}" ${extra}>
     </label>
   `;
 }
@@ -284,9 +211,7 @@ function selectInput(key, label, options) {
     <label class="field">
       <span>${label}</span>
       <select data-key="${key}">
-        ${options.map(o => `
-          <option value="${o.value}" ${selected(key, o.value)}>${o.label}</option>
-        `).join('')}
+        ${options.map(o => `<option value="${o.value}" ${selected(key, o.value)}>${o.label}</option>`).join('')}
       </select>
     </label>
   `;
@@ -310,57 +235,39 @@ function requireNumber(key, label) {
 
 function effectiveWater() {
   const water = num('water');
-  if (data.admixture !== 'none') {
-    return water * (1 - num('admixturePct') / 100);
-  }
+  if (data.admixture !== 'none') return water * (1 - num('admixturePct') / 100);
   return water;
 }
 
 function validate() {
   const required = {
-    strength: 'مقاومت مشخصه',
-    slump: 'اسلامپ',
-    msa: 'NMSA',
-    water: 'آب آزاد',
-    wc: 'نسبت آب به سیمان',
-    coarseShare: 'سهم شن',
-    air: 'درصد هوا',
-    sgCement: 'چگالی سیمان',
-    sgSand: 'چگالی ماسه',
-    waterAbsSand: 'درصد جذب آب ماسه',
-    sgGravel: 'چگالی شن',
+    strength: 'مقاومت مشخصه', slump: 'اسلامپ', msa: 'NMSA',
+    water: 'آب آزاد', wc: 'نسبت آب به سیمان', coarseShare: 'سهم شن',
+    air: 'درصد هوا', sgCement: 'چگالی سیمان', sgSand: 'چگالی ماسه',
+    waterAbsSand: 'درصد جذب آب ماسه', sgGravel: 'چگالی شن',
     waterAbsGravel: 'درصد جذب آب شن'
   };
-  for (const [key, label] of Object.entries(required)) {
-    requireNumber(key, label);
-  }
+  for (const [key, label] of Object.entries(required)) requireNumber(key, label);
 
-  if (data.admixture !== 'none') {
-    requireNumber('sgAdmixture', 'چگالی افزودنی');
-  }
-
+  if (data.admixture !== 'none') requireNumber('sgAdmixture', 'چگالی افزودنی');
   if (num('strength') <= 0) throw Error('مقاومت مشخصه باید مثبت باشد.');
 
   const range = slumpRange();
-  if (num('slump') < range.min || num('slump') > range.max) {
+  if (num('slump') < range.min || num('slump') > range.max)
     throw Error(`اسلامپ باید بین ${range.min} و ${range.max} باشد.`);
-  }
 
   if (![9.5, 12.5, 19, 25].includes(num('msa'))) throw Error('NMSA معتبر نیست.');
   if (num('water') <= 0) throw Error('آب آزاد باید مثبت باشد.');
   if (num('wc') <= 0 || num('wc') >= 1) throw Error('نسبت آب به سیمان باید بین صفر و یک باشد.');
-  if (num('coarseShare') <= 0 || num('coarseShare') >= 1) {
+  if (num('coarseShare') <= 0 || num('coarseShare') >= 1)
     throw Error('سهم حجمی شن باید بین صفر و یک باشد.');
-  }
   if (num('air') < 0 || num('air') >= 15) throw Error('درصد هوا باید بین صفر و ۱۵ باشد.');
 
-  for (const key of ['sgCement', 'sgSand', 'sgGravel']) {
+  for (const key of ['sgCement','sgSand','sgGravel'])
     if (num(key) <= 0) throw Error('چگالی نسبی باید مثبت باشد.');
-  }
 
-  if (num('waterAbsSand') < 0 || num('waterAbsGravel') < 0) {
+  if (num('waterAbsSand') < 0 || num('waterAbsGravel') < 0)
     throw Error('درصد جذب آب نمی‌تواند منفی باشد.');
-  }
 
   if (data.admixture !== 'none') {
     const pct = requireNumber('admixturePct', 'درصد افزودنی');
@@ -372,23 +279,18 @@ function validate() {
 
   if (data.limitMinCementOn) {
     const minimum = requireNumber('limitMinCement', 'حداقل سیمان');
-    if (minimum <= 0 || cement < minimum) {
+    if (minimum <= 0 || cement < minimum)
       throw Error('مقدار سیمان از حداقل تعیین‌شده کمتر است.');
-    }
   }
-
   if (data.limitMaxCementOn) {
     const maximum = requireNumber('limitMaxCement', 'حداکثر سیمان');
-    if (maximum <= 0 || cement > maximum) {
+    if (maximum <= 0 || cement > maximum)
       throw Error('مقدار سیمان از حداکثر تعیین‌شده بیشتر است.');
-    }
   }
-
   if (data.limitWcOn) {
     const maximum = requireNumber('limitWc', 'حداکثر نسبت آب به سیمان');
-    if (maximum <= 0 || maximum >= 1 || num('wc') > maximum) {
+    if (maximum <= 0 || maximum >= 1 || num('wc') > maximum)
       throw Error('نسبت آب به سیمان از حداکثر مجاز بیشتر است.');
-    }
   }
 }
 
@@ -396,21 +298,19 @@ function validateAggregates() {
   for (let i = 0; i < data.aggregateCount; i++) {
     const a = data.aggregates[i];
     if (a.fracture === '' || !Number.isFinite(Number(a.fracture)) ||
-        Number(a.fracture) < 0 || Number(a.fracture) > 100) {
+        Number(a.fracture) < 0 || Number(a.fracture) > 100)
       throw Error(`درصد شکستگی سنگدانه ${i + 1} نامعتبر است.`);
-    }
+
     let previous = null;
     for (let j = 0; j < sieves.length; j++) {
       if (sieves[j].mm === 6.35) continue;
       const raw = a.passing[j];
       if (raw === '' || raw == null) continue;
       const value = Number(raw);
-      if (!Number.isFinite(value) || value < 0 || value > 100) {
+      if (!Number.isFinite(value) || value < 0 || value > 100)
         throw Error(`درصد عبوری سنگدانه ${i + 1} از الک ${sieves[j].mm} نامعتبر است.`);
-      }
-      if (previous !== null && value > previous) {
+      if (previous !== null && value > previous)
         throw Error(`در سنگدانه ${i + 1} درصد عبوری الک ${sieves[j].mm} از الک درشت‌تر بیشتر است.`);
-      }
       previous = value;
     }
   }
@@ -420,54 +320,29 @@ function validateAggregates() {
    محاسبات
 ========================================= */
 
-class Step1 {
-  run() {
-    return { wc: num('wc'), strength: num('strength') };
-  }
-}
-
-class Step3 {
-  run() {
-    return { baseWater: num('water'), water: effectiveWater() };
-  }
-}
-
-class Step4 {
-  run() {
-    validate();
-    return { cement: effectiveWater() / num('wc') };
-  }
-}
+class Step1 { run() { return { wc: num('wc'), strength: num('strength') }; } }
+class Step3 { run() { return { baseWater: num('water'), water: effectiveWater() }; } }
+class Step4 { run() { validate(); return { cement: effectiveWater() / num('wc') }; } }
 
 class Step5 {
-  /**
-   * @param {Object} overrides - { water?: number, cement?: number }
-   *   اعمال مقادیر اصلاح‌شده بدون نیاز به بازنویسی state اصلی
-   */
   run(overrides = {}) {
     validate();
-
     const water = Number.isFinite(overrides.water) ? overrides.water : effectiveWater();
     const cement = Number.isFinite(overrides.cement) ? overrides.cement : (water / num('wc'));
-    const admixtureMass = data.admixture === 'none'
-      ? 0
-      : cement * num('admixturePct') / 100;
+    const admixtureMass = data.admixture === 'none' ? 0 : cement * num('admixturePct') / 100;
     const sgAdm = num('sgAdmixture') || 1.1;
 
     const vc = cement / (num('sgCement') * 1000);
     const vw = water / 1000;
     const va = num('air') / 100;
     const va_adm = data.admixture === 'none' ? 0 : admixtureMass / (sgAdm * 1000);
-
     const aggregateVolume = 1 - vc - vw - va - va_adm;
     if (aggregateVolume <= 0) throw Error('حجم باقی‌مانده برای سنگدانه مثبت نیست.');
 
     const gravelVolume = aggregateVolume * num('coarseShare');
     const sandVolume = aggregateVolume - gravelVolume;
-
     const ssdSand = sandVolume * num('sgSand') * 1000;
     const ssdGravel = gravelVolume * num('sgGravel') * 1000;
-
     const drySand = ssdSand / (1 + num('waterAbsSand') / 100);
     const dryGravel = ssdGravel / (1 + num('waterAbsGravel') / 100);
 
@@ -511,12 +386,9 @@ function renderHome() {
 
     <div class="grid">
       ${numberInput('strength', fields.strength[0], 0.1)}
-
       ${selectInput('slumpClass', 'رده اسلامپ',
         Object.entries(slumpClasses).map(([value, item]) => ({ value, label: item.label })))}
-
       ${numberInput('slump', fields.slump[0], 1, `min="${range.min}" max="${range.max}"`)}
-
       ${numberInput('air', fields.air[0], 0.1)}
     </div>
 
@@ -527,6 +399,7 @@ function renderHome() {
         { value: '52.5', label: '52.5' }
       ])}
       ${numberInput('sgCement', fields.sgCement[0], 0.01)}
+      ${numberInput('coarseShare', fields.coarseShare[0], 0.01, 'min="0.01" max="0.99"')}
     </div>
 
     <div class="grid">
@@ -535,22 +408,17 @@ function renderHome() {
         { value: 'slump', label: 'افزودنی افزایش‌دهنده اسلامپ' },
         { value: 'water_reducer', label: 'افزودنی کاهنده نیاز آب' }
       ])}
-
       ${numberInput('admixturePct', 'درصد افزودنی نسبت به جرم سیمان (%)', 0.1,
         data.admixture === 'none' ? 'min="0" max="99.9" disabled' : 'min="0" max="99.9"')}
-
       ${numberInput('sgAdmixture', 'چگالی افزودنی', 0.01,
         data.admixture === 'none' ? 'disabled' : '')}
     </div>
 
     <h3>کنترل‌های اختیاری طرح</h3>
-
     ${checkboxField('limitMinCementOn', 'اعمال حداقل مقدار سیمان',
       'limitMinCement', 'حداقل سیمان (kg/m³)', 1)}
-
     ${checkboxField('limitMaxCementOn', 'اعمال حداکثر مقدار سیمان',
       'limitMaxCement', 'حداکثر سیمان (kg/m³)', 1)}
-
     ${checkboxField('limitWcOn', 'اعمال حداکثر نسبت آب به سیمان',
       'limitWc', 'حداکثر نسبت آب به سیمان', 0.001)}
   `;
@@ -575,14 +443,11 @@ function getClosestDeviationRow(fc) {
 function targetCalculations() {
   let fc = num('strength');
   if (!Number.isFinite(fc) || fc <= 0) fc = 30;
-
   const row = getClosestDeviationRow(fc);
   if (!row) return null;
-
   let S = row[data.workshopRank];
   if (!Number.isFinite(S)) S = row['A'];
   if (!Number.isFinite(S)) S = 4.0;
-
   const fcm1 = fc + 1.34 * S;
   const fcm2 = 0.9 * fc + 2.33 * S;
   return { fc, S, fcm1, fcm2, target: Math.max(fcm1, fcm2) };
@@ -605,13 +470,11 @@ function renderTargetStrength() {
 
   return `
     <h3>تعیین مقاومت هدف طرح</h3>
-
     <div class="grid">
       ${selectInput('targetMethod', 'روش تعیین مقاومت هدف', [
         { value: 'manual', label: 'ورود دستی' },
         { value: 'auto', label: 'محاسبه خودکار' }
       ])}
-
       ${selectInput('workshopRank', 'رتبه کارگاه', [
         { value: 'A', label: 'الف' },
         { value: 'B', label: 'ب' },
@@ -620,7 +483,6 @@ function renderTargetStrength() {
     </div>
 
     <p>مقاومت مشخصه: <strong>${Number.isFinite(fc) ? fc.toFixed(2) : '—'} MPa</strong></p>
-
     ${result
       ? `<p>انحراف معیار S: <strong>${result.S.toFixed(2)} MPa</strong></p>`
       : `<p class="hint">برای این مقاومت، مقدار انحراف معیار در جدول فعلی موجود نیست.</p>`}
@@ -628,15 +490,11 @@ function renderTargetStrength() {
     ${data.targetMethod === 'manual'
       ? numberInput('targetStrengthManual', 'مقاومت هدف طرح (MPa)', 0.1, 'min="0"')
       : result
-        ? `
-          <p>رابطه اول: fcm1 = fc + 1.34 × S</p>
-          <p>${fc.toFixed(2)} + 1.34 × ${result.S.toFixed(2)} = ${result.fcm1.toFixed(2)} MPa</p>
-
-          <p>رابطه دوم: fcm2 = 0.9 × fc + 2.33 × S</p>
-          <p>0.9 × ${fc.toFixed(2)} + 2.33 × ${result.S.toFixed(2)} = ${result.fcm2.toFixed(2)} MPa</p>
-
-          <p>مقاومت هدف انتخابی: <strong>${result.target.toFixed(2)} MPa</strong></p>
-        `
+        ? `<p>رابطه اول: fcm1 = fc + 1.34 × S</p>
+           <p>${fc.toFixed(2)} + 1.34 × ${result.S.toFixed(2)} = ${result.fcm1.toFixed(2)} MPa</p>
+           <p>رابطه دوم: fcm2 = 0.9 × fc + 2.33 × S</p>
+           <p>0.9 × ${fc.toFixed(2)} + 2.33 × ${result.S.toFixed(2)} = ${result.fcm2.toFixed(2)} MPa</p>
+           <p>مقاومت هدف انتخابی: <strong>${result.target.toFixed(2)} MPa</strong></p>`
         : `<p class="hint">محاسبه خودکار در دسترس نیست.</p>`}
   `;
 }
@@ -653,11 +511,9 @@ function renderAggregateTable() {
     <tr>
       <th>نام سنگدانه</th>
       ${Array.from({ length: count }, (_, i) => `
-        <td>
-          <input class="table-input" type="text" enterkeyhint="next"
-            data-agg="${i}" data-agg-field="name"
-            value="${escapeHtml(data.aggregates[i].name)}">
-        </td>
+        <td><input class="table-input" type="text" enterkeyhint="next"
+          data-agg="${i}" data-agg-field="name"
+          value="${escapeHtml(data.aggregates[i].name)}"></td>
       `).join('')}
     </tr>
   `;
@@ -666,12 +522,10 @@ function renderAggregateTable() {
     <tr>
       <th>درصد شکستگی (%)</th>
       ${Array.from({ length: count }, (_, i) => `
-        <td>
-          <input class="table-input" type="text" inputmode="decimal"
-            enterkeyhint="next" min="0" max="100"
-            data-agg="${i}" data-agg-field="fracture"
-            value="${data.aggregates[i].fracture}">
-        </td>
+        <td><input class="table-input" type="text" inputmode="decimal"
+          enterkeyhint="next" min="0" max="100"
+          data-agg="${i}" data-agg-field="fracture"
+          value="${data.aggregates[i].fracture}"></td>
       `).join('')}
     </tr>
   `;
@@ -682,12 +536,10 @@ function renderAggregateTable() {
       <tr>
         <th>درصد عبوری از الک ${sieve.label}</th>
         ${Array.from({ length: count }, (_, i) => `
-          <td>
-            <input class="table-input" type="text" inputmode="decimal"
-              enterkeyhint="next" min="0" max="100"
-              data-agg="${i}" data-sieve="${j}"
-              value="${data.aggregates[i].passing[j] ?? ''}">
-          </td>
+          <td><input class="table-input" type="text" inputmode="decimal"
+            enterkeyhint="next" min="0" max="100"
+            data-agg="${i}" data-sieve="${j}"
+            value="${data.aggregates[i].passing[j] ?? ''}"></td>
         `).join('')}
       </tr>
     `;
@@ -698,16 +550,11 @@ function renderAggregateTable() {
 
     <div class="grid">
       ${selectInput('aggregateCount', 'تعداد انواع سنگدانه', [
-        { value: 2, label: '2' },
-        { value: 3, label: '3' },
-        { value: 4, label: '4' }
+        { value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }
       ])}
-
       ${selectInput('msa', 'حداکثر اندازه اسمی سنگدانه NMSA', [
-        { value: 9.5, label: '9.5' },
-        { value: 12.5, label: '12.5' },
-        { value: 19, label: '19' },
-        { value: 25, label: '25' }
+        { value: 9.5, label: '9.5' }, { value: 12.5, label: '12.5' },
+        { value: 19, label: '19' }, { value: 25, label: '25' }
       ])}
     </div>
 
@@ -719,7 +566,6 @@ function renderAggregateTable() {
     </div>
 
     <h3>مشخصات تکمیلی مصالح</h3>
-
     <div class="grid">
       ${numberInput('sgSand', fields.sgSand[0], 0.01)}
       ${numberInput('waterAbsSand', fields.waterAbsSand[0], 0.1)}
@@ -738,16 +584,11 @@ function renderAggregateTable() {
 function getSharesInfo() {
   const count = data.aggregateCount;
   const shares = data.aggregateShares.slice(0, count);
-
   const entered = shares.every(v =>
     v !== '' && v != null && Number.isFinite(Number(v)) &&
     Number(v) >= 0 && Number(v) <= 100
   );
-
-  const total = entered
-    ? shares.reduce((sum, value) => sum + Number(value), 0)
-    : null;
-
+  const total = entered ? shares.reduce((sum, value) => sum + Number(value), 0) : null;
   return {
     count, shares, entered, total,
     valid: entered && Math.abs(total - 100) < 0.0001
@@ -757,7 +598,6 @@ function getSharesInfo() {
 function combinedGrading() {
   const info = getSharesInfo();
   if (!info.valid) return null;
-
   const aggregates = data.aggregates.slice(0, info.count);
   const allEntered = aggregates.every(a =>
     aggregateSieves.every(({ j }) => {
@@ -767,12 +607,10 @@ function combinedGrading() {
     })
   );
   if (!allEntered) return null;
-
   return aggregateSieves.map(({ sieve, j }) => ({
     mm: sieve.mm,
-    value: aggregates.reduce(
-      (sum, a, i) => sum + Number(a.passing[j]) * Number(info.shares[i]) / 100, 0
-    )
+    value: aggregates.reduce((sum, a, i) =>
+      sum + Number(a.passing[j]) * Number(info.shares[i]) / 100, 0)
   }));
 }
 
@@ -796,28 +634,19 @@ function getReferenceSeries() {
   const msa = Number(data.msa);
   const source = referenceCurves[String(msa)];
   if (!source) return [];
-
   const result = [];
-  for (const name of ['A', 'B', 'C']) {
+  for (const name of ['A','B','C']) {
     const values = source[name];
     if (!Array.isArray(values) || values.length !== sieves.length) continue;
-
-    const points = sieves
-      .map((sieve, i) => ({ mm: sieve.mm, value: values[i] }))
+    const points = sieves.map((sieve, i) => ({ mm: sieve.mm, value: values[i] }))
       .filter(p => p.mm <= msa + 0.001);
     if (!points.length) continue;
-
-    if (!points.every(p =>
-      typeof p.value === 'number' && Number.isFinite(p.value) &&
-      p.value >= 0 && p.value <= 100
-    )) continue;
-
+    if (!points.every(p => typeof p.value === 'number' &&
+      Number.isFinite(p.value) && p.value >= 0 && p.value <= 100)) continue;
     let monotonic = true;
-    for (let i = 1; i < points.length; i++) {
+    for (let i = 1; i < points.length; i++)
       if (points[i].value > points[i - 1].value + 0.0001) { monotonic = false; break; }
-    }
     if (!monotonic) continue;
-
     result.push({ name, points });
   }
   return result;
@@ -828,8 +657,7 @@ function getReferenceSeries() {
 ========================================= */
 
 function renderGradingChart(combined) {
-  const width = 680;
-  const height = 390;
+  const width = 680, height = 390;
   const left = 65, right = 25, top = 25, bottom = 75;
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
@@ -840,17 +668,16 @@ function renderGradingChart(combined) {
   const y = value => top + (100 - value) / 100 * plotHeight;
 
   function drawSeries(points, color, dash = '', thickness = 2.5, sieveList = sieves) {
-    let valid = points
-      .filter(p => p.value !== '' && p.value != null &&
-        Number.isFinite(Number(p.value)) &&
-        Number(p.value) >= 0 && Number(p.value) <= 100)
-      .sort((a, b) => a.mm - b.mm);
+    let valid = points.filter(p =>
+      p.value !== '' && p.value != null &&
+      Number.isFinite(Number(p.value)) &&
+      Number(p.value) >= 0 && Number(p.value) <= 100
+    ).sort((a, b) => a.mm - b.mm);
     if (!valid.length) return '';
 
     const first100Index = valid.findIndex(p => Number(p.value) === 100);
     let last0Index = -1;
     valid.forEach((p, idx) => { if (Number(p.value) === 0) last0Index = idx; });
-
     valid = valid.filter((p, idx) => {
       const v = Number(p.value);
       if (v === 100 && idx !== first100Index) return false;
@@ -887,13 +714,11 @@ function renderGradingChart(combined) {
   const aggregateColors = ['#2563eb', '#ea580c', '#16a34a', '#9333ea'];
   const referenceColor = '#0ea5e9';
 
-  const aggregateLines = data.aggregates
-    .slice(0, data.aggregateCount)
-    .map((aggregate, i) => {
-      if (!data.showAggregateCurves[i]) return '';
-      const points = sieves.map((sieve, j) => ({ mm: sieve.mm, value: aggregate.passing[j] }));
-      return drawSeries(points, aggregateColors[i], '6 4', 2.2, chartSieves);
-    }).join('');
+  const aggregateLines = data.aggregates.slice(0, data.aggregateCount).map((aggregate, i) => {
+    if (!data.showAggregateCurves[i]) return '';
+    const points = sieves.map((sieve, j) => ({ mm: sieve.mm, value: aggregate.passing[j] }));
+    return drawSeries(points, aggregateColors[i], '6 4', 2.2, chartSieves);
+  }).join('');
 
   const referenceSeries = getReferenceSeries();
   const referenceLines = data.showReferenceCurves
@@ -920,13 +745,10 @@ function renderGradingChart(combined) {
     <div class="table-scroll">
       <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="نمودار دانه‌بندی"
         style="width:100%;max-width:900px;background:white">
-        ${horizontalGrid}
-        ${xTicks}
+        ${horizontalGrid}${xTicks}
         <line x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
         <line x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
-        ${referenceLines}
-        ${aggregateLines}
-        ${mixLine}
+        ${referenceLines}${aggregateLines}${mixLine}
         <text x="${width / 2}" y="${height - 16}" text-anchor="middle" font-size="13" fill="#334155">اندازه الک (mm) ـ مقیاس لگاریتمی</text>
         <text x="17" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155"
           transform="rotate(-90 17 ${height / 2})">درصد عبوری</text>
@@ -941,7 +763,6 @@ function renderGradingChart(combined) {
 
 function renderShares() {
   const count = data.aggregateCount;
-
   const shareInputs = Array.from({ length: count }, (_, i) => {
     const name = data.aggregates[i].name || `سنگدانه ${i + 1}`;
     return `
@@ -969,7 +790,6 @@ function renderShares() {
 
   return `
     <h2>سهم‌بندی سنگدانه‌ها</h2>
-
     <div class="grid">${shareInputs}</div>
 
     <h3>انتخاب منحنی‌های قابل نمایش</h3>
@@ -986,7 +806,6 @@ function renderShares() {
     </div>
 
     <p>مدول نرمی مخلوط: <strong>${fm === null ? 'تعیین نشده' : fm.toFixed(2)}</strong></p>
-
     ${renderGradingChart(combined)}
   `;
 }
@@ -1037,43 +856,29 @@ function getActiveCurve() {
       }
     };
   }
-
   return curveSet[cement] ? curveSet[cement][type] : curveSet['42.5']['C'];
 }
 
 function calculateStrength(wc, curve) {
-  if (!curve) return null;
-  if (!Number.isFinite(wc) || wc <= 0) return null;
+  if (!curve || !Number.isFinite(wc) || wc <= 0) return null;
   let y;
-  if (curve.d !== undefined) {
-    y = curve.a * Math.pow(wc, 3) + curve.b * Math.pow(wc, 2) + curve.c * wc + curve.d;
-  } else {
-    y = curve.a * Math.pow(wc, 2) + curve.b * wc + curve.c;
-  }
+  if (curve.d !== undefined) y = curve.a * Math.pow(wc, 3) + curve.b * Math.pow(wc, 2) + curve.c * wc + curve.d;
+  else y = curve.a * Math.pow(wc, 2) + curve.b * wc + curve.c;
   if (!Number.isFinite(y)) return null;
   return Math.max(10, Math.min(70, y));
 }
 
 function calculateWc(strength, curve) {
-  if (!curve) return null;
-  if (!Number.isFinite(strength) || strength <= 0) return null;
-
-  let low = 0.3;
-  let high = 0.75;
-
+  if (!curve || !Number.isFinite(strength) || strength <= 0) return null;
+  let low = 0.3, high = 0.75;
   const evalCurve = x => (curve.d !== undefined)
     ? curve.a * Math.pow(x, 3) + curve.b * Math.pow(x, 2) + curve.c * x + curve.d
     : curve.a * Math.pow(x, 2) + curve.b * x + curve.c;
-
-  const fLow = evalCurve(low);
-  const fHigh = evalCurve(high);
+  const fLow = evalCurve(low), fHigh = evalCurve(high);
   if (strength > fLow || strength < fHigh) return null;
-
   for (let i = 0; i < 100; i++) {
     const mid = (low + high) / 2;
-    const fMid = evalCurve(mid);
-    if (fMid > strength) low = mid;
-    else high = mid;
+    if (evalCurve(mid) > strength) low = mid; else high = mid;
   }
   return (low + high) / 2;
 }
@@ -1083,13 +888,11 @@ function renderWCChart() {
   const left = 60, right = 60, top = 20, bottom = 60;
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
-
   const xMin = 0.3, xMax = 0.75, yMin = 10, yMax = 70;
   const x = val => left + (val - xMin) / (xMax - xMin) * plotWidth;
   const y = val => top + (yMax - val) / (yMax - yMin) * plotHeight;
 
   const hasAdmixture = data.admixture && data.admixture !== 'none';
-
   let allCurves;
   if (hasAdmixture) {
     allCurves = [
@@ -1114,9 +917,7 @@ function renderWCChart() {
   const activeCurve = getActiveCurve();
   const targetY = getTargetStrength();
   let targetX = null;
-  if (targetY !== null && activeCurve) {
-    targetX = calculateWc(targetY, activeCurve);
-  }
+  if (targetY !== null && activeCurve) targetX = calculateWc(targetY, activeCurve);
 
   let grid = '';
   for (let i = 0; i <= 60; i += 5) {
@@ -1144,7 +945,6 @@ function renderWCChart() {
       path += `${path === '' ? 'M' : 'L'} ${x(wc)} ${y(val)} `;
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
-
     const labelWc = 0.35;
     const labelVal = (c.d !== undefined)
       ? (c.a * Math.pow(labelWc, 3) + c.b * Math.pow(labelWc, 2) + c.c * labelWc + c.d)
@@ -1154,28 +954,23 @@ function renderWCChart() {
     }
   });
 
-  let intersectionLines = '';
-  let intersectionText = '';
+  let intersectionLines = '', intersectionText = '';
   if (targetX !== null) {
-    const px = x(targetX);
-    const py = y(targetY);
+    const px = x(targetX), py = y(targetY);
     intersectionLines += `<line x1="${left}" y1="${py}" x2="${px}" y2="${py}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
     intersectionLines += `<line x1="${px}" y1="${py}" x2="${px}" y2="${height - bottom}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
     intersectionLines += `<circle cx="${px}" cy="${py}" r="4" fill="#dc2626" />`;
-    intersectionText = `
-      <div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
-        نسبت آب به سیمان متناظر با مقاومت هدف: <strong>${targetX.toFixed(3)}</strong>
-      </div>`;
+    intersectionText = `<div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
+      نسبت آب به سیمان متناظر با مقاومت هدف: <strong>${targetX.toFixed(3)}</strong>
+    </div>`;
   } else if (targetY !== null) {
-    intersectionText = `
-      <div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
-        مقاومت هدف ${targetY.toFixed(1)} MPa خارج از محدوده نمودار است.
-      </div>`;
+    intersectionText = `<div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
+      مقاومت هدف ${targetY.toFixed(1)} MPa خارج از محدوده نمودار است.
+    </div>`;
   } else {
-    intersectionText = `
-      <div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
-        لطفاً مقاومت هدف را تعیین کنید.
-      </div>`;
+    intersectionText = `<div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
+      لطفاً مقاومت هدف را تعیین کنید.
+    </div>`;
   }
 
   return `
@@ -1183,18 +978,13 @@ function renderWCChart() {
     <div class="table-scroll">
       <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="نمودار نسبت آب به سیمان"
         style="width:100%;max-width:900px;background:white">
-        <defs>
-          <clipPath id="plot-area-clip">
-            <rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}" />
-          </clipPath>
-        </defs>
+        <defs><clipPath id="plot-area-clip">
+          <rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}" />
+        </clipPath></defs>
         ${grid}
         <line x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
         <line x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
-        <g clip-path="url(#plot-area-clip)">
-          ${curveLines}
-          ${intersectionLines}
-        </g>
+        <g clip-path="url(#plot-area-clip)">${curveLines}${intersectionLines}</g>
         <text x="${left - 45}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155"
           transform="rotate(-90 ${left - 45} ${height / 2})">مقاومت فشاری متوسط (N/mm²)</text>
         <text x="${width / 2}" y="${height - 10}" text-anchor="middle" font-size="13" fill="#334155">نسبت آب به سیمان</text>
@@ -1205,17 +995,15 @@ function renderWCChart() {
 }
 
 /* =========================================
-   صفحات محاسبات
+   صفحه آب به سیمان
 ========================================= */
 
 function renderStep1() {
   const wcDisplay = Number.isFinite(Number(data.wc)) ? Number(data.wc).toFixed(3) : '';
   const target = getTargetStrength();
   const targetDisplay = target !== null ? target.toFixed(1) : '';
-
   return `
     <h2>تعیین نسبت آب به سیمان</h2>
-
     <div class="grid" style="margin-bottom: 15px;">
       <label class="field">
         <span>نسبت آب به سیمان انتخابی</span>
@@ -1228,13 +1016,12 @@ function renderStep1() {
           data-key="targetStrengthManual" value="${targetDisplay}">
       </label>
     </div>
-
     ${renderWCChart()}
   `;
 }
 
 /* =========================================
-   نمودار آب آزاد
+   آب آزاد
 ========================================= */
 
 function getInterpolatedWaterCurve(isCrushed, slump) {
@@ -1249,10 +1036,8 @@ function getInterpolatedWaterCurve(isCrushed, slump) {
     S3: { a: 3.3593, b: -62.257, c: 408.7, mid: 125 },
     S4: { a: 3.8367, b: -69.7547, c: 448.22, mid: 185 }
   };
-
   if (slump <= eqs.S1.mid) return eqs.S1;
   if (slump >= eqs.S4.mid) return eqs.S4;
-
   if (slump < eqs.S2.mid) {
     const t = (slump - eqs.S1.mid) / (eqs.S2.mid - eqs.S1.mid);
     return {
@@ -1277,9 +1062,13 @@ function getInterpolatedWaterCurve(isCrushed, slump) {
   }
 }
 
+// FIX 5: دیگر از fallback جادویی 4.5 استفاده نمی‌شود
 function computeWaterFromCurve() {
   const combined = combinedGrading();
-  const fm = finenessModulus(combined) || 4.5;
+  if (!combined) return { fm: null, isCrushed: null, avgFracture: null, water: null };
+  const fm = finenessModulus(combined);
+  if (fm === null) return { fm: null, isCrushed: null, avgFracture: null, water: null };
+
   const activeAggs = data.aggregates.slice(0, data.aggregateCount);
   const avgFracture = activeAggs.length > 0
     ? activeAggs.reduce((sum, a) => sum + Number(a.fracture || 0), 0) / activeAggs.length
@@ -1290,10 +1079,15 @@ function computeWaterFromCurve() {
   return { fm, isCrushed, avgFracture, water };
 }
 
+// FIX 5 + FIX 6: آب فقط با fm معتبر sync می‌شود؛ با تغییر آب cementAction reset
 function syncWater() {
   const { water } = computeWaterFromCurve();
-  if (Number.isFinite(water) && water > 0) {
-    data.water = Math.round(water * 10) / 10;
+  if (water === null) return;
+  if (!Number.isFinite(water) || water <= 0) return;
+  const newWater = Math.round(water * 10) / 10;
+  if (newWater !== data.water) {
+    data.water = newWater;
+    data.cementAction = '';
   }
 }
 
@@ -1303,7 +1097,6 @@ function renderWaterChart(fm, waterFromCurve, isCrushed, slump) {
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
   const xMin = 3.0, xMax = 8.5, yMin = 100, yMax = 320;
-
   const x = val => left + (val - xMin) / (xMax - xMin) * plotWidth;
   const y = val => top + (yMax - val) / (yMax - yMin) * plotHeight;
 
@@ -1371,8 +1164,7 @@ function renderWaterChart(fm, waterFromCurve, isCrushed, slump) {
   let intersectionLines = '';
   if (Number.isFinite(fm) && Number.isFinite(waterFromCurve) &&
       fm >= xMin && fm <= xMax && waterFromCurve >= yMin && waterFromCurve <= yMax) {
-    const px = x(fm);
-    const py = y(waterFromCurve);
+    const px = x(fm), py = y(waterFromCurve);
     intersectionLines += `<line x1="${left}" y1="${py}" x2="${px}" y2="${py}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
     intersectionLines += `<line x1="${px}" y1="${py}" x2="${px}" y2="${height - bottom}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
     intersectionLines += `<circle cx="${px}" cy="${py}" r="5" fill="#dc2626" />`;
@@ -1382,18 +1174,13 @@ function renderWaterChart(fm, waterFromCurve, isCrushed, slump) {
     <h3>نمودار تعیین آب آزاد بر اساس مدول نرمی</h3>
     <div class="table-scroll">
       <svg viewBox="0 0 ${width} ${height}" style="width:100%;max-width:900px;background:white">
-        <defs>
-          <clipPath id="water-plot-area">
-            <rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}" />
-          </clipPath>
-        </defs>
+        <defs><clipPath id="water-plot-area">
+          <rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}" />
+        </clipPath></defs>
         ${grid}
         <line x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
         <line x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
-        <g clip-path="url(#water-plot-area)">
-          ${curveLines}
-          ${intersectionLines}
-        </g>
+        <g clip-path="url(#water-plot-area)">${curveLines}${intersectionLines}</g>
         <text x="${left - 45}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155"
           transform="rotate(-90 ${left - 45} ${height / 2})">آب آزاد (kg/m³)</text>
         <text x="${width / 2}" y="${height - 10}" text-anchor="middle" font-size="13" fill="#334155">مدول نرمی (F.M.)</text>
@@ -1405,16 +1192,26 @@ function renderWaterChart(fm, waterFromCurve, isCrushed, slump) {
 function renderWater() {
   const { fm, isCrushed, avgFracture, water } = computeWaterFromCurve();
 
-  const reduction = data.admixture !== 'none'
-    ? (water * num('admixturePct') / 100)
-    : 0;
-  const calculatedWater = water - reduction;
+  // FIX 5: اگر fm قابل محاسبه نیست، پیام راهنما بده
+  if (fm === null || water === null) {
+    return `
+      <h2>تعیین آب آزاد</h2>
+      <div class="hint" style="margin: 20px 0; padding: 15px; background: #fef3c7; border-radius: 8px; color: #92400e; border: 1px solid #fcd34d;">
+        <strong>توجه:</strong> برای محاسبه خودکار آب آزاد، ابتدا در صفحه
+        «سهم‌بندی سنگدانه‌ها» درصد عبوری تمام الک‌های هر سنگدانه و سهم آن‌ها
+        (که مجموعشان باید ۱۰۰ باشد) را وارد کنید تا مدول نرمی محاسبه شود.
+        <br><br>
+        مقدار فعلی آب آزاد ذخیره‌شده: <strong>${data.water} kg/m³</strong>
+      </div>
+    `;
+  }
 
+  const reduction = data.admixture !== 'none' ? (water * num('admixturePct') / 100) : 0;
+  const calculatedWater = water - reduction;
   const fmt = v => Number.isFinite(v) ? v.toFixed(1) : 'نامشخص';
 
   return `
     <h2>تعیین آب آزاد</h2>
-
     ${renderWaterChart(fm, water, isCrushed, num('slump'))}
 
     <h3 style="margin-top: 20px;">پارامترهای محاسباتی</h3>
@@ -1442,7 +1239,7 @@ function renderWater() {
 }
 
 /* =========================================
-   صفحه ششم (تعیین مقدار سیمان)
+   صفحه سیمان
 ========================================= */
 
 function renderCement() {
@@ -1450,7 +1247,6 @@ function renderCement() {
   const wf = effectiveWater();
   const wc = num('wc');
   const cement = result.cement;
-
   const softMax = getSoftMaxCement();
   const isLimited = cement > softMax;
 
@@ -1483,7 +1279,6 @@ function renderCement() {
   `;
 
   let contentHtml = '';
-
   if (!isLimited) {
     contentHtml = `
       <div style="background:#ecfdf5; border:1px solid #10b981; color:#065f46; padding:12px; border-radius:6px; text-align:center; font-size:13px;">
@@ -1542,7 +1337,6 @@ function renderCement() {
 function renderReport() {
   let result = new Step5().run();
 
-  // اعمال اصلاح سیمان در صورت ادامه توسط کاربر
   const softMax = getSoftMaxCement();
   if (result.cement > softMax && data.cementAction === 'proceed') {
     const factor = Number(data.correctionFactor) || 1.5;
@@ -1560,6 +1354,11 @@ function renderReport() {
   const shareGravel = data.coarseShare;
   const shareSand = 1 - shareGravel;
 
+  // FIX 4: استفاده از نام واقعی سنگدانه‌ها
+  const agg1Name = (data.aggregates[0] && data.aggregates[0].name) || 'سنگدانه 1';
+  const agg2Name = (data.aggregates[1] && data.aggregates[1].name) || 'سنگدانه 2';
+  const hasMoreAggs = data.aggregateCount > 2;
+
   const totalDry = result.dryGravel + result.drySand;
   const totalWater = w + (result.ssdSand - result.drySand) + (result.ssdGravel - result.dryGravel);
   const finalDensity = c + totalWater + totalDry;
@@ -1572,12 +1371,10 @@ function renderReport() {
         <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">محاسبه حجم سنگدانه‌ها</h3>
         <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; font-size: 13px; direction: ltr; justify-content: center;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="color: #64748b;">Air:</span>
-            <strong>${(air * 100).toFixed(2)}%</strong>
+            <span style="color: #64748b;">Air:</span><strong>${(air * 100).toFixed(2)}%</strong>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="color: #64748b;">MSA:</span>
-            <strong>${data.msa} mm</strong>
+            <span style="color: #64748b;">MSA:</span><strong>${data.msa} mm</strong>
           </div>
           <div style="background: #f1f5f9; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
             <span style="font-weight: bold;">V_{Assd} = 1 - (</span>
@@ -1590,8 +1387,7 @@ function renderReport() {
               <span style="border-bottom: 1px solid #333; padding: 0 5px;">${w.toFixed(2)}</span>
               <span style="padding: 0 5px;">1000</span>
             </div>
-            <span>+</span>
-            <span>${air.toFixed(3)}</span>
+            <span>+</span><span>${air.toFixed(3)}</span>
             ${data.admixture !== 'none' ? `
             <span>+</span>
             <div style="display: flex; flex-direction: column; align-items: center; font-size: 11px;">
@@ -1611,15 +1407,15 @@ function renderReport() {
             <thead>
               <tr style="background: #f1f5f9; color: #334155;">
                 <th style="padding: 8px; border: 1px solid #e2e8f0;">مشخصات</th>
-                <th style="padding: 8px; border: 1px solid #e2e8f0; background: #e0f2fe;">سنگدانه 1 (ماسه)</th>
-                <th style="padding: 8px; border: 1px solid #e2e8f0;">سنگدانه 2 (شن)</th>
+                <th style="padding: 8px; border: 1px solid #e2e8f0; background: #e0f2fe;">${escapeHtml(agg1Name)}</th>
+                <th style="padding: 8px; border: 1px solid #e2e8f0;">${escapeHtml(agg2Name)}</th>
               </tr>
             </thead>
             <tbody>
               <tr>
                 <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; color: #475569;">نوع سنگدانه</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">ماسه</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">شن</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">گروه ماسه</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">گروه شن</td>
               </tr>
               <tr style="background: #f8fafc;">
                 <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">چگالی ذرات SSD (g/cm³)</td>
@@ -1659,6 +1455,13 @@ function renderReport() {
             </tbody>
           </table>
         </div>
+        ${hasMoreAggs ? `
+          <p style="font-size: 11px; color: #64748b; margin-top: 10px; padding: 8px; background: #f1f5f9; border-radius: 6px;">
+            توجه: محاسبه حجمی مخلوط بر اساس نسبت coarseShare بین دو گروه ماسه و شن انجام می‌شود.
+            سنگدانه‌های ۳ و ۴ در نمودار دانه‌بندی و مدول نرمی سهیم هستند ولی در تفکیک حجمی
+            این جدول فقط دو گروه ماسه و شن نمایش داده می‌شود.
+          </p>
+        ` : ''}
       </div>
 
       <div style="background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
@@ -1690,8 +1493,12 @@ function renderReport() {
 ========================================= */
 
 const TEXT_KEYS = new Set([
-  'slumpClass', 'cementClass', 'admixture',
-  'targetMethod', 'workshopRank'
+  'slumpClass', 'cementClass', 'admixture', 'targetMethod', 'workshopRank'
+]);
+
+// FIX 6: کلیدهایی که روی محاسبه سیمان تأثیر دارند
+const CEMENT_AFFECTING_KEYS = new Set([
+  'wc', 'admixturePct', 'admixture', 'correctionFactor'
 ]);
 
 function view() {
@@ -1699,21 +1506,18 @@ function view() {
   const screen = document.getElementById('screen');
   const prev = document.getElementById('prev');
   const next = document.getElementById('next');
-
   if (!tabs || !screen || !prev || !next) {
     console.error('عناصر اصلی صفحه پیدا نشدند.');
     return;
   }
 
   document.querySelectorAll('p, div, span').forEach(el => {
-    if (el.textContent && el.textContent.includes('نسخه محاسبات مقدماتی است')) {
-      el.remove();
-    }
+    if (el.textContent && el.textContent.includes('نسخه محاسبات مقدماتی است')) el.remove();
   });
 
-  tabs.innerHTML = titles.map((title, i) => `
-    <button type="button" data-page="${i}" class="${i === page ? 'active' : ''}">${title}</button>
-  `).join('');
+  tabs.innerHTML = titles.map((title, i) =>
+    `<button type="button" data-page="${i}" class="${i === page ? 'active' : ''}">${title}</button>`
+  ).join('');
 
   let html = '';
   try {
@@ -1729,31 +1533,28 @@ function view() {
     }
   } catch (error) {
     console.error(error);
-    html = `
-      <p class="bad">${escapeHtml(error.message)}</p>
-      <p>ورودی‌های این بخش را بررسی کنید.</p>
-    `;
+    html = `<p class="bad">${escapeHtml(error.message)}</p><p>ورودی‌های این بخش را بررسی کنید.</p>`;
   }
 
   screen.innerHTML = `<article class="panel">${html}</article>`;
 
   document.querySelectorAll('[data-page]').forEach(button => {
-    button.onclick = () => {
-      page = Number(button.dataset.page);
-      view();
-    };
+    button.onclick = () => { page = Number(button.dataset.page); view(); };
   });
 
   document.querySelectorAll('[data-key]').forEach(element => {
     element.onchange = () => {
       const key = element.dataset.key;
+      // FIX 6 + FIX 2: water و cementAction هم در oldState
       const oldState = {
         value: data[key],
         slump: data.slump,
         admixturePct: data.admixturePct,
         wc: data.wc,
         targetStrengthManual: data.targetStrengthManual,
-        targetMethod: data.targetMethod
+        targetMethod: data.targetMethod,
+        cementAction: data.cementAction,
+        water: data.water
       };
 
       const rawVal = element.value;
@@ -1762,6 +1563,9 @@ function view() {
         : (TEXT_KEYS.has(key) ? rawVal : Number(rawVal));
 
       data[key] = value;
+
+      // FIX 6: reset cementAction روی هر تغییر مؤثر
+      if (CEMENT_AFFECTING_KEYS.has(key)) data.cementAction = '';
 
       try {
         if (key === 'aggregateCount') {
@@ -1772,16 +1576,14 @@ function view() {
 
         if (key === 'slumpClass') {
           const range = slumpRange();
-          if (num('slump') < range.min || num('slump') > range.max) {
+          if (num('slump') < range.min || num('slump') > range.max)
             data.slump = range.min;
-          }
           syncWater();
         }
 
         if (key === 'admixture') {
-          if (value === 'none') {
-            data.admixturePct = 0;
-          } else {
+          if (value === 'none') data.admixturePct = 0;
+          else {
             if (data.admixturePct === '' || data.admixturePct == null) data.admixturePct = 0;
             if (data.sgAdmixture === '' || data.sgAdmixture == null) data.sgAdmixture = 1.1;
           }
@@ -1809,9 +1611,11 @@ function view() {
             if (newWc !== null) data.wc = newWc;
           }
           syncWater();
-          // validate عمداً اینجا صدا زده نمی‌شود تا admixture بتواند ابتدا مقدار بگیرد
-        } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'sgAdmixture') {
-          // بدون validate — تنظیمات بی‌خطر
+          // FIX 2: اعتبارسنجی مقدار admixturePct
+          validate();
+        } else if (key === 'targetMethod' || key === 'workshopRank' ||
+                   key === 'aggregateCount' || key === 'correctionFactor' || key === 'sgAdmixture') {
+          // بی‌خطر
         } else {
           validate();
         }
@@ -1825,6 +1629,8 @@ function view() {
         data.wc = oldState.wc;
         data.targetStrengthManual = oldState.targetStrengthManual;
         data.targetMethod = oldState.targetMethod;
+        data.cementAction = oldState.cementAction;
+        data.water = oldState.water;
         view();
         alert(error.message);
       }
@@ -1836,9 +1642,8 @@ function view() {
       const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
       const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
       const en = ['0','1','2','3','4','5','6','7','8','9'];
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 10; i++)
         val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
-      }
       if (e.target.value !== val) e.target.value = val;
     };
   });
@@ -1848,15 +1653,8 @@ function view() {
       const key = element.dataset.check;
       const oldValue = data[key];
       data[key] = element.checked;
-      try {
-        validate();
-        save();
-        view();
-      } catch (error) {
-        data[key] = oldValue;
-        view();
-        alert(error.message);
-      }
+      try { validate(); save(); view(); }
+      catch (error) { data[key] = oldValue; view(); alert(error.message); }
     };
   });
 
@@ -1868,10 +1666,8 @@ function view() {
       const aggregate = data.aggregates[index];
 
       let oldValue;
-      if (field === 'name') {
-        oldValue = aggregate.name;
-        aggregate.name = element.value;
-      } else if (field === 'fracture') {
+      if (field === 'name') { oldValue = aggregate.name; aggregate.name = element.value; }
+      else if (field === 'fracture') {
         oldValue = aggregate.fracture;
         aggregate.fracture = element.value === '' ? '' : Number(element.value);
       } else {
@@ -1881,7 +1677,6 @@ function view() {
 
       try {
         validateAggregates();
-        // هر تغییری در سنگدانه‌ها می‌تواند fm را عوض کند → آب را همگام کن
         syncWater();
         save();
       } catch (error) {
@@ -1893,26 +1688,29 @@ function view() {
     };
 
     element.onkeydown = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const aggIdx = element.dataset.agg;
-        let nextInput = null;
-        if (element.dataset.aggField === 'fracture') {
-          nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-sieve="0"]`);
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const aggIdx = element.dataset.agg;
+      let nextInput = null;
+
+      // FIX 1: اگر روی name هستیم، به fracture همان ستون برو
+      if (element.dataset.aggField === 'name') {
+        nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-agg-field="fracture"]`);
+      } else if (element.dataset.aggField === 'fracture') {
+        nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-sieve="0"]`);
+      } else {
+        const columnInputs = Array.from(document.querySelectorAll(`[data-agg="${aggIdx}"][data-sieve]`));
+        const currentIdx = columnInputs.indexOf(element);
+        if (currentIdx !== -1 && currentIdx < columnInputs.length - 1) {
+          nextInput = columnInputs[currentIdx + 1];
         } else {
-          const columnInputs = Array.from(document.querySelectorAll(`[data-agg="${aggIdx}"][data-sieve]`));
-          const currentIdx = columnInputs.indexOf(element);
-          if (currentIdx !== -1 && currentIdx < columnInputs.length - 1) {
-            nextInput = columnInputs[currentIdx + 1];
-          } else {
-            const nextAggFracture = document.querySelector(`[data-agg="${Number(aggIdx) + 1}"][data-agg-field="fracture"]`);
-            if (nextAggFracture) nextInput = nextAggFracture;
-          }
+          const nextAggFracture = document.querySelector(`[data-agg="${Number(aggIdx) + 1}"][data-agg-field="fracture"]`);
+          if (nextAggFracture) nextInput = nextAggFracture;
         }
-        if (nextInput) {
-          nextInput.focus();
-          nextInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }
+      }
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     };
 
@@ -1922,9 +1720,8 @@ function view() {
       const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
       const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
       const en = ['0','1','2','3','4','5','6','7','8','9'];
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 10; i++)
         val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
-      }
       if (e.target.value !== val) e.target.value = val;
     };
   });
@@ -1934,17 +1731,14 @@ function view() {
       const index = Number(element.dataset.share);
       const raw = element.value;
       const value = raw === '' ? '' : Number(raw);
-
       if (value !== '' && (!Number.isFinite(value) || value < 0 || value > 100)) {
         alert('سهم سنگدانه باید بین صفر و ۱۰۰ باشد.');
         return;
       }
-
       data.aggregateShares[index] = value;
       syncWater();
       save();
       view();
-
       setTimeout(() => {
         const newEl = document.querySelector(`[data-share="${index}"]`);
         if (newEl) { newEl.focus(); newEl.select(); }
@@ -1957,9 +1751,8 @@ function view() {
       const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
       const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
       const en = ['0','1','2','3','4','5','6','7','8','9'];
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 10; i++)
         val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
-      }
       if (e.target.value !== val) e.target.value = val;
     };
   });
@@ -1968,62 +1761,44 @@ function view() {
     element.onchange = () => {
       const index = Number(element.dataset.curveAggregate);
       data.showAggregateCurves[index] = element.checked;
-      save();
-      view();
+      save(); view();
     };
   });
 
   const mixCheckbox = document.querySelector('[data-curve-mix]');
-  if (mixCheckbox) {
-    mixCheckbox.onchange = () => {
-      data.showMixCurve = mixCheckbox.checked;
-      save();
-      view();
-    };
-  }
+  if (mixCheckbox) mixCheckbox.onchange = () => {
+    data.showMixCurve = mixCheckbox.checked; save(); view();
+  };
 
   const referenceCheckbox = document.querySelector('[data-curve-reference]');
-  if (referenceCheckbox) {
-    referenceCheckbox.onchange = () => {
-      data.showReferenceCurves = referenceCheckbox.checked;
-      save();
-      view();
-    };
-  }
+  if (referenceCheckbox) referenceCheckbox.onchange = () => {
+    data.showReferenceCurves = referenceCheckbox.checked; save(); view();
+  };
 
   const printButton = document.getElementById('print');
   if (printButton) printButton.onclick = () => window.print();
 
   const cementAction = document.getElementById('cement-action');
-  if (cementAction) {
-    cementAction.onchange = (e) => {
-      const val = e.target.value;
-      data.cementAction = val;
-      save();
-      if (val === 'grading') page = 2;
-      else if (val === 'wc') page = 3;
-      view();
-    };
-  }
+  if (cementAction) cementAction.onchange = (e) => {
+    const val = e.target.value;
+    data.cementAction = val;
+    save();
+    if (val === 'grading') page = 2;
+    else if (val === 'wc') page = 3;
+    view();
+  };
 
   prev.disabled = page === 0;
-
   try {
     if (page === 5) {
       const result = new Step4().run();
-      const cement = result.cement;
       const softMax = getSoftMaxCement();
-      if (cement > softMax && data.cementAction !== 'proceed') {
-        next.disabled = true;
-      } else {
-        next.disabled = page === titles.length - 1;
-      }
+      if (result.cement > softMax && data.cementAction !== 'proceed') next.disabled = true;
+      else next.disabled = page === titles.length - 1;
     } else {
       next.disabled = page === titles.length - 1;
     }
-  } catch (_) {
-    next.disabled = false;
-  }
+  } catch (_) { next.disabled = false; }
 }
 
 /* =========================================
@@ -2033,139 +1808,76 @@ function view() {
 function injectWindowsTheme() {
   const style = document.createElement('style');
   style.innerHTML = `
-    :root {
-      --primary: #0078d4;
-      --primary-hover: #005a9e;
-      --bg: #f3f2f1;
-      --panel-bg: #ffffff;
-      --border: #d2d0ce;
-      --text: #201f1e;
-      --text-muted: #605e5c;
-      --shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
+    :root { --primary: #0078d4; --border: #d2d0ce; --text: #201f1e; --text-muted: #605e5c; }
     body {
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
       background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-      color: var(--text);
-      margin: 0;
-      padding: 20px;
-      direction: rtl;
+      color: var(--text); margin: 0; padding: 20px; direction: rtl;
     }
     #app {
-      background: var(--panel-bg);
-      border-radius: 16px;
+      background: #fff; border-radius: 16px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.5) inset;
-      max-width: 1100px;
-      margin: 20px auto;
-      overflow: hidden;
-      border: 1px solid var(--border);
+      max-width: 1100px; margin: 20px auto; overflow: hidden; border: 1px solid var(--border);
     }
     #tabs {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      background: rgba(248, 249, 250, 0.8);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-      gap: 4px;
-      padding: 8px 8px 0 8px;
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      background: rgba(248, 249, 250, 0.8); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border); gap: 4px; padding: 8px 8px 0 8px;
     }
     #tabs button {
-      background: transparent;
-      border: none;
-      border-radius: 10px 10px 0 0;
-      padding: 8px 4px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      transition: all 0.2s ease;
-      font-family: inherit;
+      background: transparent; border: none; border-radius: 10px 10px 0 0;
+      padding: 8px 4px; cursor: pointer; font-size: 12px; font-weight: 600;
+      color: var(--text-muted); transition: all 0.2s ease; font-family: inherit;
     }
     #tabs button:hover { background: #edebe9; color: var(--primary); }
     #tabs button.active {
-      background: var(--panel-bg);
-      color: var(--primary);
-      border-bottom: 3px solid var(--primary);
-      box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+      background: #fff; color: var(--primary);
+      border-bottom: 3px solid var(--primary); box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
     }
     .panel { padding: 20px; }
     .grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
     .field {
-      display: inline-flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 4px;
-      background: #f8f9fa;
-      padding: 4px 6px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 11px;
-      color: var(--text);
-      transition: box-shadow 0.2s ease;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+      display: inline-flex; flex-direction: row; align-items: center; gap: 4px;
+      background: #f8f9fa; padding: 4px 6px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 11px; color: var(--text);
+      transition: box-shadow 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
     .field:hover { box-shadow: 0 3px 6px rgba(0,0,0,0.06); }
     input[type="number"], input[type="text"], select {
-      width: 130px !important;
-      padding: 4px 6px;
-      border: 1px solid #c8c6c4;
-      border-radius: 4px;
-      font-family: Arial, sans-serif !important;
-      font-variant-numeric: lining-nums tabular-nums;
-      font-size: 12px;
-      background: #fff;
-      text-align: center;
-      transition: border-color 0.2s;
-      box-sizing: border-box;
+      width: 130px !important; padding: 4px 6px; border: 1px solid #c8c6c4;
+      border-radius: 4px; font-family: Arial, sans-serif !important;
+      font-variant-numeric: lining-nums tabular-nums; font-size: 12px;
+      background: #fff; text-align: center; transition: border-color 0.2s; box-sizing: border-box;
     }
-    input[type="number"]:focus, input[type="text"]:focus, select:focus {
-      border-color: var(--primary);
-      outline: none;
+    input:focus, select:focus {
+      border-color: var(--primary); outline: none;
       box-shadow: 0 0 0 2px rgba(0,120,212,0.2);
     }
     input.table-input[type="text"] { width: 75px !important; text-align: right; }
     button {
-      background: linear-gradient(180deg, #0078d4, #005a9e);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 14px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-family: inherit;
+      background: linear-gradient(180deg, #0078d4, #005a9e); color: white;
+      border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit;
       box-shadow: 0 3px 5px rgba(0,120,212,0.2), 0 1px 2px rgba(0,0,0,0.1);
       transform: translateY(0);
     }
     button:hover {
       background: linear-gradient(180deg, #106ebe, #004578);
-      box-shadow: 0 5px 10px rgba(0,120,212,0.3);
-      transform: translateY(-1px);
+      box-shadow: 0 5px 10px rgba(0,120,212,0.3); transform: translateY(-1px);
     }
     button:active { transform: translateY(1px); box-shadow: none; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
     th, td {
-      border: 1px solid var(--border);
-      padding: 8px;
-      text-align: right;
-      font-size: 12px;
-      font-variant-numeric: lining-nums tabular-nums;
+      border: 1px solid var(--border); padding: 8px; text-align: right;
+      font-size: 12px; font-variant-numeric: lining-nums tabular-nums;
     }
     th { background: #f3f2f1; font-weight: 600; color: var(--text); }
     tr:nth-child(even) { background: #faf9f8; }
     .aggregate-table th:first-child {
-      position: sticky;
-      right: 0;
-      background-color: #f3f2f1;
-      z-index: 10;
-      box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+      position: sticky; right: 0; background-color: #f3f2f1;
+      z-index: 10; box-shadow: -2px 0 5px rgba(0,0,0,0.05);
     }
-    .table-scroll {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 10px;
-    }
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; }
     .table-scroll::-webkit-scrollbar { height: 8px; }
     .table-scroll::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
     @media (max-width: 600px) {
@@ -2182,37 +1894,26 @@ function startApp() {
 
   const prev = document.getElementById('prev');
   const next = document.getElementById('next');
-  if (!prev || !next) {
-    console.error('دکمه‌های پیمایش پیدا نشدند.');
-    return;
-  }
+  if (!prev || !next) { console.error('دکمه‌های پیمایش پیدا نشدند.'); return; }
 
   prev.onclick = () => { page = Math.max(0, page - 1); view(); };
   next.onclick = () => { page = Math.min(titles.length - 1, page + 1); view(); };
 
   if (data.admixture === 'none') data.admixturePct = 0;
 
-  // همگام‌سازی اولیه آب با منحنی
+  // FIX 5: syncWater فقط با fm معتبر کار می‌کند؛ در غیر این صورت امن است
   syncWater();
 
   save();
   view();
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', startApp);
-} else {
-  startApp();
-}
-
-/* =========================================
-   Service Worker
-========================================= */
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startApp);
+else startApp();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('./sw.js')
+    navigator.serviceWorker.register('./sw.js')
       .catch(error => console.warn('Service Worker ثبت نشد:', error));
   });
 }
@@ -2226,9 +1927,9 @@ function initNewMenu() {
     <div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
       <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
       <div id="app-menu-dropdown" style="display: none; position: absolute; top: 45px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
-        <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">💾 ذخیره طرح</button>
-        <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">📂 بازیابی طرح</button>
-        <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626; transition: background 0.2s;">🚪 خروج</button>
+        <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">💾 ذخیره طرح</button>
+        <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">📂 بازیابی طرح</button>
+        <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626;">🚪 خروج</button>
       </div>
     </div>
     <input type="file" id="app-hidden-file-input" accept=".json" style="display: none;">
@@ -2248,9 +1949,8 @@ function initNewMenu() {
   };
 
   document.addEventListener('click', (e) => {
-    if (!document.getElementById('app-options-menu').contains(e.target)) {
+    if (!document.getElementById('app-options-menu').contains(e.target))
       menuDropdown.style.display = 'none';
-    }
   });
 
   const downloadProject = () => {
@@ -2274,10 +1974,7 @@ function initNewMenu() {
     }
   };
 
-  menuLoad.onclick = () => {
-    fileInput.click();
-    menuDropdown.style.display = 'none';
-  };
+  menuLoad.onclick = () => { fileInput.click(); menuDropdown.style.display = 'none'; };
 
   menuExit.onclick = () => {
     menuDropdown.style.display = 'none';
@@ -2303,25 +2000,18 @@ function initNewMenu() {
         const loadedData = JSON.parse(event.target.result);
         if (loadedData && typeof loadedData === 'object') {
           Object.assign(data, loadedData);
-          normalizeData();  // ← اعمال مجدد نرمال‌سازی و sanitize
-          syncWater();      // ← همگام‌سازی آب با منحنی
+          normalizeData();
+          syncWater();
           save();
           view();
           alert('طرح با موفقیت بازیابی شد.');
-        } else {
-          alert('فایل انتخاب شده معتبر نیست.');
-        }
-      } catch (err) {
-        alert('خطا در خواندن فایل: ' + err.message);
-      }
+        } else alert('فایل انتخاب شده معتبر نیست.');
+      } catch (err) { alert('خطا در خواندن فایل: ' + err.message); }
     };
     reader.readAsText(file);
     fileInput.value = '';
   };
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initNewMenu);
-} else {
-  initNewMenu();
-}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initNewMenu);
+else initNewMenu();
