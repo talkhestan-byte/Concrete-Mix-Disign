@@ -756,9 +756,25 @@ function renderHome() {
    مقاومت هدف
 ========================================= */
 
+function getClosestDeviationRow(fc) {
+  const keys = Object.keys(standardDeviationTable).map(Number);
+  if (standardDeviationTable[fc]) return standardDeviationTable[fc];
+  
+  let nearest = keys[0];
+  let minDiff = Math.abs(fc - nearest);
+  for (let k of keys) {
+    const diff = Math.abs(fc - k);
+    if (diff < minDiff) {
+      minDiff = diff;
+      nearest = k;
+    }
+  }
+  return standardDeviationTable[nearest];
+}
+
 function targetCalculations() {
   const fc = num('strength');
-  const row = standardDeviationTable[fc];
+  const row = getClosestDeviationRow(fc);
 
   if (!row) return null;
 
@@ -2386,8 +2402,18 @@ function view() {
             syncWater();
           }
 
-          if (key === 'admixture' && value === 'none') {
-            data.admixturePct = 0;
+          // FIX 1: Admixture Dropdown Fix
+          if (key === 'admixture') {
+            if (value === 'none') {
+              data.admixturePct = 0;
+            } else {
+              if (data.admixturePct === '' || data.admixturePct == null) {
+                data.admixturePct = 0;
+              }
+              if (data.sgAdmixture === '' || data.sgAdmixture == null) {
+                data.sgAdmixture = 1.1;
+              }
+            }
           }
 
           if (key === 'wc') {
@@ -2580,7 +2606,7 @@ function view() {
         data.aggregateShares[index] = value;
         syncWater();
         save();
-        view(); // <-- RE-ADDED to fix mix curve not drawing
+        view();
 
         setTimeout(() => {
           const newEl = document.querySelector(`[data-share="${index}"]`);
@@ -3068,4 +3094,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-}
+   }
