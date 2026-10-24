@@ -2,7 +2,7 @@
 
 /* =========================================
    طرح ملی مخلوط بتن
-   app.js
+   app.js  (اصلاح‌شده)
 ========================================= */
 
 const STORAGE_KEY = 'beton479';
@@ -136,26 +136,13 @@ const fields = {
 ========================================= */
 
 let stored = {};
-
 try {
-  stored = JSON.parse(
-    localStorage.getItem(STORAGE_KEY) || '{}'
-  ) || {};
+  stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {};
 } catch (_) {
   stored = {};
 }
 
-const data = {
-  ...defaults,
-  ...stored
-};
-
-{
-  const msaValue = Number(data.msa);
-  data.msa = [9.5, 12.5, 19, 25].includes(msaValue)
-    ? msaValue
-    : 19;
-}
+const data = { ...defaults, ...stored };
 
 function defaultAggregate(index) {
   return {
@@ -165,79 +152,97 @@ function defaultAggregate(index) {
   };
 }
 
-if (!Array.isArray(data.aggregates)) {
-  data.aggregates = [];
-}
+/* ---- نرمال‌سازی (قابل فراخوانی مجدد پس از بارگذاری JSON) ---- */
 
-data.aggregates = data.aggregates.map((a, i) => {
-  const base = defaultAggregate(i);
-  let sourcePassing = Array.isArray(a.passing)
-    ? a.passing.slice()
-    : [];
-
-  if (sourcePassing.length === 11) {
-    sourcePassing.splice(SIEVE_635_INDEX, 0, '');
+function sanitizeData() {
+  if (!['S1', 'S2', 'S3', 'S4'].includes(data.slumpClass)) {
+    data.slumpClass = 'S3';
+  }
+  if (!['none', 'slump', 'water_reducer'].includes(data.admixture)) {
+    data.admixture = 'none';
+  }
+  if (!['manual', 'auto'].includes(data.targetMethod)) {
+    data.targetMethod = 'manual';
+  }
+  if (!['A', 'B', 'C'].includes(data.workshopRank)) {
+    data.workshopRank = 'A';
+  }
+  if (!['32.5', '42.5', '52.5'].includes(String(data.cementClass))) {
+    data.cementClass = '42.5';
+  }
+  if (!['continuous', 'gap_graded'].includes(data.grading)) {
+    data.grading = 'continuous';
   }
 
-  return {
-    ...base,
-    ...a,
-    passing: sieves.map((sieve, j) => {
-      if (sieve.mm === 6.35) return '';
-      const v = sourcePassing[j];
-      return v === '' || v == null ? '' : Number(v);
-    })
+  data.limitMinCementOn = data.limitMinCementOn === true;
+  data.limitMaxCementOn = data.limitMaxCementOn === true;
+  data.limitWcOn = data.limitWcOn === true;
+
+  const numericFallbacks = {
+    strength: 30, slump: 125, water: 185, wc: 0.5,
+    coarseShare: 0.6, air: 2, sgCement: 3.15, sgSand: 2.65,
+    sgGravel: 2.7, waterAbsSand: 0.5, waterAbsGravel: 0.5,
+    sgAdmixture: 1.1, admixturePct: 0, limitMinCement: 280,
+    limitMaxCement: 450, limitWc: 0.5, correctionFactor: 1.5
   };
-});
-
-while (data.aggregates.length < 4) {
-  data.aggregates.push(
-    defaultAggregate(data.aggregates.length)
-  );
+  for (const [k, fb] of Object.entries(numericFallbacks)) {
+    if (!Number.isFinite(Number(data[k]))) data[k] = fb;
+  }
 }
 
-data.aggregates = data.aggregates.slice(0, 4);
+function normalizeData() {
+  const msaValue = Number(data.msa);
+  data.msa = [9.5, 12.5, 19, 25].includes(msaValue) ? msaValue : 19;
 
-data.aggregateCount = Math.max(
-  2,
-  Math.min(4, Number(data.aggregateCount) || 2)
-);
+  if (!Array.isArray(data.aggregates)) data.aggregates = [];
 
-data.aggregateShares = Array.from(
-  { length: 4 },
-  (_, i) => {
-    const source = Array.isArray(data.aggregateShares)
-      ? data.aggregateShares[i]
-      : '';
+  data.aggregates = data.aggregates.map((a, i) => {
+    const base = defaultAggregate(i);
+    const sourcePassing = Array.isArray(a.passing) ? a.passing.slice() : [];
+    if (sourcePassing.length === 11) {
+      sourcePassing.splice(SIEVE_635_INDEX, 0, '');
+    }
+    return {
+      ...base,
+      ...a,
+      passing: sieves.map((sieve, j) => {
+        if (sieve.mm === 6.35) return '';
+        const v = sourcePassing[j];
+        return v === '' || v == null ? '' : Number(v);
+      })
+    };
+  });
 
-    return source === '' || source == null
-      ? ''
-      : Number(source);
+  while (data.aggregates.length < 4) {
+    data.aggregates.push(defaultAggregate(data.aggregates.length));
   }
-);
+  data.aggregates = data.aggregates.slice(0, 4);
 
-data.showAggregateCurves = Array.from(
-  { length: 4 },
-  (_, i) => {
-    const source = Array.isArray(data.showAggregateCurves)
-      ? data.showAggregateCurves[i]
-      : true;
+  data.aggregateCount = Math.max(2, Math.min(4, Number(data.aggregateCount) || 2));
 
+  data.aggregateShares = Array.from({ length: 4 }, (_, i) => {
+    const source = Array.isArray(data.aggregateShares) ? data.aggregateShares[i] : '';
+    return source === '' || source == null ? '' : Number(source);
+  });
+
+  data.showAggregateCurves = Array.from({ length: 4 }, (_, i) => {
+    const source = Array.isArray(data.showAggregateCurves) ? data.showAggregateCurves[i] : true;
     return source !== false;
-  }
-);
+  });
 
-data.showMixCurve = data.showMixCurve !== false;
-data.showReferenceCurves = data.showReferenceCurves !== false;
+  data.showMixCurve = data.showMixCurve !== false;
+  data.showReferenceCurves = data.showReferenceCurves !== false;
+
+  sanitizeData();
+}
+
+normalizeData();
 
 let page = 0;
 
 function save() {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(data)
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
     console.warn('ذخیره اطلاعات ناموفق بود', error);
   }
@@ -248,22 +253,13 @@ function num(key) {
 }
 
 function escapeHtml(value) {
-  return String(value ?? '').replace(
-    /[&<>"']/g,
-    ch => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    })[ch]
-  );
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[ch]);
 }
 
 function selected(key, value) {
-  return String(data[key]) === String(value)
-    ? 'selected'
-    : '';
+  return String(data[key]) === String(value) ? 'selected' : '';
 }
 
 function numberInput(key, label, step, extra = '') {
@@ -289,45 +285,10 @@ function selectInput(key, label, options) {
       <span>${label}</span>
       <select data-key="${key}">
         ${options.map(o => `
-          <option
-            value="${o.value}"
-            ${selected(key, o.value)}
-          >${o.label}</option>
+          <option value="${o.value}" ${selected(key, o.value)}>${o.label}</option>
         `).join('')}
       </select>
     </label>
-  `;
-}
-
-function group(keys) {
-  return `
-    <div class="grid">
-      ${keys.map(key => {
-        const [label, step] = fields[key];
-        return numberInput(key, label, step);
-      }).join('')}
-    </div>
-  `;
-}
-
-function table(rows) {
-  return `
-    <table>
-      <tbody>
-        ${rows.map(([label, value]) => `
-          <tr>
-            <td>${escapeHtml(label)}</td>
-            <td>
-              ${typeof value === 'number'
-                ? Number.isFinite(value)
-                  ? value.toFixed(2)
-                  : 'نامعتبر'
-                : escapeHtml(value)}
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
   `;
 }
 
@@ -336,21 +297,14 @@ function table(rows) {
 ========================================= */
 
 function slumpRange() {
-  return slumpClasses[data.slumpClass] ||
-    slumpClasses.S3;
+  return slumpClasses[data.slumpClass] || slumpClasses.S3;
 }
 
 function requireNumber(key, label) {
   const raw = data[key];
-
-  if (
-    raw === '' ||
-    raw == null ||
-    !Number.isFinite(Number(raw))
-  ) {
+  if (raw === '' || raw == null || !Number.isFinite(Number(raw))) {
     throw Error(`${label} باید عدد معتبر باشد.`);
   }
-
   return Number(raw);
 }
 
@@ -377,7 +331,6 @@ function validate() {
     sgGravel: 'چگالی شن',
     waterAbsGravel: 'درصد جذب آب شن'
   };
-
   for (const [key, label] of Object.entries(required)) {
     requireNumber(key, label);
   }
@@ -386,52 +339,23 @@ function validate() {
     requireNumber('sgAdmixture', 'چگالی افزودنی');
   }
 
-  if (num('strength') <= 0) {
-    throw Error('مقاومت مشخصه باید مثبت باشد.');
-  }
+  if (num('strength') <= 0) throw Error('مقاومت مشخصه باید مثبت باشد.');
 
   const range = slumpRange();
-
-  if (
-    num('slump') < range.min ||
-    num('slump') > range.max
-  ) {
-    throw Error(
-      `اسلامپ باید بین ${range.min} و ${range.max} باشد.`
-    );
+  if (num('slump') < range.min || num('slump') > range.max) {
+    throw Error(`اسلامپ باید بین ${range.min} و ${range.max} باشد.`);
   }
 
-  if (![9.5, 12.5, 19, 25].includes(num('msa'))) {
-    throw Error('NMSA معتبر نیست.');
-  }
-
-  if (num('water') <= 0) {
-    throw Error('آب آزاد باید مثبت باشد.');
-  }
-
-  if (num('wc') <= 0 || num('wc') >= 1) {
-    throw Error('نسبت آب به سیمان باید بین صفر و یک باشد.');
-  }
-
-  if (
-    num('coarseShare') <= 0 ||
-    num('coarseShare') >= 1
-  ) {
+  if (![9.5, 12.5, 19, 25].includes(num('msa'))) throw Error('NMSA معتبر نیست.');
+  if (num('water') <= 0) throw Error('آب آزاد باید مثبت باشد.');
+  if (num('wc') <= 0 || num('wc') >= 1) throw Error('نسبت آب به سیمان باید بین صفر و یک باشد.');
+  if (num('coarseShare') <= 0 || num('coarseShare') >= 1) {
     throw Error('سهم حجمی شن باید بین صفر و یک باشد.');
   }
+  if (num('air') < 0 || num('air') >= 15) throw Error('درصد هوا باید بین صفر و ۱۵ باشد.');
 
-  if (num('air') < 0 || num('air') >= 15) {
-    throw Error('درصد هوا باید بین صفر و ۱۵ باشد.');
-  }
-
-  for (const key of [
-    'sgCement',
-    'sgSand',
-    'sgGravel'
-  ]) {
-    if (num(key) <= 0) {
-      throw Error('چگالی نسبی باید مثبت باشد.');
-    }
+  for (const key of ['sgCement', 'sgSand', 'sgGravel']) {
+    if (num(key) <= 0) throw Error('چگالی نسبی باید مثبت باشد.');
   }
 
   if (num('waterAbsSand') < 0 || num('waterAbsGravel') < 0) {
@@ -439,55 +363,30 @@ function validate() {
   }
 
   if (data.admixture !== 'none') {
-    const pct = requireNumber(
-      'admixturePct',
-      'درصد افزودنی'
-    );
-
-    if (pct < 0 || pct >= 100) {
-      throw Error('درصد افزودنی باید بین صفر و ۱۰۰ باشد.');
-    }
-    
-    if (num('sgAdmixture') <= 0) {
-       throw Error('چگالی افزودنی باید مثبت باشد.');
-    }
+    const pct = requireNumber('admixturePct', 'درصد افزودنی');
+    if (pct < 0 || pct >= 100) throw Error('درصد افزودنی باید بین صفر و ۱۰۰ باشد.');
+    if (num('sgAdmixture') <= 0) throw Error('چگالی افزودنی باید مثبت باشد.');
   }
 
   const cement = effectiveWater() / num('wc');
 
   if (data.limitMinCementOn) {
-    const minimum = requireNumber(
-      'limitMinCement',
-      'حداقل سیمان'
-    );
-
+    const minimum = requireNumber('limitMinCement', 'حداقل سیمان');
     if (minimum <= 0 || cement < minimum) {
       throw Error('مقدار سیمان از حداقل تعیین‌شده کمتر است.');
     }
   }
 
   if (data.limitMaxCementOn) {
-    const maximum = requireNumber(
-      'limitMaxCement',
-      'حداکثر سیمان'
-    );
-
+    const maximum = requireNumber('limitMaxCement', 'حداکثر سیمان');
     if (maximum <= 0 || cement > maximum) {
       throw Error('مقدار سیمان از حداکثر تعیین‌شده بیشتر است.');
     }
   }
 
   if (data.limitWcOn) {
-    const maximum = requireNumber(
-      'limitWc',
-      'حداکثر نسبت آب به سیمان'
-    );
-
-    if (
-      maximum <= 0 ||
-      maximum >= 1 ||
-      num('wc') > maximum
-    ) {
+    const maximum = requireNumber('limitWc', 'حداکثر نسبت آب به سیمان');
+    if (maximum <= 0 || maximum >= 1 || num('wc') > maximum) {
       throw Error('نسبت آب به سیمان از حداکثر مجاز بیشتر است.');
     }
   }
@@ -496,47 +395,22 @@ function validate() {
 function validateAggregates() {
   for (let i = 0; i < data.aggregateCount; i++) {
     const a = data.aggregates[i];
-
-    if (
-      a.fracture === '' ||
-      !Number.isFinite(Number(a.fracture)) ||
-      Number(a.fracture) < 0 ||
-      Number(a.fracture) > 100
-    ) {
-      throw Error(
-        `درصد شکستگی سنگدانه ${i + 1} نامعتبر است.`
-      );
+    if (a.fracture === '' || !Number.isFinite(Number(a.fracture)) ||
+        Number(a.fracture) < 0 || Number(a.fracture) > 100) {
+      throw Error(`درصد شکستگی سنگدانه ${i + 1} نامعتبر است.`);
     }
-
     let previous = null;
-
     for (let j = 0; j < sieves.length; j++) {
       if (sieves[j].mm === 6.35) continue;
-
       const raw = a.passing[j];
-
-      if (raw === '' || raw == null) {
-        continue;
-      }
-
+      if (raw === '' || raw == null) continue;
       const value = Number(raw);
-
-      if (
-        !Number.isFinite(value) ||
-        value < 0 ||
-        value > 100
-      ) {
-        throw Error(
-          `درصد عبوری سنگدانه ${i + 1} از الک ${sieves[j].mm} نامعتبر است.`
-        );
+      if (!Number.isFinite(value) || value < 0 || value > 100) {
+        throw Error(`درصد عبوری سنگدانه ${i + 1} از الک ${sieves[j].mm} نامعتبر است.`);
       }
-
       if (previous !== null && value > previous) {
-        throw Error(
-          `در سنگدانه ${i + 1} درصد عبوری الک ${sieves[j].mm} از الک درشت‌تر بیشتر است.`
-        );
+        throw Error(`در سنگدانه ${i + 1} درصد عبوری الک ${sieves[j].mm} از الک درشت‌تر بیشتر است.`);
       }
-
       previous = value;
     }
   }
@@ -548,50 +422,45 @@ function validateAggregates() {
 
 class Step1 {
   run() {
-    return {
-      wc: num('wc'),
-      strength: num('strength')
-    };
+    return { wc: num('wc'), strength: num('strength') };
   }
 }
 
 class Step3 {
   run() {
-    return {
-      baseWater: num('water'),
-      water: effectiveWater()
-    };
+    return { baseWater: num('water'), water: effectiveWater() };
   }
 }
 
 class Step4 {
   run() {
     validate();
-    return {
-      cement: effectiveWater() / num('wc')
-    };
+    return { cement: effectiveWater() / num('wc') };
   }
 }
 
 class Step5 {
-  run() {
+  /**
+   * @param {Object} overrides - { water?: number, cement?: number }
+   *   اعمال مقادیر اصلاح‌شده بدون نیاز به بازنویسی state اصلی
+   */
+  run(overrides = {}) {
     validate();
 
-    const cement = new Step4().run().cement;
-    const water = effectiveWater();
-    const admixtureMass = data.admixture === 'none' ? 0 : cement * num('admixturePct') / 100;
+    const water = Number.isFinite(overrides.water) ? overrides.water : effectiveWater();
+    const cement = Number.isFinite(overrides.cement) ? overrides.cement : (water / num('wc'));
+    const admixtureMass = data.admixture === 'none'
+      ? 0
+      : cement * num('admixturePct') / 100;
     const sgAdm = num('sgAdmixture') || 1.1;
-    
+
     const vc = cement / (num('sgCement') * 1000);
     const vw = water / 1000;
     const va = num('air') / 100;
     const va_adm = data.admixture === 'none' ? 0 : admixtureMass / (sgAdm * 1000);
 
     const aggregateVolume = 1 - vc - vw - va - va_adm;
-
-    if (aggregateVolume <= 0) {
-      throw Error('حجم باقی‌مانده برای سنگدانه مثبت نیست.');
-    }
+    if (aggregateVolume <= 0) throw Error('حجم باقی‌مانده برای سنگدانه مثبت نیست.');
 
     const gravelVolume = aggregateVolume * num('coarseShare');
     const sandVolume = aggregateVolume - gravelVolume;
@@ -603,152 +472,87 @@ class Step5 {
     const dryGravel = ssdGravel / (1 + num('waterAbsGravel') / 100);
 
     return {
-      cement,
-      water,
-      ssdSand,
-      ssdGravel,
-      drySand,
-      dryGravel,
-      admixtureMass,
-      vc,
-      vw,
-      va,
-      va_adm,
-      aggregateVolume,
-      sandVolume,
-      gravelVolume
+      cement, water, ssdSand, ssdGravel, drySand, dryGravel,
+      admixtureMass, vc, vw, va, va_adm,
+      aggregateVolume, sandVolume, gravelVolume
     };
   }
+}
+
+function getSoftMaxCement() {
+  if (data.limitMaxCementOn &&
+      Number.isFinite(Number(data.limitMaxCement)) &&
+      Number(data.limitMaxCement) > 0) {
+    return Number(data.limitMaxCement);
+  }
+  return 350;
 }
 
 /* =========================================
    صفحه اول
 ========================================= */
 
-function checkboxField(
-  key,
-  label,
-  valueKey,
-  valueLabel,
-  step
-) {
+function checkboxField(key, label, valueKey, valueLabel, step) {
   return `
     <div class="limit-box">
       <label class="checkline">
-        <input
-          type="checkbox"
-          data-check="${key}"
-          ${data[key] ? 'checked' : ''}
-        >
+        <input type="checkbox" data-check="${key}" ${data[key] ? 'checked' : ''}>
         <span>${label}</span>
       </label>
-
-      ${data[key]
-        ? numberInput(valueKey, valueLabel, step)
-        : ''}
+      ${data[key] ? numberInput(valueKey, valueLabel, step) : ''}
     </div>
   `;
 }
 
 function renderHome() {
   const range = slumpRange();
-
   return `
     <h2>اطلاعات اولیه طرح</h2>
 
     <div class="grid">
       ${numberInput('strength', fields.strength[0], 0.1)}
 
-      ${selectInput(
-        'slumpClass',
-        'رده اسلامپ',
-        Object.entries(slumpClasses).map(
-          ([value, item]) => ({
-            value,
-            label: item.label
-          })
-        )
-      )}
+      ${selectInput('slumpClass', 'رده اسلامپ',
+        Object.entries(slumpClasses).map(([value, item]) => ({ value, label: item.label })))}
 
-      ${numberInput(
-        'slump',
-        fields.slump[0],
-        1,
-        `min="${range.min}" max="${range.max}"`
-      )}
+      ${numberInput('slump', fields.slump[0], 1, `min="${range.min}" max="${range.max}"`)}
 
       ${numberInput('air', fields.air[0], 0.1)}
     </div>
 
     <div class="grid">
-      ${selectInput(
-        'cementClass',
-        'رده مقاومتی سیمان',
-        [
-          { value: '32.5', label: '32.5' },
-          { value: '42.5', label: '42.5' },
-          { value: '52.5', label: '52.5' }
-        ]
-      )}
-
+      ${selectInput('cementClass', 'رده مقاومتی سیمان', [
+        { value: '32.5', label: '32.5' },
+        { value: '42.5', label: '42.5' },
+        { value: '52.5', label: '52.5' }
+      ])}
       ${numberInput('sgCement', fields.sgCement[0], 0.01)}
     </div>
 
     <div class="grid">
-      ${selectInput(
-        'admixture',
-        'نوع افزودنی',
-        [
-          { value: 'none', label: 'بدون افزودنی' },
-          { value: 'slump', label: 'افزودنی افزایش‌دهنده اسلامپ' },
-          { value: 'water_reducer', label: 'افزودنی کاهنده نیاز آب' }
-        ]
-      )}
+      ${selectInput('admixture', 'نوع افزودنی', [
+        { value: 'none', label: 'بدون افزودنی' },
+        { value: 'slump', label: 'افزودنی افزایش‌دهنده اسلامپ' },
+        { value: 'water_reducer', label: 'افزودنی کاهنده نیاز آب' }
+      ])}
 
-      ${numberInput(
-        'admixturePct',
-        'درصد افزودنی نسبت به جرم سیمان (%)',
-        0.1,
-        data.admixture === 'none'
-          ? 'min="0" max="99.9" disabled'
-          : 'min="0" max="99.9"'
-      )}
+      ${numberInput('admixturePct', 'درصد افزودنی نسبت به جرم سیمان (%)', 0.1,
+        data.admixture === 'none' ? 'min="0" max="99.9" disabled' : 'min="0" max="99.9"')}
 
-      ${numberInput(
-        'sgAdmixture',
-        'چگالی افزودنی',
-        0.01,
-        data.admixture === 'none'
-          ? 'disabled'
-          : ''
-      )}
+      ${numberInput('sgAdmixture', 'چگالی افزودنی', 0.01,
+        data.admixture === 'none' ? 'disabled' : '')}
     </div>
 
     <h3>کنترل‌های اختیاری طرح</h3>
 
-    ${checkboxField(
-      'limitMinCementOn',
-      'اعمال حداقل مقدار سیمان',
-      'limitMinCement',
-      'حداقل سیمان (kg/m³)',
-      1
-    )}
+    ${checkboxField('limitMinCementOn', 'اعمال حداقل مقدار سیمان',
+      'limitMinCement', 'حداقل سیمان (kg/m³)', 1)}
 
-    ${checkboxField(
-      'limitMaxCementOn',
-      'اعمال حداکثر مقدار سیمان',
-      'limitMaxCement',
-      'حداکثر سیمان (kg/m³)',
-      1
-    )}
+    ${checkboxField('limitMaxCementOn', 'اعمال حداکثر مقدار سیمان',
+      'limitMaxCement', 'حداکثر سیمان (kg/m³)', 1)}
 
-    ${checkboxField(
-      'limitWcOn',
-      'اعمال حداکثر نسبت آب به سیمان',
-      'limitWc',
-      'حداکثر نسبت آب به سیمان',
-      0.001
-    )}
+    ${checkboxField('limitWcOn', 'اعمال حداکثر نسبت آب به سیمان',
+      'limitWc', 'حداکثر نسبت آب به سیمان', 0.001)}
   `;
 }
 
@@ -759,15 +563,11 @@ function renderHome() {
 function getClosestDeviationRow(fc) {
   const keys = Object.keys(standardDeviationTable).map(Number);
   if (standardDeviationTable[fc]) return standardDeviationTable[fc];
-  
   let nearest = keys[0];
   let minDiff = Math.abs(fc - nearest);
-  for (let k of keys) {
+  for (const k of keys) {
     const diff = Math.abs(fc - k);
-    if (diff < minDiff) {
-      minDiff = diff;
-      nearest = k;
-    }
+    if (diff < minDiff) { minDiff = diff; nearest = k; }
   }
   return standardDeviationTable[nearest];
 }
@@ -775,7 +575,7 @@ function getClosestDeviationRow(fc) {
 function targetCalculations() {
   let fc = num('strength');
   if (!Number.isFinite(fc) || fc <= 0) fc = 30;
-  
+
   const row = getClosestDeviationRow(fc);
   if (!row) return null;
 
@@ -785,33 +585,17 @@ function targetCalculations() {
 
   const fcm1 = fc + 1.34 * S;
   const fcm2 = 0.9 * fc + 2.33 * S;
-
-  return {
-    fc,
-    S,
-    fcm1,
-    fcm2,
-    target: Math.max(fcm1, fcm2)
-  };
+  return { fc, S, fcm1, fcm2, target: Math.max(fcm1, fcm2) };
 }
 
 function getTargetStrength() {
   if (data.targetMethod === 'manual') {
     const raw = data.targetStrengthManual;
-
-    if (raw === '' || raw == null) {
-      return null;
-    }
-
+    if (raw === '' || raw == null) return null;
     const value = Number(raw);
-
-    return Number.isFinite(value) && value > 0
-      ? value
-      : null;
+    return Number.isFinite(value) && value > 0 ? value : null;
   }
-
   const result = targetCalculations();
-
   return result ? result.target : null;
 }
 
@@ -823,80 +607,37 @@ function renderTargetStrength() {
     <h3>تعیین مقاومت هدف طرح</h3>
 
     <div class="grid">
-      ${selectInput(
-        'targetMethod',
-        'روش تعیین مقاومت هدف',
-        [
-          { value: 'manual', label: 'ورود دستی' },
-          { value: 'auto', label: 'محاسبه خودکار' }
-        ]
-      )}
+      ${selectInput('targetMethod', 'روش تعیین مقاومت هدف', [
+        { value: 'manual', label: 'ورود دستی' },
+        { value: 'auto', label: 'محاسبه خودکار' }
+      ])}
 
-      ${selectInput(
-        'workshopRank',
-        'رتبه کارگاه',
-        [
-          { value: 'A', label: 'الف' },
-          { value: 'B', label: 'ب' },
-          { value: 'C', label: 'ج' }
-        ]
-      )}
+      ${selectInput('workshopRank', 'رتبه کارگاه', [
+        { value: 'A', label: 'الف' },
+        { value: 'B', label: 'ب' },
+        { value: 'C', label: 'ج' }
+      ])}
     </div>
 
-    <p>
-      مقاومت مشخصه:
-      <strong>${fc.toFixed(2)} MPa</strong>
-    </p>
+    <p>مقاومت مشخصه: <strong>${Number.isFinite(fc) ? fc.toFixed(2) : '—'} MPa</strong></p>
 
     ${result
-      ? `
-        <p>
-          انحراف معیار S:
-          <strong>${result.S.toFixed(2)} MPa</strong>
-        </p>
-      `
-      : `
-        <p class="hint">
-          برای این مقاومت، مقدار انحراف معیار
-          در جدول فعلی موجود نیست.
-        </p>
-      `
-    }
+      ? `<p>انحراف معیار S: <strong>${result.S.toFixed(2)} MPa</strong></p>`
+      : `<p class="hint">برای این مقاومت، مقدار انحراف معیار در جدول فعلی موجود نیست.</p>`}
 
     ${data.targetMethod === 'manual'
-      ? numberInput(
-          'targetStrengthManual',
-          'مقاومت هدف طرح (MPa)',
-          0.1,
-          'min="0"'
-        )
+      ? numberInput('targetStrengthManual', 'مقاومت هدف طرح (MPa)', 0.1, 'min="0"')
       : result
         ? `
           <p>رابطه اول: fcm1 = fc + 1.34 × S</p>
-          <p>
-            ${fc.toFixed(2)} +
-            1.34 × ${result.S.toFixed(2)}
-            = ${result.fcm1.toFixed(2)} MPa
-          </p>
+          <p>${fc.toFixed(2)} + 1.34 × ${result.S.toFixed(2)} = ${result.fcm1.toFixed(2)} MPa</p>
 
           <p>رابطه دوم: fcm2 = 0.9 × fc + 2.33 × S</p>
-          <p>
-            0.9 × ${fc.toFixed(2)} +
-            2.33 × ${result.S.toFixed(2)}
-            = ${result.fcm2.toFixed(2)} MPa
-          </p>
+          <p>0.9 × ${fc.toFixed(2)} + 2.33 × ${result.S.toFixed(2)} = ${result.fcm2.toFixed(2)} MPa</p>
 
-          <p>
-            مقاومت هدف انتخابی:
-            <strong>${result.target.toFixed(2)} MPa</strong>
-          </p>
+          <p>مقاومت هدف انتخابی: <strong>${result.target.toFixed(2)} MPa</strong></p>
         `
-        : `
-          <p class="hint">
-            محاسبه خودکار در دسترس نیست.
-          </p>
-        `
-    }
+        : `<p class="hint">محاسبه خودکار در دسترس نیست.</p>`}
   `;
 }
 
@@ -906,25 +647,16 @@ function renderTargetStrength() {
 
 function renderAggregateTable() {
   const count = data.aggregateCount;
-
-  const headers = Array.from(
-    { length: count },
-    (_, i) => `<th>سنگدانه ${i + 1}</th>`
-  ).join('');
+  const headers = Array.from({ length: count }, (_, i) => `<th>سنگدانه ${i + 1}</th>`).join('');
 
   const nameRow = `
     <tr>
       <th>نام سنگدانه</th>
       ${Array.from({ length: count }, (_, i) => `
         <td>
-          <input
-            class="table-input"
-            type="text"
-            enterkeyhint="next"
-            data-agg="${i}"
-            data-agg-field="name"
-            value="${escapeHtml(data.aggregates[i].name)}"
-          >
+          <input class="table-input" type="text" enterkeyhint="next"
+            data-agg="${i}" data-agg-field="name"
+            value="${escapeHtml(data.aggregates[i].name)}">
         </td>
       `).join('')}
     </tr>
@@ -935,17 +667,10 @@ function renderAggregateTable() {
       <th>درصد شکستگی (%)</th>
       ${Array.from({ length: count }, (_, i) => `
         <td>
-          <input
-            class="table-input"
-            type="text"
-            inputmode="decimal"
-            enterkeyhint="next"
-            min="0"
-            max="100"
-            data-agg="${i}"
-            data-agg-field="fracture"
-            value="${data.aggregates[i].fracture}"
-          >
+          <input class="table-input" type="text" inputmode="decimal"
+            enterkeyhint="next" min="0" max="100"
+            data-agg="${i}" data-agg-field="fracture"
+            value="${data.aggregates[i].fracture}">
         </td>
       `).join('')}
     </tr>
@@ -953,23 +678,15 @@ function renderAggregateTable() {
 
   const sieveRows = sieves.map((sieve, j) => {
     if (sieve.mm === 6.35) return '';
-
     return `
       <tr>
         <th>درصد عبوری از الک ${sieve.label}</th>
         ${Array.from({ length: count }, (_, i) => `
           <td>
-            <input
-              class="table-input"
-              type="text"
-              inputmode="decimal"
-              enterkeyhint="next"
-              min="0"
-              max="100"
-              data-agg="${i}"
-              data-sieve="${j}"
-              value="${data.aggregates[i].passing[j] ?? ''}"
-            >
+            <input class="table-input" type="text" inputmode="decimal"
+              enterkeyhint="next" min="0" max="100"
+              data-agg="${i}" data-sieve="${j}"
+              value="${data.aggregates[i].passing[j] ?? ''}">
           </td>
         `).join('')}
       </tr>
@@ -980,41 +697,24 @@ function renderAggregateTable() {
     <h2>مشخصات سنگدانه‌ها</h2>
 
     <div class="grid">
-      ${selectInput(
-        'aggregateCount',
-        'تعداد انواع سنگدانه',
-        [
-          { value: 2, label: '2' },
-          { value: 3, label: '3' },
-          { value: 4, label: '4' }
-        ]
-      )}
+      ${selectInput('aggregateCount', 'تعداد انواع سنگدانه', [
+        { value: 2, label: '2' },
+        { value: 3, label: '3' },
+        { value: 4, label: '4' }
+      ])}
 
-      ${selectInput(
-        'msa',
-        'حداکثر اندازه اسمی سنگدانه NMSA',
-        [
-          { value: 9.5, label: '9.5' },
-          { value: 12.5, label: '12.5' },
-          { value: 19, label: '19' },
-          { value: 25, label: '25' }
-        ]
-      )}
+      ${selectInput('msa', 'حداکثر اندازه اسمی سنگدانه NMSA', [
+        { value: 9.5, label: '9.5' },
+        { value: 12.5, label: '12.5' },
+        { value: 19, label: '19' },
+        { value: 25, label: '25' }
+      ])}
     </div>
 
     <div class="table-scroll">
       <table class="aggregate-table">
-        <thead>
-          <tr>
-            <th style="width: 140px;">مشخصات</th>
-            ${headers}
-          </tr>
-        </thead>
-        <tbody>
-          ${nameRow}
-          ${fractureRow}
-          ${sieveRows}
-        </tbody>
+        <thead><tr><th style="width: 140px;">مشخصات</th>${headers}</tr></thead>
+        <tbody>${nameRow}${fractureRow}${sieveRows}</tbody>
       </table>
     </div>
 
@@ -1039,86 +739,52 @@ function getSharesInfo() {
   const count = data.aggregateCount;
   const shares = data.aggregateShares.slice(0, count);
 
-  const entered = shares.every(
-    v => v !== '' &&
-      v != null &&
-      Number.isFinite(Number(v)) &&
-      Number(v) >= 0 &&
-      Number(v) <= 100
+  const entered = shares.every(v =>
+    v !== '' && v != null && Number.isFinite(Number(v)) &&
+    Number(v) >= 0 && Number(v) <= 100
   );
 
   const total = entered
-    ? shares.reduce(
-        (sum, value) => sum + Number(value),
-        0
-      )
+    ? shares.reduce((sum, value) => sum + Number(value), 0)
     : null;
 
   return {
-    count,
-    shares,
-    entered,
-    total,
-    valid:
-      entered &&
-      Math.abs(total - 100) < 0.0001
+    count, shares, entered, total,
+    valid: entered && Math.abs(total - 100) < 0.0001
   };
 }
 
 function combinedGrading() {
   const info = getSharesInfo();
-
   if (!info.valid) return null;
 
-  const aggregates = data.aggregates.slice(
-    0,
-    info.count
-  );
-
+  const aggregates = data.aggregates.slice(0, info.count);
   const allEntered = aggregates.every(a =>
     aggregateSieves.every(({ j }) => {
       const v = a.passing[j];
-
-      return v !== '' &&
-        v != null &&
-        Number.isFinite(Number(v)) &&
-        Number(v) >= 0 &&
-        Number(v) <= 100;
+      return v !== '' && v != null && Number.isFinite(Number(v)) &&
+             Number(v) >= 0 && Number(v) <= 100;
     })
   );
-
   if (!allEntered) return null;
 
   return aggregateSieves.map(({ sieve, j }) => ({
     mm: sieve.mm,
     value: aggregates.reduce(
-      (sum, a, i) =>
-        sum +
-        Number(a.passing[j]) *
-        Number(info.shares[i]) / 100,
-      0
+      (sum, a, i) => sum + Number(a.passing[j]) * Number(info.shares[i]) / 100, 0
     )
   }));
 }
 
 function finenessModulus(points) {
   if (!points) return null;
-
-  const fmSieves = [
-    37.5, 19, 9.5, 4.75,
-    2.36, 1.18, 0.6, 0.3, 0.15
-  ];
-
+  const fmSieves = [37.5, 19, 9.5, 4.75, 2.36, 1.18, 0.6, 0.3, 0.15];
   let total = 0;
-
   for (const mm of fmSieves) {
     const point = points.find(p => p.mm === mm);
-
     if (!point) return null;
-
     total += 100 - point.value;
   }
-
   return total / 100;
 }
 
@@ -1129,51 +795,31 @@ function finenessModulus(points) {
 function getReferenceSeries() {
   const msa = Number(data.msa);
   const source = referenceCurves[String(msa)];
-
   if (!source) return [];
 
   const result = [];
-
   for (const name of ['A', 'B', 'C']) {
     const values = source[name];
-
-    if (
-      !Array.isArray(values) ||
-      values.length !== sieves.length
-    ) {
-      continue;
-    }
+    if (!Array.isArray(values) || values.length !== sieves.length) continue;
 
     const points = sieves
-      .map((sieve, i) => ({
-        mm: sieve.mm,
-        value: values[i]
-      }))
+      .map((sieve, i) => ({ mm: sieve.mm, value: values[i] }))
       .filter(p => p.mm <= msa + 0.001);
-
     if (!points.length) continue;
 
-    if (!points.every(
-      p => typeof p.value === 'number' &&
-        Number.isFinite(p.value) &&
-        p.value >= 0 &&
-        p.value <= 100
-    )) {
-      continue;
-    }
+    if (!points.every(p =>
+      typeof p.value === 'number' && Number.isFinite(p.value) &&
+      p.value >= 0 && p.value <= 100
+    )) continue;
 
     let monotonic = true;
     for (let i = 1; i < points.length; i++) {
-      if (points[i].value > points[i - 1].value + 0.0001) {
-        monotonic = false;
-        break;
-      }
+      if (points[i].value > points[i - 1].value + 0.0001) { monotonic = false; break; }
     }
     if (!monotonic) continue;
 
     result.push({ name, points });
   }
-
   return result;
 }
 
@@ -1184,51 +830,26 @@ function getReferenceSeries() {
 function renderGradingChart(combined) {
   const width = 680;
   const height = 390;
-
-  const left = 65;
-  const right = 25;
-  const top = 25;
-  const bottom = 75;
-
+  const left = 65, right = 25, top = 25, bottom = 75;
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
-
   const minLog = Math.log10(0.075);
   const maxLog = Math.log10(37.5);
 
-  const x = mm =>
-    left +
-    (Math.log10(mm) - minLog) /
-    (maxLog - minLog) * plotWidth;
+  const x = mm => left + (Math.log10(mm) - minLog) / (maxLog - minLog) * plotWidth;
+  const y = value => top + (100 - value) / 100 * plotHeight;
 
-  const y = value =>
-    top +
-    (100 - value) / 100 * plotHeight;
-
-  function drawSeries(
-    points,
-    color,
-    dash = '',
-    thickness = 2.5,
-    sieveList = sieves
-  ) {
+  function drawSeries(points, color, dash = '', thickness = 2.5, sieveList = sieves) {
     let valid = points
-      .filter(p =>
-        p.value !== '' &&
-        p.value != null &&
+      .filter(p => p.value !== '' && p.value != null &&
         Number.isFinite(Number(p.value)) &&
-        Number(p.value) >= 0 &&
-        Number(p.value) <= 100
-      )
+        Number(p.value) >= 0 && Number(p.value) <= 100)
       .sort((a, b) => a.mm - b.mm);
-
     if (!valid.length) return '';
 
-    let first100Index = valid.findIndex(p => Number(p.value) === 100);
+    const first100Index = valid.findIndex(p => Number(p.value) === 100);
     let last0Index = -1;
-    valid.forEach((p, idx) => {
-      if (Number(p.value) === 0) last0Index = idx;
-    });
+    valid.forEach((p, idx) => { if (Number(p.value) === 0) last0Index = idx; });
 
     valid = valid.filter((p, idx) => {
       const v = Number(p.value);
@@ -1239,205 +860,76 @@ function renderGradingChart(combined) {
 
     const segments = [];
     let current = [];
-
     for (const p of valid) {
-      const originalIndex = sieveList.findIndex(
-        s => Math.abs(s.mm - p.mm) < 0.0001
-      );
-
-      if (
-        current.length &&
-        Math.abs(
-          originalIndex -
-          current[current.length - 1].index
-        ) !== 1
-      ) {
-        segments.push(current);
-        current = [];
+      const originalIndex = sieveList.findIndex(s => Math.abs(s.mm - p.mm) < 0.0001);
+      if (current.length && Math.abs(originalIndex - current[current.length - 1].index) !== 1) {
+        segments.push(current); current = [];
       }
-
-      current.push({
-        ...p,
-        index: originalIndex
-      });
+      current.push({ ...p, index: originalIndex });
     }
-
-    if (current.length) {
-      segments.push(current);
-    }
+    if (current.length) segments.push(current);
 
     const lines = segments.map(segment => {
       if (segment.length < 2) return '';
-
-      const coords = segment.map(
-        p => `${x(p.mm)},${y(Number(p.value))}`
-      ).join(' ');
-
-      return `
-        <polyline
-          points="${coords}"
-          fill="none"
-          stroke="${color}"
-          stroke-width="${thickness}"
-          stroke-dasharray="${dash}"
-          stroke-linejoin="round"
-        />
-      `;
+      const coords = segment.map(p => `${x(p.mm)},${y(Number(p.value))}`).join(' ');
+      return `<polyline points="${coords}" fill="none" stroke="${color}"
+              stroke-width="${thickness}" stroke-dasharray="${dash}"
+              stroke-linejoin="round" />`;
     }).join('');
 
-    const circles = valid.map((p) => `
-      <circle
-        cx="${x(p.mm)}"
-        cy="${y(Number(p.value))}"
-        r="3"
-        fill="${color}"
-      />
-    `).join('');
+    const circles = valid.map(p =>
+      `<circle cx="${x(p.mm)}" cy="${y(Number(p.value))}" r="3" fill="${color}" />`
+    ).join('');
 
     return lines + circles;
   }
 
-  const aggregateColors = [
-    '#2563eb',
-    '#ea580c',
-    '#16a34a',
-    '#9333ea'
-  ];
-
+  const aggregateColors = ['#2563eb', '#ea580c', '#16a34a', '#9333ea'];
   const referenceColor = '#0ea5e9';
 
   const aggregateLines = data.aggregates
     .slice(0, data.aggregateCount)
     .map((aggregate, i) => {
-      if (!data.showAggregateCurves[i]) {
-        return '';
-      }
-
-      const points = sieves.map((sieve, j) => ({
-        mm: sieve.mm,
-        value: aggregate.passing[j]
-      }));
-
-      return drawSeries(
-        points,
-        aggregateColors[i],
-        '6 4',
-        2.2,
-        chartSieves
-      );
+      if (!data.showAggregateCurves[i]) return '';
+      const points = sieves.map((sieve, j) => ({ mm: sieve.mm, value: aggregate.passing[j] }));
+      return drawSeries(points, aggregateColors[i], '6 4', 2.2, chartSieves);
     }).join('');
 
   const referenceSeries = getReferenceSeries();
-
   const referenceLines = data.showReferenceCurves
-    ? referenceSeries.map(series =>
-        drawSeries(
-          series.points,
-          referenceColor,
-          '',
-          2.8
-        )
-      ).join('')
+    ? referenceSeries.map(series => drawSeries(series.points, referenceColor, '', 2.8)).join('')
     : '';
 
-  const mixLine =
-    data.showMixCurve && combined
-      ? drawSeries(combined, '#000000', '', 3.5, chartSieves)
-      : '';
+  const mixLine = data.showMixCurve && combined
+    ? drawSeries(combined, '#000000', '', 3.5, chartSieves)
+    : '';
 
-  const horizontalGrid = [
-    0, 20, 40, 60, 80, 100
-  ].map(value => `
-    <line
-      x1="${left}"
-      y1="${y(value)}"
-      x2="${width - right}"
-      y2="${y(value)}"
-      stroke="#d7e0e8"
-    />
-    <text
-      x="${left - 25}"
-      y="${y(value) + 4}"
-      text-anchor="end"
-      font-size="12"
-      fill="#334155"
-    >${value}</text>
+  const horizontalGrid = [0, 20, 40, 60, 80, 100].map(value => `
+    <line x1="${left}" y1="${y(value)}" x2="${width - right}" y2="${y(value)}" stroke="#d7e0e8" />
+    <text x="${left - 25}" y="${y(value) + 4}" text-anchor="end" font-size="12" fill="#334155">${value}</text>
   `).join('');
 
-  const xTickValues = [
-    0.075, 0.15, 0.3, 0.6,
-    1.18, 2.36, 4.75, 6.35,
-    9.5, 12.5, 19, 25, 37.5
-  ];
-
+  const xTickValues = [0.075, 0.15, 0.3, 0.6, 1.18, 2.36, 4.75, 6.35, 9.5, 12.5, 19, 25, 37.5];
   const xTicks = xTickValues.map(mm => `
-    <line
-      x1="${x(mm)}"
-      y1="${top}"
-      x2="${x(mm)}"
-      y2="${height - bottom}"
-      stroke="#e2e8f0"
-    />
-    <text
-      x="${x(mm)}"
-      y="${height - bottom + 20}"
-      text-anchor="middle"
-      font-size="11"
-      fill="#334155"
-    >${mm}</text>
+    <line x1="${x(mm)}" y1="${top}" x2="${x(mm)}" y2="${height - bottom}" stroke="#e2e8f0" />
+    <text x="${x(mm)}" y="${height - bottom + 20}" text-anchor="middle" font-size="11" fill="#334155">${mm}</text>
   `).join('');
 
   return `
     <h3>منحنی‌های دانه‌بندی</h3>
-
     <div class="table-scroll">
-      <svg
-        viewBox="0 0 ${width} ${height}"
-        role="img"
-        aria-label="نمودار دانه‌بندی"
-        style="width:100%;max-width:900px;background:white"
-      >
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="نمودار دانه‌بندی"
+        style="width:100%;max-width:900px;background:white">
         ${horizontalGrid}
         ${xTicks}
-
-        <line
-          x1="${left}"
-          y1="${top}"
-          x2="${left}"
-          y2="${height - bottom}"
-          stroke="#475569"
-          stroke-width="1.5"
-        />
-
-        <line
-          x1="${left}"
-          y1="${height - bottom}"
-          x2="${width - right}"
-          y2="${height - bottom}"
-          stroke="#475569"
-          stroke-width="1.5"
-        />
-
+        <line x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
+        <line x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
         ${referenceLines}
         ${aggregateLines}
         ${mixLine}
-
-        <text
-          x="${width / 2}"
-          y="${height - 16}"
-          text-anchor="middle"
-          font-size="13"
-          fill="#334155"
-        >اندازه الک (mm) ـ مقیاس لگاریتمی</text>
-
-        <text
-          x="17"
-          y="${height / 2}"
-          text-anchor="middle"
-          font-size="13"
-          fill="#334155"
-          transform="rotate(-90 17 ${height / 2})"
-        >درصد عبوری</text>
+        <text x="${width / 2}" y="${height - 16}" text-anchor="middle" font-size="13" fill="#334155">اندازه الک (mm) ـ مقیاس لگاریتمی</text>
+        <text x="17" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155"
+          transform="rotate(-90 17 ${height / 2})">درصد عبوری</text>
       </svg>
     </div>
   `;
@@ -1450,103 +942,67 @@ function renderGradingChart(combined) {
 function renderShares() {
   const count = data.aggregateCount;
 
-  const shareInputs = Array.from(
-    { length: count },
-    (_, i) => {
-      const name = data.aggregates[i].name || `سنگدانه ${i + 1}`;
-      return `
-        <label class="field">
-          <span>سهم ${escapeHtml(name)} (%)</span>
-          <input
-            type="text"
-            inputmode="decimal"
-            enterkeyhint="next"
-            min="0"
-            max="100"
-            data-share="${i}"
-            value="${data.aggregateShares[i] ?? ''}"
-          >
-        </label>
-      `;
-    }
-  ).join('');
+  const shareInputs = Array.from({ length: count }, (_, i) => {
+    const name = data.aggregates[i].name || `سنگدانه ${i + 1}`;
+    return `
+      <label class="field">
+        <span>سهم ${escapeHtml(name)} (%)</span>
+        <input type="text" inputmode="decimal" enterkeyhint="next" min="0" max="100"
+          data-share="${i}" value="${data.aggregateShares[i] ?? ''}">
+      </label>
+    `;
+  }).join('');
 
   const combined = combinedGrading();
   const fm = finenessModulus(combined);
 
-  const curveCheckboxes = Array.from(
-    { length: count },
-    (_, i) => {
-      const name = data.aggregates[i].name || `سنگدانه ${i + 1}`;
-      return `
-        <label class="checkline" style="margin:8px 0">
-          <input
-            type="checkbox"
-            data-curve-aggregate="${i}"
-            ${data.showAggregateCurves[i] ? 'checked' : ''}
-          >
-          <span>
-            نمایش منحنی ${escapeHtml(name)}
-          </span>
-        </label>
-      `;
-    }
-  ).join('');
+  const curveCheckboxes = Array.from({ length: count }, (_, i) => {
+    const name = data.aggregates[i].name || `سنگدانه ${i + 1}`;
+    return `
+      <label class="checkline" style="margin:8px 0">
+        <input type="checkbox" data-curve-aggregate="${i}"
+          ${data.showAggregateCurves[i] ? 'checked' : ''}>
+        <span>نمایش منحنی ${escapeHtml(name)}</span>
+      </label>
+    `;
+  }).join('');
 
   return `
     <h2>سهم‌بندی سنگدانه‌ها</h2>
 
-    <div class="grid">
-      ${shareInputs}
-    </div>
+    <div class="grid">${shareInputs}</div>
 
     <h3>انتخاب منحنی‌های قابل نمایش</h3>
-
     <div class="limit-box">
       ${curveCheckboxes}
-
       <label class="checkline" style="margin:8px 0">
-        <input
-          type="checkbox"
-          data-curve-mix
-          ${data.showMixCurve ? 'checked' : ''}
-        >
+        <input type="checkbox" data-curve-mix ${data.showMixCurve ? 'checked' : ''}>
         <span>نمایش منحنی مخلوط ترکیبی</span>
       </label>
-
       <label class="checkline" style="margin:8px 0">
-        <input
-          type="checkbox"
-          data-curve-reference
-          ${data.showReferenceCurves ? 'checked' : ''}
-        >
+        <input type="checkbox" data-curve-reference ${data.showReferenceCurves ? 'checked' : ''}>
         <span>نمایش منحنی‌های مرجع A، B و C</span>
       </label>
     </div>
 
-    <p>
-      مدول نرمی مخلوط:
-      <strong>
-        ${fm === null ? 'تعیین نشده' : fm.toFixed(2)}
-      </strong>
-    </p>
+    <p>مدول نرمی مخلوط: <strong>${fm === null ? 'تعیین نشده' : fm.toFixed(2)}</strong></p>
 
     ${renderGradingChart(combined)}
   `;
 }
 
 /* =========================================
-   نمودار نسبت آب به سیمان (صفحه چهارم)
+   نمودار نسبت آب به سیمان
 ========================================= */
 
 function getActiveCurve() {
   const cement = String(data.cementClass || '42.5');
   let isCrushed = false;
   if (data.aggregates && data.aggregates.length > 0) {
-    isCrushed = data.aggregates.slice(0, data.aggregateCount).some(a => Number(a.fracture) > 0);
+    isCrushed = data.aggregates.slice(0, data.aggregateCount)
+      .some(a => Number(a.fracture) > 0);
   }
   const type = isCrushed ? 'C' : 'R';
-
   const hasAdmixture = data.admixture && data.admixture !== 'none';
 
   let curveSet;
@@ -1587,60 +1043,48 @@ function getActiveCurve() {
 
 function calculateStrength(wc, curve) {
   if (!curve) return null;
+  if (!Number.isFinite(wc) || wc <= 0) return null;
   let y;
   if (curve.d !== undefined) {
     y = curve.a * Math.pow(wc, 3) + curve.b * Math.pow(wc, 2) + curve.c * wc + curve.d;
   } else {
     y = curve.a * Math.pow(wc, 2) + curve.b * wc + curve.c;
   }
+  if (!Number.isFinite(y)) return null;
   return Math.max(10, Math.min(70, y));
 }
 
 function calculateWc(strength, curve) {
   if (!curve) return null;
+  if (!Number.isFinite(strength) || strength <= 0) return null;
+
   let low = 0.3;
   let high = 0.75;
-  
-  function evalCurve(x) {
-    if (curve.d !== undefined) {
-      return curve.a * Math.pow(x, 3) + curve.b * Math.pow(x, 2) + curve.c * x + curve.d;
-    } else {
-      return curve.a * Math.pow(x, 2) + curve.b * x + curve.c;
-    }
-  }
 
-  let fLow = evalCurve(low);
-  let fHigh = evalCurve(high);
+  const evalCurve = x => (curve.d !== undefined)
+    ? curve.a * Math.pow(x, 3) + curve.b * Math.pow(x, 2) + curve.c * x + curve.d
+    : curve.a * Math.pow(x, 2) + curve.b * x + curve.c;
 
+  const fLow = evalCurve(low);
+  const fHigh = evalCurve(high);
   if (strength > fLow || strength < fHigh) return null;
 
   for (let i = 0; i < 100; i++) {
-    let mid = (low + high) / 2;
-    let fMid = evalCurve(mid);
-    if (fMid > strength) {
-      low = mid;
-    } else {
-      high = mid;
-    }
+    const mid = (low + high) / 2;
+    const fMid = evalCurve(mid);
+    if (fMid > strength) low = mid;
+    else high = mid;
   }
   return (low + high) / 2;
 }
 
 function renderWCChart() {
-  const width = 680;
-  const height = 400;
-  const left = 60;
-  const right = 60; 
-  const top = 20;
-  const bottom = 60;
+  const width = 680, height = 400;
+  const left = 60, right = 60, top = 20, bottom = 60;
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
 
-  const xMin = 0.3;
-  const xMax = 0.75;
-  const yMin = 10;
-  const yMax = 70;
-
+  const xMin = 0.3, xMax = 0.75, yMin = 10, yMax = 70;
   const x = val => left + (val - xMin) / (xMax - xMin) * plotWidth;
   const y = val => top + (yMax - val) / (yMax - yMin) * plotHeight;
 
@@ -1670,7 +1114,6 @@ function renderWCChart() {
   const activeCurve = getActiveCurve();
   const targetY = getTargetStrength();
   let targetX = null;
-
   if (targetY !== null && activeCurve) {
     targetX = calculateWc(targetY, activeCurve);
   }
@@ -1695,21 +1138,19 @@ function renderWCChart() {
   allCurves.forEach(c => {
     let path = '';
     for (let wc = 0.35; wc <= 0.7001; wc += 0.005) {
-      let val = (c.d !== undefined) ? 
-        (c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d) :
-        (c.a * Math.pow(wc, 2) + c.b * wc + c.c);
-      
+      const val = (c.d !== undefined)
+        ? (c.a * Math.pow(wc, 3) + c.b * Math.pow(wc, 2) + c.c * wc + c.d)
+        : (c.a * Math.pow(wc, 2) + c.b * wc + c.c);
       path += `${path === '' ? 'M' : 'L'} ${x(wc)} ${y(val)} `;
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="${c.width}" stroke-dasharray="${c.dash}" />`;
-    
-    const labelWc = 0.35; 
-    const labelVal = (c.d !== undefined) ? 
-      (c.a * Math.pow(labelWc, 3) + c.b * Math.pow(labelWc, 2) + c.c * labelWc + c.d) :
-      (c.a * Math.pow(labelWc, 2) + c.b * labelWc + c.c);
-    
+
+    const labelWc = 0.35;
+    const labelVal = (c.d !== undefined)
+      ? (c.a * Math.pow(labelWc, 3) + c.b * Math.pow(labelWc, 2) + c.c * labelWc + c.d)
+      : (c.a * Math.pow(labelWc, 2) + c.b * labelWc + c.c);
     if (labelVal >= 5 && labelVal <= 75) {
-        curveLines += `<text x="${x(labelWc)}" y="${y(labelVal) - 5}" font-size="11" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
+      curveLines += `<text x="${x(labelWc)}" y="${y(labelVal) - 5}" font-size="11" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
     }
   });
 
@@ -1718,51 +1159,44 @@ function renderWCChart() {
   if (targetX !== null) {
     const px = x(targetX);
     const py = y(targetY);
-
     intersectionLines += `<line x1="${left}" y1="${py}" x2="${px}" y2="${py}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
     intersectionLines += `<line x1="${px}" y1="${py}" x2="${px}" y2="${height - bottom}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
     intersectionLines += `<circle cx="${px}" cy="${py}" r="4" fill="#dc2626" />`;
-
     intersectionText = `
       <div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
         نسبت آب به سیمان متناظر با مقاومت هدف: <strong>${targetX.toFixed(3)}</strong>
-      </div>
-    `;
+      </div>`;
   } else if (targetY !== null) {
-     intersectionText = `
+    intersectionText = `
       <div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
         مقاومت هدف ${targetY.toFixed(1)} MPa خارج از محدوده نمودار است.
-      </div>
-    `;
+      </div>`;
   } else {
     intersectionText = `
       <div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">
         لطفاً مقاومت هدف را تعیین کنید.
-      </div>
-    `;
+      </div>`;
   }
 
   return `
     <h3>نمودار نسبت آب به سیمان و مقاومت فشاری</h3>
     <div class="table-scroll">
-      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="نمودار نسبت آب به سیمان" style="width:100%;max-width:900px;background:white">
+      <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="نمودار نسبت آب به سیمان"
+        style="width:100%;max-width:900px;background:white">
         <defs>
           <clipPath id="plot-area-clip">
             <rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}" />
           </clipPath>
         </defs>
-
         ${grid}
-        
         <line x1="${left}" y1="${top}" x2="${left}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
         <line x1="${left}" y1="${height - bottom}" x2="${width - right}" y2="${height - bottom}" stroke="#475569" stroke-width="1.5" />
-
         <g clip-path="url(#plot-area-clip)">
           ${curveLines}
           ${intersectionLines}
         </g>
-
-        <text x="${left - 45}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 45} ${height / 2})">مقاومت فشاری متوسط (N/mm²)</text>
+        <text x="${left - 45}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155"
+          transform="rotate(-90 ${left - 45} ${height / 2})">مقاومت فشاری متوسط (N/mm²)</text>
         <text x="${width / 2}" y="${height - 10}" text-anchor="middle" font-size="13" fill="#334155">نسبت آب به سیمان</text>
       </svg>
     </div>
@@ -1775,29 +1209,23 @@ function renderWCChart() {
 ========================================= */
 
 function renderStep1() {
+  const wcDisplay = Number.isFinite(Number(data.wc)) ? Number(data.wc).toFixed(3) : '';
+  const target = getTargetStrength();
+  const targetDisplay = target !== null ? target.toFixed(1) : '';
+
   return `
     <h2>تعیین نسبت آب به سیمان</h2>
 
     <div class="grid" style="margin-bottom: 15px;">
       <label class="field">
         <span>نسبت آب به سیمان انتخابی</span>
-        <input
-          type="text"
-          inputmode="decimal"
-          enterkeyhint="next"
-          data-key="wc"
-          value="${Number(data.wc).toFixed(3)}"
-        >
+        <input type="text" inputmode="decimal" enterkeyhint="next"
+          data-key="wc" value="${wcDisplay}">
       </label>
       <label class="field">
         <span>مقاومت فشاری متوسط متناظر (MPa)</span>
-        <input
-          type="text"
-          inputmode="decimal"
-          enterkeyhint="next"
-          data-key="targetStrengthManual"
-          value="${getTargetStrength() !== null ? Number(getTargetStrength()).toFixed(1) : ''}"
-        >
+        <input type="text" inputmode="decimal" enterkeyhint="next"
+          data-key="targetStrengthManual" value="${targetDisplay}">
       </label>
     </div>
 
@@ -1806,7 +1234,7 @@ function renderStep1() {
 }
 
 /* =========================================
-   نمودار آب آزاد (صفحه پنجم)
+   نمودار آب آزاد
 ========================================= */
 
 function getInterpolatedWaterCurve(isCrushed, slump) {
@@ -1828,56 +1256,53 @@ function getInterpolatedWaterCurve(isCrushed, slump) {
   if (slump < eqs.S2.mid) {
     const t = (slump - eqs.S1.mid) / (eqs.S2.mid - eqs.S1.mid);
     return {
-      a: eqs.S1.a * (1-t) + eqs.S2.a * t,
-      b: eqs.S1.b * (1-t) + eqs.S2.b * t,
-      c: eqs.S1.c * (1-t) + eqs.S2.c * t
+      a: eqs.S1.a * (1 - t) + eqs.S2.a * t,
+      b: eqs.S1.b * (1 - t) + eqs.S2.b * t,
+      c: eqs.S1.c * (1 - t) + eqs.S2.c * t
     };
   } else if (slump < eqs.S3.mid) {
     const t = (slump - eqs.S2.mid) / (eqs.S3.mid - eqs.S2.mid);
     return {
-      a: eqs.S2.a * (1-t) + eqs.S3.a * t,
-      b: eqs.S2.b * (1-t) + eqs.S3.b * t,
-      c: eqs.S2.c * (1-t) + eqs.S3.c * t
+      a: eqs.S2.a * (1 - t) + eqs.S3.a * t,
+      b: eqs.S2.b * (1 - t) + eqs.S3.b * t,
+      c: eqs.S2.c * (1 - t) + eqs.S3.c * t
     };
   } else {
     const t = (slump - eqs.S3.mid) / (eqs.S4.mid - eqs.S3.mid);
     return {
-      a: eqs.S3.a * (1-t) + eqs.S4.a * t,
-      b: eqs.S3.b * (1-t) + eqs.S4.b * t,
-      c: eqs.S3.c * (1-t) + eqs.S4.c * t
+      a: eqs.S3.a * (1 - t) + eqs.S4.a * t,
+      b: eqs.S3.b * (1 - t) + eqs.S4.b * t,
+      c: eqs.S3.c * (1 - t) + eqs.S4.c * t
     };
   }
 }
 
-function syncWater() {
+function computeWaterFromCurve() {
   const combined = combinedGrading();
   const fm = finenessModulus(combined) || 4.5;
   const activeAggs = data.aggregates.slice(0, data.aggregateCount);
-  const avgFracture = activeAggs.length > 0 ? activeAggs.reduce((sum, a) => sum + Number(a.fracture || 0), 0) / activeAggs.length : 0;
+  const avgFracture = activeAggs.length > 0
+    ? activeAggs.reduce((sum, a) => sum + Number(a.fracture || 0), 0) / activeAggs.length
+    : 0;
   const isCrushed = avgFracture > 0;
-
   const curve = getInterpolatedWaterCurve(isCrushed, num('slump'));
-  const waterFromCurve = curve.a * fm * fm + curve.b * fm + curve.c;
-  
-  if (waterFromCurve) {
-    data.water = Math.round(waterFromCurve * 10) / 10;
+  const water = curve.a * fm * fm + curve.b * fm + curve.c;
+  return { fm, isCrushed, avgFracture, water };
+}
+
+function syncWater() {
+  const { water } = computeWaterFromCurve();
+  if (Number.isFinite(water) && water > 0) {
+    data.water = Math.round(water * 10) / 10;
   }
 }
 
-function renderWaterChart(fm, water, isCrushed, slump) {
-  const width = 680;
-  const height = 400;
-  const left = 60;
-  const right = 60; 
-  const top = 20;
-  const bottom = 60;
+function renderWaterChart(fm, waterFromCurve, isCrushed, slump) {
+  const width = 680, height = 400;
+  const left = 60, right = 60, top = 20, bottom = 60;
   const plotWidth = width - left - right;
   const plotHeight = height - top - bottom;
-
-  const xMin = 3.0;
-  const xMax = 8.5;
-  const yMin = 100;
-  const yMax = 320;
+  const xMin = 3.0, xMax = 8.5, yMin = 100, yMax = 320;
 
   const x = val => left + (val - xMin) / (xMax - xMin) * plotWidth;
   const y = val => top + (yMax - val) / (yMax - yMin) * plotHeight;
@@ -1900,7 +1325,6 @@ function renderWaterChart(fm, water, isCrushed, slump) {
   }
 
   const activeEq = getInterpolatedWaterCurve(isCrushed, slump);
-  const waterFromCurve = activeEq.a * fm * fm + activeEq.b * fm + activeEq.c;
 
   let grid = '';
   for (let i = 100; i <= 320; i += 20) {
@@ -1915,18 +1339,16 @@ function renderWaterChart(fm, water, isCrushed, slump) {
   }
 
   const labelSuffix = isCrushed ? '-C' : '-R';
-
   let curveLines = '';
-  
+
   baseCurves.forEach(c => {
     let path = '';
     for (let xv = 3.35; xv <= 8.01; xv += 0.1) {
-      let yv = c.a * xv * xv + c.b * xv + c.c;
-      if (yv < 105) break; 
+      const yv = c.a * xv * xv + c.b * xv + c.c;
+      if (yv < 105) break;
       path += `${path === '' ? 'M' : 'L'} ${x(xv)} ${y(yv)} `;
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.5" />`;
-    
     const labelY = c.a * 3.35 * 3.35 + c.b * 3.35 + c.c;
     if (labelY >= yMin && labelY <= yMax) {
       curveLines += `<text x="${x(3.35)}" y="${y(labelY) - 5}" font-size="12" fill="${c.color}" opacity="0.6" text-anchor="start">${c.name}${labelSuffix}</text>`;
@@ -1935,21 +1357,22 @@ function renderWaterChart(fm, water, isCrushed, slump) {
 
   let interpPath = '';
   for (let xv = 3.35; xv <= 8.01; xv += 0.1) {
-    let yv = activeEq.a * xv * xv + activeEq.b * xv + activeEq.c;
-    if (yv < 105) break; 
+    const yv = activeEq.a * xv * xv + activeEq.b * xv + activeEq.c;
+    if (yv < 105) break;
     interpPath += `${interpPath === '' ? 'M' : 'L'} ${x(xv)} ${y(yv)} `;
   }
   curveLines += `<path d="${interpPath}" fill="none" stroke="#059669" stroke-width="4" />`;
-  
+
   const rightLabelY = activeEq.a * 7.8 * 7.8 + activeEq.b * 7.8 + activeEq.c;
   if (rightLabelY >= yMin && rightLabelY <= yMax) {
     curveLines += `<text x="${x(7.8)}" y="${y(rightLabelY) - 10}" font-size="14" fill="#059669" font-weight="bold" text-anchor="end">S = ${slump}</text>`;
   }
 
   let intersectionLines = '';
-  if (fm >= xMin && fm <= xMax && water >= yMin && water <= yMax) {
+  if (Number.isFinite(fm) && Number.isFinite(waterFromCurve) &&
+      fm >= xMin && fm <= xMax && waterFromCurve >= yMin && waterFromCurve <= yMax) {
     const px = x(fm);
-    const py = y(water);
+    const py = y(waterFromCurve);
     intersectionLines += `<line x1="${left}" y1="${py}" x2="${px}" y2="${py}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
     intersectionLines += `<line x1="${px}" y1="${py}" x2="${px}" y2="${height - bottom}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
     intersectionLines += `<circle cx="${px}" cy="${py}" r="5" fill="#dc2626" />`;
@@ -1971,7 +1394,8 @@ function renderWaterChart(fm, water, isCrushed, slump) {
           ${curveLines}
           ${intersectionLines}
         </g>
-        <text x="${left - 45}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155" transform="rotate(-90 ${left - 45} ${height / 2})">آب آزاد (kg/m³)</text>
+        <text x="${left - 45}" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155"
+          transform="rotate(-90 ${left - 45} ${height / 2})">آب آزاد (kg/m³)</text>
         <text x="${width / 2}" y="${height - 10}" text-anchor="middle" font-size="13" fill="#334155">مدول نرمی (F.M.)</text>
       </svg>
     </div>
@@ -1979,40 +1403,39 @@ function renderWaterChart(fm, water, isCrushed, slump) {
 }
 
 function renderWater() {
-  const combined = combinedGrading();
-  const fm = finenessModulus(combined) || 4.5;
-  
-  const activeAggs = data.aggregates.slice(0, data.aggregateCount);
-  const avgFracture = activeAggs.length > 0 ? activeAggs.reduce((sum, a) => sum + Number(a.fracture || 0), 0) / activeAggs.length : 0;
-  const isCrushed = avgFracture > 0;
+  const { fm, isCrushed, avgFracture, water } = computeWaterFromCurve();
 
-  const activeEq = getInterpolatedWaterCurve(isCrushed, num('slump'));
-  const waterFromCurve = activeEq.a * fm * fm + activeEq.b * fm + activeEq.c;
+  const reduction = data.admixture !== 'none'
+    ? (water * num('admixturePct') / 100)
+    : 0;
+  const calculatedWater = water - reduction;
 
-  const reduction = data.admixture !== 'none' ? (waterFromCurve * num('admixturePct') / 100) : 0;
-  const reductionPct = data.admixture !== 'none' ? num('admixturePct') : 0;
-  const calculatedWater = waterFromCurve - reduction;
+  const fmt = v => Number.isFinite(v) ? v.toFixed(1) : 'نامشخص';
 
   return `
     <h2>تعیین آب آزاد</h2>
-    
-    ${renderWaterChart(fm, data.water, isCrushed, num('slump'))}
+
+    ${renderWaterChart(fm, water, isCrushed, num('slump'))}
 
     <h3 style="margin-top: 20px;">پارامترهای محاسباتی</h3>
     <table>
       <tbody>
-        <tr><td>1. مدول نرمی مخلوط سنگدانه</td><td>${fm.toFixed(2)}</td></tr>
+        <tr><td>1. مدول نرمی مخلوط سنگدانه</td><td>${Number.isFinite(fm) ? fm.toFixed(2) : '—'}</td></tr>
         <tr><td>2. اسلامپ مشخصه</td><td>${data.slump} mm</td></tr>
-        <tr><td>3. درصد شکستگی متوسط معادل برای مخلوط سنگدانه</td><td>${avgFracture.toFixed(1)}٪ (${isCrushed ? 'تیزگوشه' : 'گردگوشه'})</td></tr>
-        <tr><td>4. میزان آب آزاد مورد نیاز حاصل از منحنی (kg/m³)</td><td>${waterFromCurve ? waterFromCurve.toFixed(1) : 'نامشخص'}</td></tr>
+        <tr><td>3. درصد شکستگی متوسط معادل برای مخلوط سنگدانه</td><td>${Number.isFinite(avgFracture) ? avgFracture.toFixed(1) : '—'}٪ (${isCrushed ? 'تیزگوشه' : 'گردگوشه'})</td></tr>
+        <tr><td>4. میزان آب آزاد مورد نیاز حاصل از منحنی (kg/m³)</td><td>${fmt(water)}</td></tr>
         <tr>
           <td>5. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده (%)</td>
           <td>
-            <input type="text" inputmode="decimal" enterkeyhint="next" data-key="admixturePct" value="${data.admixture !== 'none' ? data.admixturePct : 0}" ${data.admixture === 'none' ? 'disabled' : ''} style="width: 80px; padding: 4px;">
+            <input type="text" inputmode="decimal" enterkeyhint="next"
+              data-key="admixturePct"
+              value="${data.admixture !== 'none' ? data.admixturePct : 0}"
+              ${data.admixture === 'none' ? 'disabled' : ''}
+              style="width: 80px; padding: 4px;">
           </td>
         </tr>
-        <tr><td>6. مقدار کاهش آب آزاد (kg/m³)</td><td>${reduction.toFixed(1)}</td></tr>
-        <tr><td>7. میزان آب آزاد مورد نیاز محاسبه شده (kg/m³)</td><td>${calculatedWater.toFixed(1)}</td></tr>
+        <tr><td>6. مقدار کاهش آب آزاد (kg/m³)</td><td>${fmt(reduction)}</td></tr>
+        <tr><td>7. میزان آب آزاد مورد نیاز محاسبه شده (kg/m³)</td><td>${fmt(calculatedWater)}</td></tr>
       </tbody>
     </table>
   `;
@@ -2026,25 +1449,22 @@ function renderCement() {
   const result = new Step4().run();
   const wf = effectiveWater();
   const wc = num('wc');
-  let cement = result.cement;
-  
-  const maxC = 350;
-  let isLimited = cement > maxC;
+  const cement = result.cement;
 
-  let extraC = 0;
-  let extraW = 0;
-  let wfNew = wf;
-  let cNew = cement;
-  let factor = Number(data.correctionFactor) || 1.5;
+  const softMax = getSoftMaxCement();
+  const isLimited = cement > softMax;
+
+  let extraC = 0, extraW = 0, wfNew = wf, cNew = cement;
+  const factor = Number(data.correctionFactor) || 1.5;
 
   if (isLimited) {
-    extraC = cement - maxC;
-    extraW = extraC * (factor / 10); 
+    extraC = cement - softMax;
+    extraW = extraC * (factor / 10);
     wfNew = wf + extraW;
     cNew = wfNew / wc;
   }
 
-  let formulaBox = `
+  const formulaBox = `
     <div class="compact-formula" style="display:flex; align-items:center; gap:10px; padding:10px; background:#f8fafc; border-radius:6px; margin-bottom:15px; border:1px solid #e2e8f0; direction:ltr; font-size:13px;">
       <span style="font-weight:bold;">C =</span>
       <div style="display:flex; flex-direction:column; align-items:center; font-size:11px;">
@@ -2068,26 +1488,23 @@ function renderCement() {
     contentHtml = `
       <div style="background:#ecfdf5; border:1px solid #10b981; color:#065f46; padding:12px; border-radius:6px; text-align:center; font-size:13px;">
         <strong>مقدار سیمان در محدوده مجاز است.</strong>
-        <div style="font-size:11px; margin-top:5px;">(${cement.toFixed(2)} kg/m³ < ${maxC} kg/m³)</div>
+        <div style="font-size:11px; margin-top:5px;">(${cement.toFixed(2)} kg/m³ ≤ ${softMax} kg/m³)</div>
       </div>
     `;
   } else {
     contentHtml = `
       <div style="background:#fffbeb; border:1px solid #f59e0b; color:#92400e; padding:12px; border-radius:6px; font-size:13px;">
-        <strong>هشدار:</strong> مقدار سیمان (${cement.toFixed(2)}) بیش از حد مجاز (${maxC}) است.
-        
+        <strong>هشدار:</strong> مقدار سیمان (${cement.toFixed(2)}) بیش از حد مجاز (${softMax}) است.
         <div style="background:white; padding:10px; border-radius:6px; margin-top:10px; border:1px solid #fcd34d;">
-          
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:12px;">
             <span>ضریب اصلاح آب (kg/10kg):</span>
-            <input type="text" inputmode="decimal" data-key="correctionFactor" value="${factor}" style="width:60px; padding:2px 4px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
+            <input type="text" inputmode="decimal" data-key="correctionFactor" value="${factor}"
+              style="width:60px; padding:2px 4px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
           </div>
-          
           <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:11px; margin-bottom:10px;">
             <div>سیمان اضافی: <strong>${extraC.toFixed(2)}</strong> kg</div>
             <div>آب اضافی: <strong>${extraW.toFixed(2)}</strong> kg</div>
           </div>
-          
           <div class="compact-formula" style="display:flex; align-items:center; gap:10px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0; direction:ltr; font-size:12px;">
             <span style="font-weight:bold;">C_new =</span>
             <div style="display:flex; flex-direction:column; align-items:center; font-size:11px;">
@@ -2123,43 +1540,34 @@ function renderCement() {
 ========================================= */
 
 function renderReport() {
-  const result = new Step5().run();
-  const target = getTargetStrength();
-  
+  let result = new Step5().run();
+
+  // اعمال اصلاح سیمان در صورت ادامه توسط کاربر
+  const softMax = getSoftMaxCement();
+  if (result.cement > softMax && data.cementAction === 'proceed') {
+    const factor = Number(data.correctionFactor) || 1.5;
+    const extraC = result.cement - softMax;
+    const extraW = extraC * (factor / 10);
+    const newWater = result.water + extraW;
+    const newCement = newWater / num('wc');
+    result = new Step5().run({ water: newWater, cement: newCement });
+  }
+
   const c = result.cement;
   const w = result.water;
   const air = data.air / 100;
-  
-  const vc = result.vc;
-  const vw = result.vw;
-  const va = result.va;
-  const va_adm = result.va_adm;
-  const vAgg = result.aggregateVolume;
-  
+
   const shareGravel = data.coarseShare;
   const shareSand = 1 - shareGravel;
-  
-  const volGravel = result.gravelVolume;
-  const volSand = result.sandVolume;
-  
-  const ssdGravel = result.ssdGravel;
-  const ssdSand = result.ssdSand;
-  
-  const dryGravel = result.dryGravel;
-  const drySand = result.drySand;
-  
-  const totalSSD = ssdGravel + ssdSand;
-  const totalDry = dryGravel + drySand;
-  
-  const totalWater = w + (ssdSand - drySand) + (ssdGravel - dryGravel);
-  
+
+  const totalDry = result.dryGravel + result.drySand;
+  const totalWater = w + (result.ssdSand - result.drySand) + (result.ssdGravel - result.dryGravel);
   const finalDensity = c + totalWater + totalDry;
 
   return `
     <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1;">
       <h2 style="text-align: center; color: #1e293b; margin-bottom: 20px; font-size: 18px;">گزارش نهایی طرح مخلوط بتن</h2>
 
-      <!-- Section 1: Volume -->
       <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">محاسبه حجم سنگدانه‌ها</h3>
         <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; font-size: 13px; direction: ltr; justify-content: center;">
@@ -2183,7 +1591,7 @@ function renderReport() {
               <span style="padding: 0 5px;">1000</span>
             </div>
             <span>+</span>
-            <span>${(air).toFixed(3)}</span>
+            <span>${air.toFixed(3)}</span>
             ${data.admixture !== 'none' ? `
             <span>+</span>
             <div style="display: flex; flex-direction: column; align-items: center; font-size: 11px;">
@@ -2191,12 +1599,11 @@ function renderReport() {
               <span style="padding: 0 5px;">${(data.sgAdmixture * 1000).toFixed(0)}</span>
             </div>` : ''}
             <span style="font-weight: bold;">) =</span>
-            <strong style="color: #2563eb;">${vAgg.toFixed(3)} m³</strong>
+            <strong style="color: #2563eb;">${result.aggregateVolume.toFixed(3)} m³</strong>
           </div>
         </div>
       </div>
 
-      <!-- Section 2: Table -->
       <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">مقدار سنگدانه‌ها در یک متر مکعب بتن</h3>
         <div style="overflow-x: auto;">
@@ -2236,25 +1643,24 @@ function renderReport() {
               </tr>
               <tr style="background: #f8fafc;">
                 <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold;">حجم در 1m³ (m³)</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; color: #2563eb; font-weight: bold;">${volSand.toFixed(3)}</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; color: #2563eb; font-weight: bold;">${volGravel.toFixed(3)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; color: #2563eb; font-weight: bold;">${result.sandVolume.toFixed(3)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; color: #2563eb; font-weight: bold;">${result.gravelVolume.toFixed(3)}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">جرم SSD (kg)</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${ssdSand.toFixed(0)}</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${ssdGravel.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${result.ssdSand.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${result.ssdGravel.toFixed(0)}</td>
               </tr>
               <tr style="background: #f8fafc;">
                 <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">جرم خشک (kg)</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${drySand.toFixed(0)}</td>
-                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${dryGravel.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${result.drySand.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${result.dryGravel.toFixed(0)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Section 3: Summary -->
       <div style="background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
         <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">خلاصه مقادیر نهایی (بر مبنای وزن خشک)</h3>
         <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; justify-content: space-between;">
@@ -2283,6 +1689,11 @@ function renderReport() {
    نمایش و رویدادها
 ========================================= */
 
+const TEXT_KEYS = new Set([
+  'slumpClass', 'cementClass', 'admixture',
+  'targetMethod', 'workshopRank'
+]);
+
 function view() {
   const tabs = document.getElementById('tabs');
   const screen = document.getElementById('screen');
@@ -2301,359 +1712,268 @@ function view() {
   });
 
   tabs.innerHTML = titles.map((title, i) => `
-    <button
-      type="button"
-      data-page="${i}"
-      class="${i === page ? 'active' : ''}"
-    >${title}</button>
+    <button type="button" data-page="${i}" class="${i === page ? 'active' : ''}">${title}</button>
   `).join('');
 
   let html = '';
-
   try {
     switch (page) {
-      case 0:
-        html = renderHome();
-        break;
-      case 1:
-        html = renderAggregateTable();
-        break;
-      case 2:
-        html = renderShares();
-        break;
-      case 3:
-        html = renderStep1();
-        break;
-      case 4:
-        html = renderWater();
-        break;
-      case 5:
-        html = renderCement();
-        break;
-      case 6:
-        html = renderReport();
-        break;
-      default:
-        html = renderHome();
+      case 0: html = renderHome(); break;
+      case 1: html = renderAggregateTable(); break;
+      case 2: html = renderShares(); break;
+      case 3: html = renderStep1(); break;
+      case 4: html = renderWater(); break;
+      case 5: html = renderCement(); break;
+      case 6: html = renderReport(); break;
+      default: html = renderHome();
     }
   } catch (error) {
     console.error(error);
-
     html = `
-      <p class="bad">
-        ${escapeHtml(error.message)}
-      </p>
+      <p class="bad">${escapeHtml(error.message)}</p>
       <p>ورودی‌های این بخش را بررسی کنید.</p>
     `;
   }
 
-  screen.innerHTML = `
-    <article class="panel">
-      ${html}
-    </article>
-  `;
+  screen.innerHTML = `<article class="panel">${html}</article>`;
 
-  document.querySelectorAll('[data-page]').forEach(
-    button => {
-      button.onclick = () => {
-        page = Number(button.dataset.page);
-        view();
+  document.querySelectorAll('[data-page]').forEach(button => {
+    button.onclick = () => {
+      page = Number(button.dataset.page);
+      view();
+    };
+  });
+
+  document.querySelectorAll('[data-key]').forEach(element => {
+    element.onchange = () => {
+      const key = element.dataset.key;
+      const oldState = {
+        value: data[key],
+        slump: data.slump,
+        admixturePct: data.admixturePct,
+        wc: data.wc,
+        targetStrengthManual: data.targetStrengthManual,
+        targetMethod: data.targetMethod
       };
-    }
-  );
 
-  document.querySelectorAll('[data-key]').forEach(
-    element => {
-      element.onchange = () => {
-        const key = element.dataset.key;
-        const oldValue = data[key];
-        const oldSlump = data.slump;
-        const oldPct = data.admixturePct;
-        const oldWc = data.wc;
-        const oldTarget = data.targetStrengthManual;
-        const oldMethod = data.targetMethod;
+      const rawVal = element.value;
+      const value = rawVal === ''
+        ? ''
+        : (TEXT_KEYS.has(key) ? rawVal : Number(rawVal));
 
-        const rawVal = element.value;
-        const value = rawVal === ''
-          ? ''
-          : Number(rawVal);
+      data[key] = value;
 
-        data[key] = value;
+      try {
+        if (key === 'aggregateCount') {
+          const count = Number(value);
+          if (![2, 3, 4].includes(count)) throw Error('تعداد سنگدانه نامعتبر است.');
+          data.aggregateCount = count;
+        }
 
-        try {
-          if (key === 'aggregateCount') {
-            const count = Number(value);
-
-            if (![2, 3, 4].includes(count)) {
-              throw Error('تعداد سنگدانه نامعتبر است.');
-            }
-
-            data.aggregateCount = count;
+        if (key === 'slumpClass') {
+          const range = slumpRange();
+          if (num('slump') < range.min || num('slump') > range.max) {
+            data.slump = range.min;
           }
+          syncWater();
+        }
 
-          if (key === 'slumpClass') {
-            const range = slumpRange();
-
-            if (
-              num('slump') < range.min ||
-              num('slump') > range.max
-            ) {
-              data.slump = range.min;
-            }
-            syncWater();
+        if (key === 'admixture') {
+          if (value === 'none') {
+            data.admixturePct = 0;
+          } else {
+            if (data.admixturePct === '' || data.admixturePct == null) data.admixturePct = 0;
+            if (data.sgAdmixture === '' || data.sgAdmixture == null) data.sgAdmixture = 1.1;
           }
+        }
 
-          // FIX 1: Admixture Dropdown Fix
-          if (key === 'admixture') {
-            if (value === 'none') {
-              data.admixturePct = 0;
-            } else {
-              if (data.admixturePct === '' || data.admixturePct == null) {
-                data.admixturePct = 0;
-              }
-              if (data.sgAdmixture === '' || data.sgAdmixture == null) {
-                data.sgAdmixture = 1.1;
-              }
-            }
-          }
-
-          if (key === 'wc') {
-            const curve = getActiveCurve();
-            const y = calculateStrength(num('wc'), curve);
-            if (y !== null) {
-              data.targetStrengthManual = y;
-              data.targetMethod = 'manual';
-            }
-          } else if (key === 'targetStrengthManual') {
-            const curve = getActiveCurve();
-            const x = calculateWc(num('targetStrengthManual'), curve);
-            if (x !== null) {
-              data.wc = x;
-            }
+        if (key === 'wc') {
+          const curve = getActiveCurve();
+          const y = calculateStrength(num('wc'), curve);
+          if (y !== null) {
+            data.targetStrengthManual = y;
             data.targetMethod = 'manual';
-          } else if (['cementClass', 'admixture', 'admixturePct', 'slump'].includes(key)) {
-            const curve = getActiveCurve();
-            const target = getTargetStrength();
-            if (target !== null) {
-              const newWc = calculateWc(target, curve);
-              if (newWc !== null) data.wc = newWc;
-            }
-            syncWater();
-            // Removed validate() here to prevent reverting admixture changes
-          } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'cementAction' || key === 'sgAdmixture') {
-            // No strict validation needed for these keys
-          } else if (key === 'water') {
-            validate();
-          } else {
-            validate();
           }
-
-          save();
-          view();
-        } catch (error) {
-          data[key] = oldValue;
-          data.slump = oldSlump;
-          data.admixturePct = oldPct;
-          data.wc = oldWc;
-          data.targetStrengthManual = oldTarget;
-          data.targetMethod = oldMethod;
-
-          view();
-          alert(error.message);
-        }
-      };
-    }
-  );
-
-  document.querySelectorAll('[data-check]').forEach(
-    element => {
-      element.onchange = () => {
-        const key = element.dataset.check;
-        const oldValue = data[key];
-
-        data[key] = element.checked;
-
-        try {
           validate();
-          save();
-          view();
-        } catch (error) {
-          data[key] = oldValue;
-          view();
-          alert(error.message);
-        }
-      };
-    }
-  );
-
-  document.querySelectorAll('[data-agg]').forEach(
-    element => {
-      element.onchange = () => {
-        const index = Number(element.dataset.agg);
-        const field = element.dataset.aggField;
-        const sieveIndex = Number(element.dataset.sieve);
-        const aggregate = data.aggregates[index];
-
-        let oldValue;
-
-        if (field === 'name') {
-          oldValue = aggregate.name;
-          aggregate.name = element.value;
-
-        } else if (field === 'fracture') {
-          oldValue = aggregate.fracture;
-          aggregate.fracture =
-            element.value === ''
-              ? ''
-              : Number(element.value);
-
+        } else if (key === 'targetStrengthManual') {
+          const curve = getActiveCurve();
+          const x = calculateWc(num('targetStrengthManual'), curve);
+          if (x !== null) data.wc = x;
+          data.targetMethod = 'manual';
+          validate();
+        } else if (['cementClass', 'admixture', 'admixturePct', 'slump'].includes(key)) {
+          const curve = getActiveCurve();
+          const target = getTargetStrength();
+          if (target !== null) {
+            const newWc = calculateWc(target, curve);
+            if (newWc !== null) data.wc = newWc;
+          }
+          syncWater();
+          // validate عمداً اینجا صدا زده نمی‌شود تا admixture بتواند ابتدا مقدار بگیرد
+        } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'sgAdmixture') {
+          // بدون validate — تنظیمات بی‌خطر
         } else {
-          oldValue = aggregate.passing[sieveIndex];
-          aggregate.passing[sieveIndex] =
-            element.value === ''
-              ? ''
-              : Number(element.value);
+          validate();
         }
 
-        try {
-          validateAggregates();
-          
-          if (field === 'fracture') {
-            const curve = getActiveCurve();
-            const target = getTargetStrength();
-            if (target !== null) {
-              const newWc = calculateWc(target, curve);
-              if (newWc !== null) data.wc = newWc;
-            }
-            syncWater();
-          }
-
-          save(); // Removed view() here to keep keyboard open
-        } catch (error) {
-          if (field === 'name') {
-            aggregate.name = oldValue;
-          } else if (field === 'fracture') {
-            aggregate.fracture = oldValue;
-          } else {
-            aggregate.passing[sieveIndex] = oldValue;
-          }
-
-          alert(error.message);
-        }
-      };
-
-      element.onkeydown = (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          const aggIdx = element.dataset.agg;
-          let nextInput = null;
-          if (element.dataset.aggField === 'fracture') {
-            nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-sieve="0"]`);
-          } else {
-            const columnInputs = Array.from(document.querySelectorAll(`[data-agg="${aggIdx}"][data-sieve]`));
-            const currentIdx = columnInputs.indexOf(element);
-            if (currentIdx !== -1 && currentIdx < columnInputs.length - 1) {
-              nextInput = columnInputs[currentIdx + 1];
-            } else {
-              const nextAggFracture = document.querySelector(`[data-agg="${Number(aggIdx)+1}"][data-agg-field="fracture"]`);
-              if (nextAggFracture) nextInput = nextAggFracture;
-            }
-          }
-          if (nextInput) {
-            nextInput.focus();
-            nextInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-          }
-        }
-      };
-
-      element.oninput = (e) => {
-        let val = e.target.value;
-        if (!val) return;
-        const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-        const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
-        const en = ['0','1','2','3','4','5','6','7','8','9'];
-        for (let i = 0; i < 10; i++) {
-          val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
-        }
-        if (e.target.value !== val) {
-          e.target.value = val;
-        }
-      };
-    }
-  );
-
-  document.querySelectorAll('[data-share]').forEach(
-    element => {
-      element.onchange = () => {
-        const index = Number(element.dataset.share);
-        const raw = element.value;
-
-        const value = raw === ''
-          ? ''
-          : Number(raw);
-
-        if (
-          value !== '' &&
-          (
-            !Number.isFinite(value) ||
-            value < 0 ||
-            value > 100
-          )
-        ) {
-          alert('سهم سنگدانه باید بین صفر و ۱۰۰ باشد.');
-          return;
-        }
-
-        data.aggregateShares[index] = value;
-        syncWater();
         save();
         view();
+      } catch (error) {
+        data[key] = oldState.value;
+        data.slump = oldState.slump;
+        data.admixturePct = oldState.admixturePct;
+        data.wc = oldState.wc;
+        data.targetStrengthManual = oldState.targetStrengthManual;
+        data.targetMethod = oldState.targetMethod;
+        view();
+        alert(error.message);
+      }
+    };
 
-        setTimeout(() => {
-          const newEl = document.querySelector(`[data-share="${index}"]`);
-          if (newEl) {
-            newEl.focus();
-            newEl.select();
-          }
-        }, 10);
-      };
+    element.oninput = (e) => {
+      let val = e.target.value;
+      if (!val) return;
+      const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+      const en = ['0','1','2','3','4','5','6','7','8','9'];
+      for (let i = 0; i < 10; i++) {
+        val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
+      }
+      if (e.target.value !== val) e.target.value = val;
+    };
+  });
 
-      element.oninput = (e) => {
-        let val = e.target.value;
-        if (!val) return;
-        const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
-        const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
-        const en = ['0','1','2','3','4','5','6','7','8','9'];
-        for (let i = 0; i < 10; i++) {
-          val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
-        }
-        if (e.target.value !== val) {
-          e.target.value = val;
-        }
-      };
-    }
-  );
-
-  document.querySelectorAll(
-    '[data-curve-aggregate]'
-  ).forEach(element => {
+  document.querySelectorAll('[data-check]').forEach(element => {
     element.onchange = () => {
-      const index = Number(
-        element.dataset.curveAggregate
-      );
+      const key = element.dataset.check;
+      const oldValue = data[key];
+      data[key] = element.checked;
+      try {
+        validate();
+        save();
+        view();
+      } catch (error) {
+        data[key] = oldValue;
+        view();
+        alert(error.message);
+      }
+    };
+  });
 
-      data.showAggregateCurves[index] =
-        element.checked;
+  document.querySelectorAll('[data-agg]').forEach(element => {
+    element.onchange = () => {
+      const index = Number(element.dataset.agg);
+      const field = element.dataset.aggField;
+      const sieveIndex = Number(element.dataset.sieve);
+      const aggregate = data.aggregates[index];
 
+      let oldValue;
+      if (field === 'name') {
+        oldValue = aggregate.name;
+        aggregate.name = element.value;
+      } else if (field === 'fracture') {
+        oldValue = aggregate.fracture;
+        aggregate.fracture = element.value === '' ? '' : Number(element.value);
+      } else {
+        oldValue = aggregate.passing[sieveIndex];
+        aggregate.passing[sieveIndex] = element.value === '' ? '' : Number(element.value);
+      }
+
+      try {
+        validateAggregates();
+        // هر تغییری در سنگدانه‌ها می‌تواند fm را عوض کند → آب را همگام کن
+        syncWater();
+        save();
+      } catch (error) {
+        if (field === 'name') aggregate.name = oldValue;
+        else if (field === 'fracture') aggregate.fracture = oldValue;
+        else aggregate.passing[sieveIndex] = oldValue;
+        alert(error.message);
+      }
+    };
+
+    element.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const aggIdx = element.dataset.agg;
+        let nextInput = null;
+        if (element.dataset.aggField === 'fracture') {
+          nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-sieve="0"]`);
+        } else {
+          const columnInputs = Array.from(document.querySelectorAll(`[data-agg="${aggIdx}"][data-sieve]`));
+          const currentIdx = columnInputs.indexOf(element);
+          if (currentIdx !== -1 && currentIdx < columnInputs.length - 1) {
+            nextInput = columnInputs[currentIdx + 1];
+          } else {
+            const nextAggFracture = document.querySelector(`[data-agg="${Number(aggIdx) + 1}"][data-agg-field="fracture"]`);
+            if (nextAggFracture) nextInput = nextAggFracture;
+          }
+        }
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      }
+    };
+
+    element.oninput = (e) => {
+      let val = e.target.value;
+      if (!val) return;
+      const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+      const en = ['0','1','2','3','4','5','6','7','8','9'];
+      for (let i = 0; i < 10; i++) {
+        val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
+      }
+      if (e.target.value !== val) e.target.value = val;
+    };
+  });
+
+  document.querySelectorAll('[data-share]').forEach(element => {
+    element.onchange = () => {
+      const index = Number(element.dataset.share);
+      const raw = element.value;
+      const value = raw === '' ? '' : Number(raw);
+
+      if (value !== '' && (!Number.isFinite(value) || value < 0 || value > 100)) {
+        alert('سهم سنگدانه باید بین صفر و ۱۰۰ باشد.');
+        return;
+      }
+
+      data.aggregateShares[index] = value;
+      syncWater();
+      save();
+      view();
+
+      setTimeout(() => {
+        const newEl = document.querySelector(`[data-share="${index}"]`);
+        if (newEl) { newEl.focus(); newEl.select(); }
+      }, 10);
+    };
+
+    element.oninput = (e) => {
+      let val = e.target.value;
+      if (!val) return;
+      const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+      const en = ['0','1','2','3','4','5','6','7','8','9'];
+      for (let i = 0; i < 10; i++) {
+        val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
+      }
+      if (e.target.value !== val) e.target.value = val;
+    };
+  });
+
+  document.querySelectorAll('[data-curve-aggregate]').forEach(element => {
+    element.onchange = () => {
+      const index = Number(element.dataset.curveAggregate);
+      data.showAggregateCurves[index] = element.checked;
       save();
       view();
     };
   });
 
-  const mixCheckbox = document.querySelector(
-    '[data-curve-mix]'
-  );
-
+  const mixCheckbox = document.querySelector('[data-curve-mix]');
   if (mixCheckbox) {
     mixCheckbox.onchange = () => {
       data.showMixCurve = mixCheckbox.checked;
@@ -2662,25 +1982,17 @@ function view() {
     };
   }
 
-  const referenceCheckbox = document.querySelector(
-    '[data-curve-reference]'
-  );
-
+  const referenceCheckbox = document.querySelector('[data-curve-reference]');
   if (referenceCheckbox) {
     referenceCheckbox.onchange = () => {
-      data.showReferenceCurves =
-        referenceCheckbox.checked;
-
+      data.showReferenceCurves = referenceCheckbox.checked;
       save();
       view();
     };
   }
 
   const printButton = document.getElementById('print');
-
-  if (printButton) {
-    printButton.onclick = () => window.print();
-  }
+  if (printButton) printButton.onclick = () => window.print();
 
   const cementAction = document.getElementById('cement-action');
   if (cementAction) {
@@ -2688,38 +2000,39 @@ function view() {
       const val = e.target.value;
       data.cementAction = val;
       save();
-      if (val === 'grading') {
-        page = 2;
-      } else if (val === 'wc') {
-        page = 3;
-      }
+      if (val === 'grading') page = 2;
+      else if (val === 'wc') page = 3;
       view();
     };
   }
 
   prev.disabled = page === 0;
-  
-  if (page === 5) {
-    const result = new Step4().run();
-    const cement = result.cement;
-    if (cement > 350 && data.cementAction !== 'proceed') {
-      next.disabled = true;
+
+  try {
+    if (page === 5) {
+      const result = new Step4().run();
+      const cement = result.cement;
+      const softMax = getSoftMaxCement();
+      if (cement > softMax && data.cementAction !== 'proceed') {
+        next.disabled = true;
+      } else {
+        next.disabled = page === titles.length - 1;
+      }
     } else {
       next.disabled = page === titles.length - 1;
     }
-  } else {
-    next.disabled = page === titles.length - 1;
+  } catch (_) {
+    next.disabled = false;
   }
 }
 
 /* =========================================
-   راه‌اندازی و تزریق استایل ویندوزی
+   تم و راه‌اندازی
 ========================================= */
 
 function injectWindowsTheme() {
   const style = document.createElement('style');
   style.innerHTML = `
-    /* Modern Fluent / Windows 11 Theme */
     :root {
       --primary: #0078d4;
       --primary-hover: #005a9e;
@@ -2730,7 +2043,6 @@ function injectWindowsTheme() {
       --text-muted: #605e5c;
       --shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
-    
     body {
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
       background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
@@ -2739,7 +2051,6 @@ function injectWindowsTheme() {
       padding: 20px;
       direction: rtl;
     }
-
     #app {
       background: var(--panel-bg);
       border-radius: 16px;
@@ -2749,7 +2060,6 @@ function injectWindowsTheme() {
       overflow: hidden;
       border: 1px solid var(--border);
     }
-
     #tabs {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -2759,7 +2069,6 @@ function injectWindowsTheme() {
       gap: 4px;
       padding: 8px 8px 0 8px;
     }
-
     #tabs button {
       background: transparent;
       border: none;
@@ -2772,30 +2081,15 @@ function injectWindowsTheme() {
       transition: all 0.2s ease;
       font-family: inherit;
     }
-
-    #tabs button:hover {
-      background: #edebe9;
-      color: var(--primary);
-    }
-
+    #tabs button:hover { background: #edebe9; color: var(--primary); }
     #tabs button.active {
       background: var(--panel-bg);
       color: var(--primary);
       border-bottom: 3px solid var(--primary);
       box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
     }
-
-    .panel {
-      padding: 20px;
-    }
-
-    .grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
+    .panel { padding: 20px; }
+    .grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
     .field {
       display: inline-flex;
       flex-direction: row;
@@ -2810,15 +2104,9 @@ function injectWindowsTheme() {
       transition: box-shadow 0.2s ease;
       box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
-
-    .field:hover {
-      box-shadow: 0 3px 6px rgba(0,0,0,0.06);
-    }
-
-    input[type="number"],
-    input[type="text"],
-    select {
-      width: 130px !important; 
+    .field:hover { box-shadow: 0 3px 6px rgba(0,0,0,0.06); }
+    input[type="number"], input[type="text"], select {
+      width: 130px !important;
       padding: 4px 6px;
       border: 1px solid #c8c6c4;
       border-radius: 4px;
@@ -2830,20 +2118,12 @@ function injectWindowsTheme() {
       transition: border-color 0.2s;
       box-sizing: border-box;
     }
-
-    input[type="number"]:focus,
-    input[type="text"]:focus,
-    select:focus {
+    input[type="number"]:focus, input[type="text"]:focus, select:focus {
       border-color: var(--primary);
       outline: none;
       box-shadow: 0 0 0 2px rgba(0,120,212,0.2);
     }
-
-    input.table-input[type="text"] {
-      width: 75px !important;
-      text-align: right;
-    }
-
+    input.table-input[type="text"] { width: 75px !important; text-align: right; }
     button {
       background: linear-gradient(180deg, #0078d4, #005a9e);
       color: white;
@@ -2858,24 +2138,13 @@ function injectWindowsTheme() {
       box-shadow: 0 3px 5px rgba(0,120,212,0.2), 0 1px 2px rgba(0,0,0,0.1);
       transform: translateY(0);
     }
-
     button:hover {
       background: linear-gradient(180deg, #106ebe, #004578);
       box-shadow: 0 5px 10px rgba(0,120,212,0.3);
       transform: translateY(-1px);
     }
-    
-    button:active {
-      transform: translateY(1px);
-      box-shadow: none;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 16px;
-    }
-
+    button:active { transform: translateY(1px); box-shadow: none; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
     th, td {
       border: 1px solid var(--border);
       padding: 8px;
@@ -2883,17 +2152,8 @@ function injectWindowsTheme() {
       font-size: 12px;
       font-variant-numeric: lining-nums tabular-nums;
     }
-
-    th {
-      background: #f3f2f1;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    tr:nth-child(even) {
-      background: #faf9f8;
-    }
-
+    th { background: #f3f2f1; font-weight: 600; color: var(--text); }
+    tr:nth-child(even) { background: #faf9f8; }
     .aggregate-table th:first-child {
       position: sticky;
       right: 0;
@@ -2901,21 +2161,13 @@ function injectWindowsTheme() {
       z-index: 10;
       box-shadow: -2px 0 5px rgba(0,0,0,0.05);
     }
-
     .table-scroll {
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
       padding-bottom: 10px;
     }
-
-    .table-scroll::-webkit-scrollbar {
-      height: 8px;
-    }
-    .table-scroll::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 4px;
-    }
-
+    .table-scroll::-webkit-scrollbar { height: 8px; }
+    .table-scroll::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
     @media (max-width: 600px) {
       #tabs button { font-size: 11px; padding: 6px 2px; }
       .panel { padding: 12px; }
@@ -2927,41 +2179,28 @@ function injectWindowsTheme() {
 
 function startApp() {
   injectWindowsTheme();
-  
+
   const prev = document.getElementById('prev');
   const next = document.getElementById('next');
-
   if (!prev || !next) {
     console.error('دکمه‌های پیمایش پیدا نشدند.');
     return;
   }
 
-  prev.onclick = () => {
-    page = Math.max(0, page - 1);
-    view();
-  };
+  prev.onclick = () => { page = Math.max(0, page - 1); view(); };
+  next.onclick = () => { page = Math.min(titles.length - 1, page + 1); view(); };
 
-  next.onclick = () => {
-    page = Math.min(
-      titles.length - 1,
-      page + 1
-    );
-    view();
-  };
+  if (data.admixture === 'none') data.admixturePct = 0;
 
-  if (data.admixture === 'none') {
-    data.admixturePct = 0;
-  }
+  // همگام‌سازی اولیه آب با منحنی
+  syncWater();
 
   save();
   view();
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener(
-    'DOMContentLoaded',
-    startApp
-  );
+  document.addEventListener('DOMContentLoaded', startApp);
 } else {
   startApp();
 }
@@ -2974,17 +2213,12 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('./sw.js')
-      .catch(error => {
-        console.warn(
-          'Service Worker ثبت نشد:',
-          error
-        );
-      });
+      .catch(error => console.warn('Service Worker ثبت نشد:', error));
   });
 }
 
 /* =========================================
-   کدهای جدید: منوی سه نقطه‌ای
+   منوی سه نقطه‌ای
 ========================================= */
 
 function initNewMenu() {
@@ -2999,7 +2233,6 @@ function initNewMenu() {
     </div>
     <input type="file" id="app-hidden-file-input" accept=".json" style="display: none;">
   `;
-  
   document.body.insertAdjacentHTML('beforeend', menuHTML);
 
   const menuBtn = document.getElementById('app-menu-btn');
@@ -3020,19 +2253,23 @@ function initNewMenu() {
     }
   });
 
+  const downloadProject = () => {
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `beton_project_${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   menuSave.onclick = () => {
     menuDropdown.style.display = 'none';
     if (confirm('آیا از ذخیره طرح اطمینان دارید؟')) {
-      const jsonStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadProject();
       alert('فایل طرح با موفقیت ذخیره شد.');
     }
   };
@@ -3046,16 +2283,7 @@ function initNewMenu() {
     menuDropdown.style.display = 'none';
     const confirmSave = confirm('آیا مایل به ذخیره اطلاعات طرح قبل از خروج هستید؟');
     if (confirmSave) {
-      const jsonStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadProject();
       setTimeout(() => {
         window.close();
         setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
@@ -3069,13 +2297,14 @@ function initNewMenu() {
   fileInput.onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const loadedData = JSON.parse(event.target.result);
         if (loadedData && typeof loadedData === 'object') {
           Object.assign(data, loadedData);
+          normalizeData();  // ← اعمال مجدد نرمال‌سازی و sanitize
+          syncWater();      // ← همگام‌سازی آب با منحنی
           save();
           view();
           alert('طرح با موفقیت بازیابی شد.');
@@ -3095,4 +2324,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-     }
+}
