@@ -36,29 +36,31 @@ const defaults = {
   aggregateShares: ['', '', '', ''],
   showAggregateCurves: [true, true, true, true],
   showMixCurve: true,
-  showReferenceCurves: true
+  showReferenceCurves: true,
+  correctionFactor: 1.5,
+  cementAction: ''
 };
 
 const sieves = [
-  { mm: 37.5, label: '۳۷٫۵' },
-  { mm: 25, label: '۲۵' },
-  { mm: 19, label: '۱۹' },
-  { mm: 12.5, label: '۱۲٫۵' },
-  { mm: 9.5, label: '۹٫۵' },
-  { mm: 6.35, label: '۶٫۳۵' },
-  { mm: 4.75, label: '۴٫۷۵' },
-  { mm: 2.36, label: '۲٫۳۶' },
-  { mm: 1.18, label: '۱٫۱۸' },
-  { mm: 0.6, label: '۰٫۶' },
-  { mm: 0.3, label: '۰٫۳' },
-  { mm: 0.15, label: '۰٫۱۵' }
+  { mm: 37.5, label: '37.5' },
+  { mm: 25, label: '25' },
+  { mm: 19, label: '19' },
+  { mm: 12.5, label: '12.5' },
+  { mm: 9.5, label: '9.5' },
+  { mm: 6.35, label: '6.35' },
+  { mm: 4.75, label: '4.75' },
+  { mm: 2.36, label: '2.36' },
+  { mm: 1.18, label: '1.18' },
+  { mm: 0.6, label: '0.6' },
+  { mm: 0.3, label: '0.3' },
+  { mm: 0.15, label: '0.15' }
 ];
 
 const slumpClasses = {
-  S1: { label: 'S1 ـ روانی کم', min: 10, max: 40 },
-  S2: { label: 'S2 ـ روانی متوسط', min: 50, max: 90 },
-  S3: { label: 'S3 ـ روانی نسبتاً زیاد', min: 100, max: 150 },
-  S4: { label: 'S4 ـ روانی زیاد', min: 160, max: 210 }
+  S1: { label: 'S1 (10-40 mm)', min: 10, max: 40 },
+  S2: { label: 'S2 (50-90 mm)', min: 50, max: 90 },
+  S3: { label: 'S3 (100-150 mm)', min: 100, max: 150 },
+  S4: { label: 'S4 (160-210 mm)', min: 160, max: 210 }
 };
 
 const standardDeviationTable = {
@@ -642,8 +644,7 @@ function renderHome() {
         Object.entries(slumpClasses).map(
           ([value, item]) => ({
             value,
-            label:
-              `${item.label} (${item.min}–${item.max} mm)`
+            label: item.label
           })
         )
       )}
@@ -663,9 +664,9 @@ function renderHome() {
         'cementClass',
         'رده مقاومتی سیمان',
         [
-          { value: '32.5', label: '۳۲٫۵' },
-          { value: '42.5', label: '۴۲٫۵' },
-          { value: '52.5', label: '۵۲٫۵' }
+          { value: '32.5', label: '32.5' },
+          { value: '42.5', label: '42.5' },
+          { value: '52.5', label: '52.5' }
         ]
       )}
 
@@ -938,9 +939,9 @@ function renderAggregateTable() {
         'aggregateCount',
         'تعداد انواع سنگدانه',
         [
-          { value: 2, label: '۲' },
-          { value: 3, label: '۳' },
-          { value: 4, label: '۴' }
+          { value: 2, label: '2' },
+          { value: 3, label: '3' },
+          { value: 4, label: '4' }
         ]
       )}
 
@@ -948,10 +949,10 @@ function renderAggregateTable() {
         'msa',
         'حداکثر اندازه اسمی سنگدانه NMSA',
         [
-          { value: 9.5, label: '۹٫۵ میلی‌متر' },
-          { value: 12.5, label: '۱۲٫۵ میلی‌متر' },
-          { value: 19, label: '۱۹ میلی‌متر' },
-          { value: 25, label: '۲۵ میلی‌متر' }
+          { value: 9.5, label: '9.5' },
+          { value: 12.5, label: '12.5' },
+          { value: 19, label: '19' },
+          { value: 25, label: '25' }
         ]
       )}
     </div>
@@ -1999,28 +2000,25 @@ function renderCement() {
   let extraW = 0;
   let wfNew = wf;
   let cNew = cement;
+  let factor = Number(data.correctionFactor) || 1.5;
 
   if (isLimited) {
     extraC = cement - maxC;
-    extraW = extraC * 0.15; 
+    extraW = extraC * (factor / 10); 
     wfNew = wf + extraW;
     cNew = wfNew / wc;
   }
 
   let formulaBox = `
-    <div class="formula-box" style="display:flex; align-items:center; gap:15px; font-size:1.1em; padding:15px; background:#f8fafc; border-radius:8px; margin-bottom:20px;">
-      <div style="font-weight:bold;">C =</div>
-      <div style="display:flex; flex-direction:column; align-items:center;">
-        <span style="border-bottom:1px solid #333; padding:0 5px; font-size:0.9em;">میزان آب مورد نیاز انتخاب شده (Wf)</span>
-        <span style="padding:0 5px; font-size:0.9em;">نسبت آب به سیمان انتخاب شده (W/C)</span>
-      </div>
+    <div class="formula-box" style="display:flex; align-items:center; gap:15px; font-size:0.95em; padding:15px; background:#f8fafc; border-radius:8px; margin-bottom:20px; border:1px solid #e2e8f0; direction:ltr;">
+      <div style="font-weight:bold; font-family:monospace;">C = Wf / (W/C)</div>
       <div style="display:flex; flex-direction:column; align-items:center;">
         <span style="border-bottom:1px solid #333; padding:0 5px;">${wf.toFixed(2)}</span>
         <span style="padding:0 5px;">${wc.toFixed(3)}</span>
       </div>
       <div style="font-weight:bold; font-size:1.5em;">=</div>
-      <div style="background:#f1f5f9; padding:8px 20px; border:1px solid #cbd5e1; font-weight:bold; font-size:1.3em; border-radius:4px;">${cement.toFixed(2)}</div>
-      <div>Kg/m3</div>
+      <div style="background:#f1f5f9; padding:6px 15px; border:1px solid #cbd5e1; font-weight:bold; font-size:1.1em; border-radius:4px;">${cement.toFixed(2)}</div>
+      <div>kg/m³</div>
     </div>
   `;
 
@@ -2031,7 +2029,6 @@ function renderCement() {
       <div class="success-card" style="background:#ecfdf5; border:1px solid #10b981; color:#065f46; padding:20px; border-radius:8px; text-align:center;">
         <h3 style="margin-top:0;">مقدار سیمان محاسبه شده در محدوده مجاز است.</h3>
         <p>مقدار سیمان (${cement.toFixed(2)} kg/m³) کمتر از حد مجاز (${maxC} kg/m³) است.</p>
-        <p>می‌توانید به صفحه بعد بروید.</p>
       </div>
     `;
   } else {
@@ -2042,36 +2039,37 @@ function renderCement() {
         
         <div style="background:white; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #fcd34d;">
           <h4 style="margin-top:0; color:#92400e;">اصلاح مقدار آب و محاسبه مجدد مقدار سیمان</h4>
-          <p style="font-size:0.9em; margin-bottom:10px;">به ازای هر ۱۰ کیلوگرم سیمان اضافی، ۱.۵ کیلوگرم آب اضافه می‌شود.</p>
           
-          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:0.95em;">
-            <div>مقدار سیمان اضافی: <strong>${extraC.toFixed(2)}</strong> kg</div>
-            <div>مقدار آب اضافی: <strong>${extraW.toFixed(2)}</strong> kg</div>
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
+            <span style="font-size:0.95em;">ضریب اصلاح آب (به ازای هر 10 کیلو سیمان):</span>
+            <input type="number" data-key="correctionFactor" min="1" max="2" step="0.1" value="${factor}" style="width:70px; padding:4px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
+            <span style="font-size:0.95em;">kg</span>
           </div>
           
-          <div class="formula-box" style="display:flex; align-items:center; gap:15px; font-size:1.1em; padding:15px; background:#f8fafc; border-radius:8px; margin-top:15px; border:1px solid #e2e8f0;">
-            <div style="font-weight:bold;">C_new =</div>
-            <div style="display:flex; flex-direction:column; align-items:center;">
-              <span style="border-bottom:1px solid #333; padding:0 5px; font-size:0.9em;">میزان آب اصلاح شده (Wf_new)</span>
-              <span style="padding:0 5px; font-size:0.9em;">نسبت آب به سیمان انتخاب شده (W/C)</span>
-            </div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:0.95em; margin-bottom:15px;">
+            <div>سیمان اضافی: <strong>${extraC.toFixed(2)}</strong> kg</div>
+            <div>آب اضافی: <strong>${extraW.toFixed(2)}</strong> kg</div>
+          </div>
+          
+          <div class="formula-box" style="display:flex; align-items:center; gap:15px; font-size:0.95em; padding:10px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0; direction:ltr;">
+            <div style="font-weight:bold; font-family:monospace;">C_new = Wf_new / (W/C)</div>
             <div style="display:flex; flex-direction:column; align-items:center;">
               <span style="border-bottom:1px solid #333; padding:0 5px;">${wfNew.toFixed(2)}</span>
               <span style="padding:0 5px;">${wc.toFixed(3)}</span>
             </div>
             <div style="font-weight:bold; font-size:1.5em;">=</div>
-            <div style="background:#f1f5f9; padding:8px 20px; border:1px solid #cbd5e1; font-weight:bold; font-size:1.3em; border-radius:4px;">${cNew.toFixed(2)}</div>
-            <div>Kg/m3</div>
+            <div style="background:#f1f5f9; padding:6px 15px; border:1px solid #cbd5e1; font-weight:bold; font-size:1.1em; border-radius:4px;">${cNew.toFixed(2)}</div>
+            <div>kg/m³</div>
           </div>
         </div>
 
         <div style="margin-top:20px;">
           <label style="font-weight:bold; margin-bottom:10px; display:block;">لطفاً یک گزینه را انتخاب کنید:</label>
-          <select id="cement-action" style="width:100%; padding:12px; border-radius:8px; border:1px solid #fcd34d; font-family:inherit; font-size:1em; background:white; color:#92400e; cursor:pointer; outline:none;">
-            <option value="" disabled selected>--- انتخاب کنید ---</option>
-            <option value="proceed">۱. مقدار سیمان را نادیده بگیر و ادامه بده</option>
-            <option value="grading">۲. اصلاح بافت دانه‌بندی (بازگشت به سهم‌بندی)</option>
-            <option value="wc">۳. اصلاح نسبت آب به سیمان (بازگشت به صفحه W/C)</option>
+          <select id="cement-action" style="width:100%; padding:10px; border-radius:8px; border:1px solid #fcd34d; font-family:inherit; font-size:0.95em; background:white; color:#92400e; cursor:pointer; outline:none;">
+            <option value="" disabled ${data.cementAction === '' ? 'selected' : ''}>--- انتخاب کنید ---</option>
+            <option value="proceed" ${data.cementAction === 'proceed' ? 'selected' : ''}>۱. نادیده گرفتن مقدار سیمان و ادامه</option>
+            <option value="grading" ${data.cementAction === 'grading' ? 'selected' : ''}>۲. اصلاح بافت دانه‌بندی</option>
+            <option value="wc" ${data.cementAction === 'wc' ? 'selected' : ''}>۳. اصلاح نسبت آب به سیمان</option>
           </select>
         </div>
       </div>
@@ -2481,9 +2479,9 @@ function view() {
   if (cementAction) {
     cementAction.onchange = (e) => {
       const val = e.target.value;
-      if (val === 'proceed') {
-        page = 6;
-      } else if (val === 'grading') {
+      data.cementAction = val;
+      save();
+      if (val === 'grading') {
         page = 2;
       } else if (val === 'wc') {
         page = 3;
@@ -2493,7 +2491,18 @@ function view() {
   }
 
   prev.disabled = page === 0;
-  next.disabled = page === titles.length - 1;
+  
+  if (page === 5) {
+    const result = new Step4().run();
+    const cement = result.cement;
+    if (cement > 350 && data.cementAction !== 'proceed') {
+      next.disabled = true;
+    } else {
+      next.disabled = page === titles.length - 1;
+    }
+  } else {
+    next.disabled = page === titles.length - 1;
+  }
 }
 
 /* =========================================
@@ -2548,9 +2557,9 @@ function injectWindowsTheme() {
       background: transparent;
       border: none;
       border-radius: 10px 10px 0 0;
-      padding: 10px;
+      padding: 8px 4px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--text-muted);
       transition: all 0.2s ease;
@@ -2570,13 +2579,13 @@ function injectWindowsTheme() {
     }
 
     .panel {
-      padding: 24px;
+      padding: 20px;
     }
 
     .grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
       margin-bottom: 16px;
     }
 
@@ -2584,30 +2593,30 @@ function injectWindowsTheme() {
       display: inline-flex;
       flex-direction: row;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       background: #f8f9fa;
-      padding: 8px 12px;
+      padding: 6px 10px;
       border: 1px solid var(--border);
-      border-radius: 10px;
-      font-size: 13px;
+      border-radius: 8px;
+      font-size: 12px;
       color: var(--text);
       transition: box-shadow 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
 
     .field:hover {
-      box-shadow: 0 4px 8px rgba(0,0,0,0.06);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.06);
     }
 
     input[type="number"],
     input[type="text"],
     select {
-      width: 85px !important; 
-      padding: 6px;
+      width: 75px !important; 
+      padding: 4px 6px;
       border: 1px solid #c8c6c4;
-      border-radius: 6px;
+      border-radius: 4px;
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12px;
       background: #fff;
       text-align: center;
       transition: border-color 0.2s;
@@ -2619,11 +2628,11 @@ function injectWindowsTheme() {
     select:focus {
       border-color: var(--primary);
       outline: none;
-      box-shadow: 0 0 0 3px rgba(0,120,212,0.2);
+      box-shadow: 0 0 0 2px rgba(0,120,212,0.2);
     }
 
     input.table-input[type="text"] {
-      width: 85px !important;
+      width: 75px !important;
       text-align: right;
     }
 
@@ -2631,20 +2640,20 @@ function injectWindowsTheme() {
       background: linear-gradient(180deg, #0078d4, #005a9e);
       color: white;
       border: none;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 13px;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       font-family: inherit;
-      box-shadow: 0 4px 6px rgba(0,120,212,0.2), 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 3px 5px rgba(0,120,212,0.2), 0 1px 2px rgba(0,0,0,0.1);
       transform: translateY(0);
     }
 
     button:hover {
       background: linear-gradient(180deg, #106ebe, #004578);
-      box-shadow: 0 6px 12px rgba(0,120,212,0.3);
+      box-shadow: 0 5px 10px rgba(0,120,212,0.3);
       transform: translateY(-1px);
     }
     
@@ -2661,9 +2670,9 @@ function injectWindowsTheme() {
 
     th, td {
       border: 1px solid var(--border);
-      padding: 10px;
+      padding: 8px;
       text-align: right;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     th {
@@ -2699,7 +2708,7 @@ function injectWindowsTheme() {
     }
 
     @media (max-width: 600px) {
-      #tabs button { font-size: 12px; padding: 8px 4px; }
+      #tabs button { font-size: 11px; padding: 6px 2px; }
       .panel { padding: 12px; }
       .field { width: 100%; justify-content: space-between; }
     }
@@ -2877,4 +2886,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-}
+   }
