@@ -590,6 +590,12 @@ class Step5 {
     return {
       cement,
       water,
+      vc,
+      vw,
+      va,
+      aggregateVolume,
+      sandVolume,
+      gravelVolume,
       drySand,
       dryGravel,
       admixtureMass,
@@ -2074,30 +2080,147 @@ function renderCement() {
 function renderReport() {
   const result = new Step5().run();
   const target = getTargetStrength();
+  
+  const c = result.cement;
+  const w = result.water;
+  const air = data.air / 100;
+  
+  const vc = c / (data.sgCement * 1000);
+  const vw = w / 1000;
+  const vAgg = 1 - vc - vw - air;
+  
+  const shareGravel = data.coarseShare;
+  const shareSand = 1 - shareGravel;
+  
+  const volGravel = vAgg * shareGravel;
+  const volSand = vAgg * shareSand;
+  
+  const massGravelSSD = volGravel * data.sgGravel * 1000;
+  const massSandSSD = volSand * data.sgSand * 1000;
+  
+  const massGravelDry = massGravelSSD / (1 + 0); 
+  const massSandDry = massSandSSD / (1 + 0); 
+  
+  const totalSSD = massGravelSSD + massSandSSD;
+  const totalDry = massGravelDry + massSandDry;
+  
+  const finalDensity = c + w + totalSSD;
 
   return `
-    <h2>گزارش نهایی — وزن خشک مصالح</h2>
+    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1;">
+      <h2 style="text-align: center; color: #1e293b; margin-bottom: 20px; font-size: 18px;">گزارش نهایی طرح مخلوط بتن</h2>
 
-    ${table([
-      ['رده مقاومتی سیمان', data.cementClass],
-      ['مقاومت مشخصه (MPa)', num('strength')],
-      [
-        'مقاومت هدف (MPa)',
-        target === null ? 'تعیین نشده' : target
-      ],
-      ['NMSA (mm)', num('msa')],
-      ['نسبت آب به سیمان', num('wc')],
-      ['آب مؤثر طرح (kg/m³)', result.water],
-      ['سیمان (kg/m³)', result.cement],
-      ['ماسه خشک (kg/m³)', result.drySand],
-      ['شن خشک (kg/m³)', result.dryGravel],
-      ['افزودنی (kg/m³)', result.admixtureMass],
-      ['حجم محاسباتی اجزا (m³)', result.volume]
-    ])}
+      <!-- Section 1: Volume -->
+      <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">محاسبه حجم سنگدانه‌ها</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; font-size: 13px; direction: ltr; justify-content: center;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #64748b;">Air:</span>
+            <strong>${(air * 100).toFixed(2)}%</strong>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: #64748b;">MSA:</span>
+            <strong>${data.msa} mm</strong>
+          </div>
+          <div style="background: #f1f5f9; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-weight: bold;">V_{Assd} = 1 - (</span>
+            <div style="display: flex; flex-direction: column; align-items: center; font-size: 11px;">
+              <span style="border-bottom: 1px solid #333; padding: 0 5px;">${c.toFixed(2)}</span>
+              <span style="padding: 0 5px;">${(data.sgCement * 1000).toFixed(0)}</span>
+            </div>
+            <span>+</span>
+            <div style="display: flex; flex-direction: column; align-items: center; font-size: 11px;">
+              <span style="border-bottom: 1px solid #333; padding: 0 5px;">${w.toFixed(2)}</span>
+              <span style="padding: 0 5px;">1000</span>
+            </div>
+            <span>+</span>
+            <span>${(air).toFixed(3)}</span>
+            <span style="font-weight: bold;">) =</span>
+            <strong style="color: #2563eb;">${vAgg.toFixed(3)} m³</strong>
+          </div>
+        </div>
+      </div>
 
-    <button type="button" id="print">
-      چاپ / ذخیره PDF
-    </button>
+      <!-- Section 2: Table -->
+      <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">مقدار سنگدانه‌ها در یک متر مکعب بتن</h3>
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; text-align: right; font-size: 12px;">
+            <thead>
+              <tr style="background: #f1f5f9; color: #334155;">
+                <th style="padding: 8px; border: 1px solid #e2e8f0;">مشخصات</th>
+                <th style="padding: 8px; border: 1px solid #e2e8f0; background: #e0f2fe;">سنگدانه 1 (ماسه)</th>
+                <th style="padding: 8px; border: 1px solid #e2e8f0;">سنگدانه 2 (شن)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold; color: #475569;">نوع سنگدانه</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">ماسه</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">شن</td>
+              </tr>
+              <tr style="background: #f8fafc;">
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">چگالی ذرات SSD (g/cm³)</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${data.sgSand.toFixed(2)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${data.sgGravel.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">درصد جذب آب (%)</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">0</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">0</td>
+              </tr>
+              <tr style="background: #f8fafc;">
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">درصد شکستگی</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${data.aggregates[0].fracture || 0}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${data.aggregates[1] ? data.aggregates[1].fracture || 0 : 0}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">سهم در مخلوط (%)</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${(shareSand * 100).toFixed(1)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${(shareGravel * 100).toFixed(1)}</td>
+              </tr>
+              <tr style="background: #f8fafc;">
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold;">حجم در 1m³ (m³)</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; color: #2563eb; font-weight: bold;">${volSand.toFixed(3)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center; color: #2563eb; font-weight: bold;">${volGravel.toFixed(3)}</td>
+              </tr>
+              <tr>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">جرم SSD (kg)</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${massSandSSD.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${massGravelSSD.toFixed(0)}</td>
+              </tr>
+              <tr style="background: #f8fafc;">
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">جرم خشک (kg)</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${massSandDry.toFixed(0)}</td>
+                <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${massGravelDry.toFixed(0)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Section 3: Summary -->
+      <div style="background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">خلاصه مقادیر نهایی</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; justify-content: space-between;">
+          <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;">
+            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">جرم کل SSD (Assd)</div>
+            <strong style="font-size: 16px; color: #0f172a;">${totalSSD.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
+          </div>
+          <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;">
+            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">جرم کل خشک (Ad)</div>
+            <strong style="font-size: 16px; color: #0f172a;">${totalDry.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
+          </div>
+          <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #bae6fd;">
+            <div style="font-size: 11px; color: #0369a1; margin-bottom: 4px;">چگالی نهایی بتن (G)</div>
+            <strong style="font-size: 16px; color: #0284c7;">${finalDensity.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
+          </div>
+        </div>
+        <div style="margin-top: 10px; font-size: 11px; color: #64748b; text-align: center; direction: ltr;">
+          G = C + Wf + Assd = ${c.toFixed(2)} + ${w.toFixed(2)} + ${totalSSD.toFixed(0)} = ${finalDensity.toFixed(2)} kg/m³
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -2115,6 +2238,13 @@ function view() {
     console.error('عناصر اصلی صفحه پیدا نشدند.');
     return;
   }
+
+  // Remove unwanted text if it exists
+  document.querySelectorAll('p, div, span').forEach(el => {
+    if (el.textContent && el.textContent.includes('نسخه محاسبات مقدماتی است')) {
+      el.remove();
+    }
+  });
 
   tabs.innerHTML = titles.map((title, i) => `
     <button
@@ -2334,8 +2464,7 @@ function view() {
             syncWater();
           }
 
-          save();
-          view();
+          save(); // Removed view() here to keep keyboard open
         } catch (error) {
           if (field === 'name') {
             aggregate.name = oldValue;
@@ -2345,7 +2474,6 @@ function view() {
             aggregate.passing[sieveIndex] = oldValue;
           }
 
-          view();
           alert(error.message);
         }
       };
@@ -2408,7 +2536,6 @@ function view() {
             value > 100
           )
         ) {
-          view();
           alert('سهم سنگدانه باید بین صفر و ۱۰۰ باشد.');
           return;
         }
@@ -2416,8 +2543,7 @@ function view() {
         data.aggregateShares[index] = value;
         syncWater();
 
-        save();
-        view();
+        save(); // Removed view() here too
       };
 
       element.oninput = (e) => {
@@ -2714,187 +2840,4 @@ function injectWindowsTheme() {
       height: 8px;
     }
     .table-scroll::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 4px;
-    }
-
-    @media (max-width: 600px) {
-      #tabs button { font-size: 11px; padding: 6px 2px; }
-      .panel { padding: 12px; }
-      .field { width: 100%; justify-content: space-between; }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-function startApp() {
-  injectWindowsTheme();
-  
-  const prev = document.getElementById('prev');
-  const next = document.getElementById('next');
-
-  if (!prev || !next) {
-    console.error('دکمه‌های پیمایش پیدا نشدند.');
-    return;
-  }
-
-  prev.onclick = () => {
-    page = Math.max(0, page - 1);
-    view();
-  };
-
-  next.onclick = () => {
-    page = Math.min(
-      titles.length - 1,
-      page + 1
-    );
-    view();
-  };
-
-  if (data.admixture === 'none') {
-    data.admixturePct = 0;
-  }
-
-  save();
-  view();
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener(
-    'DOMContentLoaded',
-    startApp
-  );
-} else {
-  startApp();
-}
-
-/* =========================================
-   Service Worker
-========================================= */
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('./sw.js')
-      .catch(error => {
-        console.warn(
-          'Service Worker ثبت نشد:',
-          error
-        );
-      });
-  });
-}
-
-/* =========================================
-   کدهای جدید: منوی سه نقطه‌ای
-========================================= */
-
-function initNewMenu() {
-  const menuHTML = `
-    <div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
-      <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
-      <div id="app-menu-dropdown" style="display: none; position: absolute; top: 45px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
-        <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">💾 ذخیره طرح</button>
-        <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">📂 بازیابی طرح</button>
-        <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626; transition: background 0.2s;">🚪 خروج</button>
-      </div>
-    </div>
-    <input type="file" id="app-hidden-file-input" accept=".json" style="display: none;">
-  `;
-  
-  document.body.insertAdjacentHTML('beforeend', menuHTML);
-
-  const menuBtn = document.getElementById('app-menu-btn');
-  const menuDropdown = document.getElementById('app-menu-dropdown');
-  const menuSave = document.getElementById('app-menu-save');
-  const menuLoad = document.getElementById('app-menu-load');
-  const menuExit = document.getElementById('app-menu-exit');
-  const fileInput = document.getElementById('app-hidden-file-input');
-
-  menuBtn.onclick = (e) => {
-    e.stopPropagation();
-    menuDropdown.style.display = menuDropdown.style.display === 'none' ? 'block' : 'none';
-  };
-
-  document.addEventListener('click', (e) => {
-    if (!document.getElementById('app-options-menu').contains(e.target)) {
-      menuDropdown.style.display = 'none';
-    }
-  });
-
-  menuSave.onclick = () => {
-    menuDropdown.style.display = 'none';
-    if (confirm('آیا از ذخیره طرح اطمینان دارید؟')) {
-      const jsonStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      alert('فایل طرح با موفقیت ذخیره شد.');
-    }
-  };
-
-  menuLoad.onclick = () => {
-    fileInput.click();
-    menuDropdown.style.display = 'none';
-  };
-
-  menuExit.onclick = () => {
-    menuDropdown.style.display = 'none';
-    const confirmSave = confirm('آیا مایل به ذخیره اطلاعات طرح قبل از خروج هستید؟');
-    if (confirmSave) {
-      const jsonStr = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `beton_project_${new Date().toISOString().slice(0,10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setTimeout(() => {
-        window.close();
-        setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
-      }, 800);
-    } else {
-      window.close();
-      setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
-    }
-  };
-
-  fileInput.onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const loadedData = JSON.parse(event.target.result);
-        if (loadedData && typeof loadedData === 'object') {
-          Object.assign(data, loadedData);
-          save();
-          view();
-          alert('طرح با موفقیت بازیابی شد.');
-        } else {
-          alert('فایل انتخاب شده معتبر نیست.');
-        }
-      } catch (err) {
-        alert('خطا در خواندن فایل: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    fileInput.value = '';
-  };
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initNewMenu);
-} else {
-  initNewMenu();
-                     }
+      background: #c1c
