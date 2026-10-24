@@ -10,7 +10,7 @@ const STORAGE_KEY = 'beton479';
 const defaults = {
   strength: 30,
   slumpClass: 'S3',
-  slump: 120,
+  slump: 125,
   msa: 19,
   aggregateCount: 2,
   cementClass: '42.5',
@@ -1224,7 +1224,6 @@ function renderGradingChart(combined) {
       `;
     }).join('');
 
-    // Prevent duplicate 0 and 100 circles
     let first100Index = valid.findIndex(p => Number(p.value) === 100);
     let last0Index = -1;
     valid.forEach((p, idx) => {
@@ -1291,7 +1290,6 @@ function renderGradingChart(combined) {
       ).join('')
     : '';
 
-  // Mix curve changed to Black
   const mixLine =
     data.showMixCurve && combined
       ? drawSeries(combined, '#000000', '', 3.5, chartSieves)
@@ -1761,6 +1759,46 @@ function renderStep1() {
    نمودار آب آزاد (صفحه پنجم)
 ========================================= */
 
+function getInterpolatedWaterCurve(isCrushed, slump) {
+  const eqs = isCrushed ? {
+    S1: { a: 3.2682, b: -56.602, c: 355.02, mid: 25 },
+    S2: { a: 3.922, b: -68.531, c: 433.0, mid: 70 },
+    S3: { a: 4.4766, b: -76.242, c: 473.31, mid: 125 },
+    S4: { a: 5.0816, b: -84.654, c: 517.28, mid: 185 }
+  } : {
+    S1: { a: 2.4397, b: -45.811, c: 305.64, mid: 25 },
+    S2: { a: 2.9217, b: -55.384, c: 372.47, mid: 70 },
+    S3: { a: 3.3593, b: -62.257, c: 408.7, mid: 125 },
+    S4: { a: 3.8367, b: -69.7547, c: 448.22, mid: 185 }
+  };
+
+  if (slump <= eqs.S1.mid) return eqs.S1;
+  if (slump >= eqs.S4.mid) return eqs.S4;
+
+  if (slump < eqs.S2.mid) {
+    const t = (slump - eqs.S1.mid) / (eqs.S2.mid - eqs.S1.mid);
+    return {
+      a: eqs.S1.a * (1-t) + eqs.S2.a * t,
+      b: eqs.S1.b * (1-t) + eqs.S2.b * t,
+      c: eqs.S1.c * (1-t) + eqs.S2.c * t
+    };
+  } else if (slump < eqs.S3.mid) {
+    const t = (slump - eqs.S2.mid) / (eqs.S3.mid - eqs.S2.mid);
+    return {
+      a: eqs.S2.a * (1-t) + eqs.S3.a * t,
+      b: eqs.S2.b * (1-t) + eqs.S3.b * t,
+      c: eqs.S2.c * (1-t) + eqs.S3.c * t
+    };
+  } else {
+    const t = (slump - eqs.S3.mid) / (eqs.S4.mid - eqs.S3.mid);
+    return {
+      a: eqs.S3.a * (1-t) + eqs.S4.a * t,
+      b: eqs.S3.b * (1-t) + eqs.S4.b * t,
+      c: eqs.S3.c * (1-t) + eqs.S4.c * t
+    };
+  }
+}
+
 function syncWater() {
   const combined = combinedGrading();
   const fm = finenessModulus(combined) || 4.5;
@@ -1768,23 +1806,15 @@ function syncWater() {
   const avgFracture = activeAggs.length > 0 ? activeAggs.reduce((sum, a) => sum + Number(a.fracture || 0), 0) / activeAggs.length : 0;
   const isCrushed = avgFracture > 0;
 
-  const eqs = isCrushed ? {
-    S3: [4.4766, -76.242, 473.31],
-    S2: [3.922, -68.531, 433.0],
-    S1: [3.2682, -56.602, 355.02]
-  } : {
-    S3: [3.3593, -62.257, 408.7],
-    S2: [2.9217, -55.384, 372.47],
-    S1: [2.4397, -45.811, 305.64]
-  };
-  const activeEq = eqs[data.slumpClass] || eqs['S3'];
-  const waterFromCurve = activeEq[0] * fm * fm + activeEq[1] * fm + activeEq[2];
+  const curve = getInterpolatedWaterCurve(isCrushed, num('slump'));
+  const waterFromCurve = curve.a * fm * fm + curve.b * fm + curve.c;
+  
   if (waterFromCurve) {
     data.water = Math.round(waterFromCurve * 10) / 10;
   }
 }
 
-function renderWaterChart(fm, water, isCrushed) {
+function renderWaterChart(fm, water, isCrushed, slump) {
   const width = 680;
   const height = 400;
   const left = 60;
@@ -1802,22 +1832,24 @@ function renderWaterChart(fm, water, isCrushed) {
   const x = val => left + (val - xMin) / (xMax - xMin) * plotWidth;
   const y = val => top + (yMax - val) / (yMax - yMin) * plotHeight;
 
-  let allCurves;
+  let baseCurves;
   if (isCrushed) {
-    allCurves = [
+    baseCurves = [
+      { a: 5.0816, b: -84.654, c: 517.28, name: 'S4', color: '#b91c1c' },
       { a: 4.4766, b: -76.242, c: 473.31, name: 'S3', color: '#991b1b' },
       { a: 3.922, b: -68.531, c: 433.0, name: 'S2', color: '#ec4899' },
       { a: 3.2682, b: -56.602, c: 355.02, name: 'S1', color: '#2563eb' }
     ];
   } else {
-    allCurves = [
+    baseCurves = [
+      { a: 3.8367, b: -69.7547, c: 448.22, name: 'S4', color: '#b91c1c' },
       { a: 3.3593, b: -62.257, c: 408.7, name: 'S3', color: '#991b1b' },
       { a: 2.9217, b: -55.384, c: 372.47, name: 'S2', color: '#ec4899' },
       { a: 2.4397, b: -45.811, c: 305.64, name: 'S1', color: '#2563eb' }
     ];
   }
 
-  const activeEq = allCurves.find(c => c.name === data.slumpClass) || allCurves[0];
+  const activeEq = getInterpolatedWaterCurve(isCrushed, slump);
   const waterFromCurve = activeEq.a * fm * fm + activeEq.b * fm + activeEq.c;
 
   let grid = '';
@@ -1833,20 +1865,36 @@ function renderWaterChart(fm, water, isCrushed) {
   }
 
   let curveLines = '';
-  allCurves.forEach(c => {
+  
+  // Draw background curves (thin, semi-transparent)
+  baseCurves.forEach(c => {
     let path = '';
     for (let xv = 3.35; xv <= 8.01; xv += 0.1) {
       let yv = c.a * xv * xv + c.b * xv + c.c;
       if (yv < 105) break; 
       path += `${path === '' ? 'M' : 'L'} ${x(xv)} ${y(yv)} `;
     }
-    curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="2.5" />`;
+    curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.5" />`;
     
     const labelY = c.a * 3.35 * 3.35 + c.b * 3.35 + c.c;
     if (labelY >= yMin && labelY <= yMax) {
-      curveLines += `<text x="${x(3.35)}" y="${y(labelY) - 5}" font-size="12" fill="${c.color}" font-weight="bold" text-anchor="start">${c.name}</text>`;
+      curveLines += `<text x="${x(3.35)}" y="${y(labelY) - 5}" font-size="12" fill="${c.color}" opacity="0.6" text-anchor="start">${c.name}</text>`;
     }
   });
+
+  // Draw interpolated curve (thick, distinct color)
+  let interpPath = '';
+  for (let xv = 3.35; xv <= 8.01; xv += 0.1) {
+    let yv = activeEq.a * xv * xv + activeEq.b * xv + activeEq.c;
+    if (yv < 105) break; 
+    interpPath += `${interpPath === '' ? 'M' : 'L'} ${x(xv)} ${y(yv)} `;
+  }
+  curveLines += `<path d="${interpPath}" fill="none" stroke="#059669" stroke-width="4" />`;
+  
+  const interpLabelY = activeEq.a * 3.35 * 3.35 + activeEq.b * 3.35 + activeEq.c;
+  if (interpLabelY >= yMin && interpLabelY <= yMax) {
+    curveLines += `<text x="${x(3.35)}" y="${y(interpLabelY) - 8}" font-size="13" fill="#059669" font-weight="bold" text-anchor="start">میان‌یابی (${slump} mm)</text>`;
+  }
 
   let intersectionLines = '';
   if (fm >= xMin && fm <= xMax && water >= yMin && water <= yMax) {
@@ -1854,7 +1902,7 @@ function renderWaterChart(fm, water, isCrushed) {
     const py = y(water);
     intersectionLines += `<line x1="${left}" y1="${py}" x2="${px}" y2="${py}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
     intersectionLines += `<line x1="${px}" y1="${py}" x2="${px}" y2="${height - bottom}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
-    intersectionLines += `<circle cx="${px}" cy="${py}" r="4" fill="#dc2626" />`;
+    intersectionLines += `<circle cx="${px}" cy="${py}" r="5" fill="#dc2626" />`;
   }
 
   return `
@@ -1888,18 +1936,8 @@ function renderWater() {
   const avgFracture = activeAggs.length > 0 ? activeAggs.reduce((sum, a) => sum + Number(a.fracture || 0), 0) / activeAggs.length : 0;
   const isCrushed = avgFracture > 0;
 
-  let waterFromCurve = null;
-  const eqs = isCrushed ? {
-    S3: [4.4766, -76.242, 473.31],
-    S2: [3.922, -68.531, 433.0],
-    S1: [3.2682, -56.602, 355.02]
-  } : {
-    S3: [3.3593, -62.257, 408.7],
-    S2: [2.9217, -55.384, 372.47],
-    S1: [2.4397, -45.811, 305.64]
-  };
-  const activeEq = eqs[data.slumpClass] || eqs['S3'];
-  waterFromCurve = activeEq[0] * fm * fm + activeEq[1] * fm + activeEq[2];
+  const activeEq = getInterpolatedWaterCurve(isCrushed, num('slump'));
+  const waterFromCurve = activeEq.a * fm * fm + activeEq.b * fm + activeEq.c;
 
   const reduction = data.admixture === 'water_reducer' ? (waterFromCurve * num('admixturePct') / 100) : 0;
   const reductionPct = data.admixture === 'water_reducer' ? num('admixturePct') : 0;
@@ -1919,13 +1957,13 @@ function renderWater() {
       </label>
     </div>
 
-    ${renderWaterChart(fm, data.water, isCrushed)}
+    ${renderWaterChart(fm, data.water, isCrushed, num('slump'))}
 
     <h3 style="margin-top: 20px;">پارامترهای محاسباتی</h3>
     <table>
       <tbody>
         <tr><td>۱. مدول نرمی مخلوط سنگدانه</td><td>${fm.toFixed(2)}</td></tr>
-        <tr><td>۲. اسلامپ مشخصه</td><td>${data.slumpClass} (${data.slump} mm)</td></tr>
+        <tr><td>۲. اسلامپ مشخصه</td><td>${data.slump} mm</td></tr>
         <tr><td>۳. درصد شکستگی متوسط معادل برای مخلوط سنگدانه</td><td>${avgFracture.toFixed(1)}٪ (${isCrushed ? 'تیزگوشه' : 'گردگوشه'})</td></tr>
         <tr><td>۴. میزان آب آزاد مورد نیاز حاصل از منحنی (kg/m³)</td><td>${waterFromCurve ? waterFromCurve.toFixed(1) : 'نامشخص'}</td></tr>
         <tr>
@@ -2203,13 +2241,14 @@ function view() {
               data.wc = x;
             }
             data.targetMethod = 'manual';
-          } else if (['cementClass', 'admixture', 'admixturePct'].includes(key)) {
+          } else if (['cementClass', 'admixture', 'admixturePct', 'slump'].includes(key)) {
             const curve = getActiveCurve();
             const target = getTargetStrength();
             if (target !== null) {
               const newWc = calculateWc(target, curve);
               if (newWc !== null) data.wc = newWc;
             }
+            syncWater();
             validate();
           } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount') {
             // No strict validation needed for these keys
@@ -2789,4 +2828,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-}
+   }
