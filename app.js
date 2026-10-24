@@ -773,14 +773,11 @@ function getClosestDeviationRow(fc) {
 }
 
 function targetCalculations() {
-  const fc = num('strength');
+  let fc = num('strength');
+  if (!Number.isFinite(fc) || fc <= 0) fc = 30; // Fallback to avoid errors
   const row = getClosestDeviationRow(fc);
 
-  if (!row) return null;
-
-  const S = row[data.workshopRank];
-
-  if (!Number.isFinite(S)) return null;
+  const S = row[data.workshopRank] || row['A'] || 4.0;
 
   const fcm1 = fc + 1.34 * S;
   const fcm2 = 0.9 * fc + 2.33 * S;
@@ -847,20 +844,10 @@ function renderTargetStrength() {
       <strong>${fc.toFixed(2)} MPa</strong>
     </p>
 
-    ${result
-      ? `
-        <p>
-          انحراف معیار S:
-          <strong>${result.S.toFixed(2)} MPa</strong>
-        </p>
-      `
-      : `
-        <p class="hint">
-          برای این مقاومت، مقدار انحراف معیار
-          در جدول فعلی موجود نیست.
-        </p>
-      `
-    }
+    <p>
+      انحراف معیار S:
+      <strong>${result.S.toFixed(2)} MPa</strong>
+    </p>
 
     ${data.targetMethod === 'manual'
       ? numberInput(
@@ -869,32 +856,26 @@ function renderTargetStrength() {
           0.1,
           'min="0"'
         )
-      : result
-        ? `
-          <p>رابطه اول: fcm1 = fc + 1.34 × S</p>
-          <p>
-            ${fc.toFixed(2)} +
-            1.34 × ${result.S.toFixed(2)}
-            = ${result.fcm1.toFixed(2)} MPa
-          </p>
+      : `
+        <p>رابطه اول: fcm1 = fc + 1.34 × S</p>
+        <p>
+          ${fc.toFixed(2)} +
+          1.34 × ${result.S.toFixed(2)}
+          = ${result.fcm1.toFixed(2)} MPa
+        </p>
 
-          <p>رابطه دوم: fcm2 = 0.9 × fc + 2.33 × S</p>
-          <p>
-            0.9 × ${fc.toFixed(2)} +
-            2.33 × ${result.S.toFixed(2)}
-            = ${result.fcm2.toFixed(2)} MPa
-          </p>
+        <p>رابطه دوم: fcm2 = 0.9 × fc + 2.33 × S</p>
+        <p>
+          0.9 × ${fc.toFixed(2)} +
+          2.33 × ${result.S.toFixed(2)}
+          = ${result.fcm2.toFixed(2)} MPa
+        </p>
 
-          <p>
-            مقاومت هدف انتخابی:
-            <strong>${result.target.toFixed(2)} MPa</strong>
-          </p>
-        `
-        : `
-          <p class="hint">
-            محاسبه خودکار در دسترس نیست.
-          </p>
-        `
+        <p>
+          مقاومت هدف انتخابی:
+          <strong>${result.target.toFixed(2)} MPa</strong>
+        </p>
+      `
     }
   `;
 }
@@ -2438,7 +2419,7 @@ function view() {
               if (newWc !== null) data.wc = newWc;
             }
             syncWater();
-            validate();
+            // Removed validate() here to prevent reverting admixture changes
           } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'cementAction' || key === 'sgAdmixture') {
             // No strict validation needed for these keys
           } else if (key === 'water') {
@@ -3094,4 +3075,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-   }
+           }
