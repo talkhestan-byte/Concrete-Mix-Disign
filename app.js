@@ -1741,7 +1741,7 @@ function renderStep1() {
           enterkeyhint="next"
           data-key="wc"
           step="0.001"
-          value="${data.wc}"
+          value="${Number(data.wc).toFixed(3)}"
         >
       </label>
       <label class="field">
@@ -1752,7 +1752,7 @@ function renderStep1() {
           enterkeyhint="next"
           data-key="targetStrengthManual"
           step="0.1"
-          value="${getTargetStrength() !== null ? getTargetStrength().toFixed(1) : ''}"
+          value="${getTargetStrength() !== null ? Number(getTargetStrength()).toFixed(1) : ''}"
         >
       </label>
     </div>
@@ -1950,17 +1950,6 @@ function renderWater() {
   return `
     <h2>تعیین آب آزاد</h2>
     
-    <div class="grid" style="margin-bottom: 15px;">
-      <label class="field">
-        <span>مدول نرمی مخلوط (F.M.)</span>
-        <input type="number" inputmode="decimal" enterkeyhint="next" readonly value="${fm.toFixed(2)}">
-      </label>
-      <label class="field">
-        <span>میزان آب آزاد انتخابی (kg/m³)</span>
-        <input type="number" inputmode="decimal" enterkeyhint="next" data-key="water" step="0.1" value="${data.water}">
-      </label>
-    </div>
-
     ${renderWaterChart(fm, data.water, isCrushed, num('slump'))}
 
     <h3 style="margin-top: 20px;">پارامترهای محاسباتی</h3>
@@ -2615,7 +2604,8 @@ function injectWindowsTheme() {
       padding: 4px 6px;
       border: 1px solid #c8c6c4;
       border-radius: 4px;
-      font-family: inherit;
+      font-family: Arial, sans-serif !important;
+      font-variant-numeric: lining-nums tabular-nums;
       font-size: 12px;
       background: #fff;
       text-align: center;
@@ -2673,6 +2663,7 @@ function injectWindowsTheme() {
       padding: 8px;
       text-align: right;
       font-size: 12px;
+      font-variant-numeric: lining-nums tabular-nums;
     }
 
     th {
