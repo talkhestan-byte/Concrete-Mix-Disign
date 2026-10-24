@@ -265,11 +265,11 @@ function numberInput(key, label, step, extra = '') {
     <label class="field">
       <span>${label}</span>
       <input
-        type="number"
+        type="text"
         inputmode="decimal"
         enterkeyhint="next"
         data-key="${key}"
-        step="${step}"
+        data-step="${step}"
         value="${escapeHtml(data[key] ?? '')}"
         ${extra}
       >
@@ -890,12 +890,11 @@ function renderAggregateTable() {
         <td>
           <input
             class="table-input"
-            type="number"
+            type="text"
             inputmode="decimal"
             enterkeyhint="next"
             min="0"
             max="100"
-            step="0.1"
             data-agg="${i}"
             data-agg-field="fracture"
             value="${data.aggregates[i].fracture}"
@@ -915,12 +914,11 @@ function renderAggregateTable() {
           <td>
             <input
               class="table-input"
-              type="number"
+              type="text"
               inputmode="decimal"
               enterkeyhint="next"
               min="0"
               max="100"
-              step="0.1"
               data-agg="${i}"
               data-sieve="${j}"
               value="${data.aggregates[i].passing[j] ?? ''}"
@@ -1411,12 +1409,11 @@ function renderShares() {
         <label class="field">
           <span>سهم ${escapeHtml(name)} (%)</span>
           <input
-            type="number"
+            type="text"
             inputmode="decimal"
             enterkeyhint="next"
             min="0"
             max="100"
-            step="0.1"
             data-share="${i}"
             value="${data.aggregateShares[i] ?? ''}"
           >
@@ -1736,22 +1733,20 @@ function renderStep1() {
       <label class="field">
         <span>نسبت آب به سیمان انتخابی</span>
         <input
-          type="number"
+          type="text"
           inputmode="decimal"
           enterkeyhint="next"
           data-key="wc"
-          step="0.001"
           value="${Number(data.wc).toFixed(3)}"
         >
       </label>
       <label class="field">
         <span>مقاومت فشاری متوسط متناظر (MPa)</span>
         <input
-          type="number"
+          type="text"
           inputmode="decimal"
           enterkeyhint="next"
           data-key="targetStrengthManual"
-          step="0.1"
           value="${getTargetStrength() !== null ? Number(getTargetStrength()).toFixed(1) : ''}"
         >
       </label>
@@ -1962,7 +1957,7 @@ function renderWater() {
         <tr>
           <td>5. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده (%)</td>
           <td>
-            <input type="number" inputmode="decimal" enterkeyhint="next" data-key="admixturePct" step="0.1" value="${data.admixture !== 'none' ? data.admixturePct : 0}" ${data.admixture === 'none' ? 'disabled' : ''} style="width: 80px; padding: 4px;">
+            <input type="text" inputmode="decimal" enterkeyhint="next" data-key="admixturePct" value="${data.admixture !== 'none' ? data.admixturePct : 0}" ${data.admixture === 'none' ? 'disabled' : ''} style="width: 80px; padding: 4px;">
           </td>
         </tr>
         <tr><td>6. مقدار کاهش آب آزاد (kg/m³)</td><td>${reduction.toFixed(1)}</td></tr>
@@ -2034,7 +2029,7 @@ function renderCement() {
           
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:12px;">
             <span>ضریب اصلاح آب (kg/10kg):</span>
-            <input type="number" data-key="correctionFactor" min="1" max="2" step="0.1" value="${factor}" style="width:60px; padding:2px 4px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
+            <input type="text" inputmode="decimal" data-key="correctionFactor" value="${factor}" style="width:60px; padding:2px 4px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
           </div>
           
           <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:11px; margin-bottom:10px;">
@@ -2194,11 +2189,10 @@ function view() {
         const oldTarget = data.targetStrengthManual;
         const oldMethod = data.targetMethod;
 
-        const value = element.type === 'number'
-          ? element.value === ''
-            ? ''
-            : Number(element.value)
-          : element.value;
+        const rawVal = element.value;
+        const value = rawVal === ''
+          ? ''
+          : Number(rawVal);
 
         data[key] = value;
 
@@ -2374,11 +2368,23 @@ function view() {
             }
           }
           if (nextInput) {
-            setTimeout(() => {
-              nextInput.focus();
-              nextInput.select();
-            }, 10);
+            nextInput.focus();
+            nextInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           }
+        }
+      };
+
+      element.oninput = (e) => {
+        let val = e.target.value;
+        if (!val) return;
+        const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+        const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+        const en = ['0','1','2','3','4','5','6','7','8','9'];
+        for (let i = 0; i < 10; i++) {
+          val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
+        }
+        if (e.target.value !== val) {
+          e.target.value = val;
         }
       };
     }
@@ -2412,6 +2418,20 @@ function view() {
 
         save();
         view();
+      };
+
+      element.oninput = (e) => {
+        let val = e.target.value;
+        if (!val) return;
+        const fa = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+        const ar = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+        const en = ['0','1','2','3','4','5','6','7','8','9'];
+        for (let i = 0; i < 10; i++) {
+          val = val.replace(new RegExp(fa[i], 'g'), en[i]).replace(new RegExp(ar[i], 'g'), en[i]);
+        }
+        if (e.target.value !== val) {
+          e.target.value = val;
+        }
       };
     }
   );
@@ -2877,4 +2897,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-}
+                     }
