@@ -1975,7 +1975,6 @@ function renderCement() {
   return `
     <h2>گام سوم — تعیین مقدار سیمان</h2>
 
-    <!-- Top Formula Section -->
     <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 15px; margin-bottom: 30px; font-size: 1.1em; padding: 15px; border-bottom: 2px solid #e2e8f0;">
       <div style="display: flex; align-items: center;">
         <span style="font-weight: bold; margin-left: 10px;">C =</span>
@@ -1992,7 +1991,7 @@ function renderCement() {
 
       <span style="font-weight: bold; font-size: 1.5em;">=</span>
       
-      <div style="background: #f1f5f9; padding: 8px 20px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 1.3em; margin: 0 10px;">
+      <div style="background: #f1f5f9; padding: 8px 20px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 1.3em; margin: 0 10px; border-radius: 4px;">
         ${cement.toFixed(2)}
       </div>
       
@@ -2003,26 +2002,24 @@ function renderCement() {
       ${isOk ? '<span style="color: #16a34a; font-weight: bold; margin-right: 10px;">OK</span>' : '<span style="color: #dc2626; font-weight: bold; margin-right: 10px;">محدودیت دارد</span>'}
     </div>
 
-    <!-- Middle Section (Correction) -->
     <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 20px; margin-bottom: 30px; border-radius: 8px;">
       <h4 style="margin-top: 0; margin-bottom: 15px; color: #475569; text-align: right;">اصلاح مقدار آب و محاسبه مجدد مقدار سیمان</h4>
       <div style="display: flex; justify-content: space-between; align-items: center;">
          <div style="font-size: 0.95em;">مقدار افزایش آب به ازای هر ۱۰ کیلوگرم سیمان اضافی</div>
          <div style="display: flex; align-items: center;">
-             <div style="background: white; border: 1px solid #94a3b8; padding: 6px 12px; margin-left: 10px; min-width: 60px; text-align: center; font-weight: bold;">1/50</div>
+             <div style="background: white; border: 1px solid #94a3b8; padding: 6px 12px; margin-left: 10px; min-width: 60px; text-align: center; font-weight: bold; border-radius: 4px;">1/50</div>
              <div>Kg/10 kg</div>
          </div>
       </div>
     </div>
 
-    <!-- Bottom Right Section (3 parameters) -->
     <div style="display: flex; justify-content: flex-end;">
       <div style="border: 1px solid #cbd5e1; padding: 25px; width: 100%; max-width: 450px; background: #f8fafc; border-radius: 8px;">
          
          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
             <span>حداکثر مقدار سیمان</span>
             <div style="display: flex; align-items: center;">
-                <input type="number" value="${maxC}" readonly style="width: 80px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
+                <input type="number" value="${maxC}" readonly style="width: 85px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
                 <span>Kg/m3</span>
             </div>
          </div>
@@ -2030,7 +2027,7 @@ function renderCement() {
          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
             <span>مقدار سیمان محاسبه شده</span>
             <div style="display: flex; align-items: center;">
-                <span style="background: #e2e8f0; padding: 6px 15px; font-weight: bold; border-radius: 4px; margin-left: 10px;">${cement.toFixed(2)}</span>
+                <span style="background: #e2e8f0; padding: 6px 15px; font-weight: bold; border-radius: 4px; margin-left: 10px; width: 85px; text-align: center;">${cement.toFixed(2)}</span>
                 <span>Kg/m3</span>
             </div>
          </div>
@@ -2038,7 +2035,7 @@ function renderCement() {
          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
             <span>حداقل مقدار سیمان</span>
             <div style="display: flex; align-items: center;">
-                <input type="number" value="${minC}" readonly style="width: 80px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
+                <input type="number" value="${minC}" readonly style="width: 85px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
                 <span>Kg/m3</span>
             </div>
          </div>
@@ -2433,10 +2430,180 @@ function view() {
 }
 
 /* =========================================
-   راه‌اندازی
+   راه‌اندازی و تزریق استایل ویندوزی
 ========================================= */
 
+function injectWindowsTheme() {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    /* Windows-like OS Theme */
+    :root {
+      --win-bg: #f3f3f3;
+      --win-window: #ffffff;
+      --win-border: #cccccc;
+      --win-blue: #0078d7;
+      --win-blue-hover: #e5f1fb;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--win-bg);
+      color: #000;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+    }
+
+    /* The App Container (Main Window) */
+    #app {
+      background: var(--win-window);
+      border: 1px solid var(--win-border);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      max-width: 1000px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    /* Tabs (Title bar) */
+    #tabs {
+      background: #e6e6e6;
+      border-bottom: 1px solid var(--win-border);
+      padding: 8px 8px 0 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    #tabs button {
+      background: #f0f0f0;
+      border: 1px solid var(--win-border);
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+      transition: background 0.2s;
+      font-family: inherit;
+    }
+
+    #tabs button:hover {
+      background: #e0e0e0;
+    }
+
+    #tabs button.active {
+      background: var(--win-window);
+      border-bottom: 1px solid var(--win-window);
+      margin-bottom: -1px;
+      font-weight: bold;
+      color: var(--win-blue);
+    }
+
+    /* Main Panel Content */
+    .panel {
+      padding: 24px;
+    }
+
+    /* Inputs - Restricted to 6 characters/digits */
+    input[type="number"],
+    input[type="text"],
+    select {
+      width: 85px !important; /* Fits ~6 digits */
+      padding: 4px 6px;
+      border: 1px solid #7a7a7a;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 13px;
+      box-sizing: border-box;
+      background: #fff;
+      text-align: center;
+    }
+
+    input.table-input[type="text"] {
+      width: 85px !important;
+      text-align: right;
+    }
+
+    input[type="number"]:focus,
+    input[type="text"]:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--win-blue);
+      box-shadow: 0 0 0 1px var(--win-blue);
+    }
+
+    /* Grid Layout for fields */
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      font-size: 13px;
+      color: #333;
+    }
+
+    /* Buttons */
+    button {
+      background: #e1e1e1;
+      border: 1px solid #adadad;
+      border-radius: 4px;
+      padding: 6px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: var(--win-blue-hover);
+      border-color: var(--win-blue);
+    }
+    button:active {
+      background: #cce4f7;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+    }
+    th, td {
+      border: 1px solid #e0e0e0;
+      padding: 8px 12px;
+      text-align: right;
+      font-size: 13px;
+    }
+    th {
+      background: #f9f9f9;
+      font-weight: 600;
+    }
+
+    /* Hint Text */
+    .hint {
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    /* Responsive Overrides */
+    @media (max-width: 600px) {
+      #tabs button { font-size: 12px; padding: 6px 10px; }
+      .panel { padding: 12px; }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 function startApp() {
+  injectWindowsTheme();
+  
   const prev = document.getElementById('prev');
   const next = document.getElementById('next');
 
