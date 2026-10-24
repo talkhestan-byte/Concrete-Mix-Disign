@@ -1897,6 +1897,8 @@ function renderWaterChart(fm, water, isCrushed, slump) {
     grid += `<text x="${px}" y="${height - bottom + 20}" text-anchor="middle" font-size="12" fill="#334155">${i.toFixed(2)}</text>`;
   }
 
+  const labelSuffix = isCrushed ? '-C' : '-R';
+
   let curveLines = '';
   
   baseCurves.forEach(c => {
@@ -1910,7 +1912,7 @@ function renderWaterChart(fm, water, isCrushed, slump) {
     
     const labelY = c.a * 3.35 * 3.35 + c.b * 3.35 + c.c;
     if (labelY >= yMin && labelY <= yMax) {
-      curveLines += `<text x="${x(3.35)}" y="${y(labelY) - 5}" font-size="12" fill="${c.color}" opacity="0.6" text-anchor="start">${c.name}</text>`;
+      curveLines += `<text x="${x(3.35)}" y="${y(labelY) - 5}" font-size="12" fill="${c.color}" opacity="0.6" text-anchor="start">${c.name}${labelSuffix}</text>`;
     }
   });
 
@@ -2132,8 +2134,9 @@ function renderReport() {
   const totalSSD = ssdGravel + ssdSand;
   const totalDry = dryGravel + drySand;
   
-  const finalDensitySSD = c + w + totalSSD;
-  const finalDensityDry = c + w + totalDry;
+  const totalWater = w + (ssdSand - drySand) + (ssdGravel - dryGravel);
+  
+  const finalDensity = c + totalWater + totalDry;
 
   return `
     <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1;">
@@ -2239,20 +2242,20 @@ function renderReport() {
         <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">خلاصه مقادیر نهایی (بر مبنای وزن خشک)</h3>
         <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 13px; justify-content: space-between;">
           <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;">
-            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">جرم کل SSD (Assd)</div>
-            <strong style="font-size: 16px; color: #0f172a;">${totalSSD.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
+            <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">جرم آب کل (W_total)</div>
+            <strong style="font-size: 16px; color: #0f172a;">${totalWater.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
           </div>
           <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;">
             <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">جرم کل خشک (Ad)</div>
             <strong style="font-size: 16px; color: #0f172a;">${totalDry.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
           </div>
           <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #bae6fd;">
-            <div style="font-size: 11px; color: #0369a1; margin-bottom: 4px;">چگالی نهایی بتن (G_SSD)</div>
-            <strong style="font-size: 16px; color: #0284c7;">${finalDensitySSD.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
+            <div style="font-size: 11px; color: #0369a1; margin-bottom: 4px;">چگالی نهایی بتن (G)</div>
+            <strong style="font-size: 16px; color: #0284c7;">${finalDensity.toFixed(0)} <span style="font-size: 10px;">kg/m³</span></strong>
           </div>
         </div>
         <div style="margin-top: 10px; font-size: 11px; color: #64748b; text-align: center; direction: ltr;">
-          G_Dry = C + Wf + Ad = ${c.toFixed(2)} + ${w.toFixed(2)} + ${totalDry.toFixed(0)} = ${finalDensityDry.toFixed(0)} kg/m³
+          G = C + W_total + Ad = ${c.toFixed(2)} + ${totalWater.toFixed(2)} + ${totalDry.toFixed(0)} = ${finalDensity.toFixed(0)} kg/m³
         </div>
       </div>
     </div>
@@ -2754,20 +2757,21 @@ function injectWindowsTheme() {
     .grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       margin-bottom: 16px;
     }
 
+    /* Reduced label space and increased input width */
     .field {
       display: inline-flex;
       flex-direction: row;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       background: #f8f9fa;
-      padding: 6px 10px;
+      padding: 4px 6px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text);
       transition: box-shadow 0.2s ease;
       box-shadow: 0 1px 3px rgba(0,0,0,0.02);
@@ -2780,7 +2784,7 @@ function injectWindowsTheme() {
     input[type="number"],
     input[type="text"],
     select {
-      width: 75px !important; 
+      width: 85px !important; 
       padding: 4px 6px;
       border: 1px solid #c8c6c4;
       border-radius: 4px;
@@ -3057,4 +3061,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-             }
+}
