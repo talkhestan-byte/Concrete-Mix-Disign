@@ -265,6 +265,7 @@ function numberInput(key, label, step, extra = '') {
       <input
         type="number"
         inputmode="decimal"
+        enterkeyhint="next"
         data-key="${key}"
         step="${step}"
         value="${escapeHtml(data[key] ?? '')}"
@@ -875,6 +876,7 @@ function renderAggregateTable() {
           <input
             class="table-input"
             type="text"
+            enterkeyhint="next"
             data-agg="${i}"
             data-agg-field="name"
             value="${escapeHtml(data.aggregates[i].name)}"
@@ -893,6 +895,7 @@ function renderAggregateTable() {
             class="table-input"
             type="number"
             inputmode="decimal"
+            enterkeyhint="next"
             min="0"
             max="100"
             step="0.1"
@@ -917,6 +920,7 @@ function renderAggregateTable() {
               class="table-input"
               type="number"
               inputmode="decimal"
+              enterkeyhint="next"
               min="0"
               max="100"
               step="0.1"
@@ -1164,7 +1168,7 @@ function renderGradingChart(combined) {
     thickness = 2.5,
     sieveList = sieves
   ) {
-    const valid = points
+    let valid = points
       .filter(p =>
         p.value !== '' &&
         p.value != null &&
@@ -1175,6 +1179,20 @@ function renderGradingChart(combined) {
       .sort((a, b) => a.mm - b.mm);
 
     if (!valid.length) return '';
+
+    let first100Index = valid.findIndex(p => Number(p.value) === 100);
+    let last0Index = -1;
+    valid.forEach((p, idx) => {
+      if (Number(p.value) === 0) last0Index = idx;
+    });
+
+    // Filter out intermediate 100s and 0s to prevent drawing horizontal plateau lines
+    valid = valid.filter((p, idx) => {
+      const v = Number(p.value);
+      if (v === 100 && idx !== first100Index) return false;
+      if (v === 0 && idx !== last0Index) return false;
+      return true;
+    });
 
     const segments = [];
     let current = [];
@@ -1224,20 +1242,11 @@ function renderGradingChart(combined) {
       `;
     }).join('');
 
-    let first100Index = valid.findIndex(p => Number(p.value) === 100);
-    let last0Index = -1;
-    valid.forEach((p, idx) => {
-      if (Number(p.value) === 0) last0Index = idx;
-    });
-
     const circles = valid.map((p, idx) => {
-      const v = Number(p.value);
-      if (v === 100 && idx !== first100Index) return '';
-      if (v === 0 && idx !== last0Index) return '';
       return `
         <circle
           cx="${x(p.mm)}"
-          cy="${y(v)}"
+          cy="${y(Number(p.value))}"
           r="3"
           fill="${color}"
         />
@@ -1410,6 +1419,7 @@ function renderShares() {
           <input
             type="number"
             inputmode="decimal"
+            enterkeyhint="next"
             min="0"
             max="100"
             step="0.1"
@@ -1734,6 +1744,7 @@ function renderStep1() {
         <input
           type="number"
           inputmode="decimal"
+          enterkeyhint="next"
           data-key="wc"
           step="0.001"
           value="${data.wc}"
@@ -1744,6 +1755,7 @@ function renderStep1() {
         <input
           type="number"
           inputmode="decimal"
+          enterkeyhint="next"
           data-key="targetStrengthManual"
           step="0.1"
           value="${getTargetStrength() !== null ? getTargetStrength().toFixed(1) : ''}"
@@ -1866,7 +1878,6 @@ function renderWaterChart(fm, water, isCrushed, slump) {
 
   let curveLines = '';
   
-  // Draw background curves (thin, semi-transparent)
   baseCurves.forEach(c => {
     let path = '';
     for (let xv = 3.35; xv <= 8.01; xv += 0.1) {
@@ -1882,7 +1893,6 @@ function renderWaterChart(fm, water, isCrushed, slump) {
     }
   });
 
-  // Draw interpolated curve (thick, distinct color)
   let interpPath = '';
   for (let xv = 3.35; xv <= 8.01; xv += 0.1) {
     let yv = activeEq.a * xv * xv + activeEq.b * xv + activeEq.c;
@@ -1891,9 +1901,9 @@ function renderWaterChart(fm, water, isCrushed, slump) {
   }
   curveLines += `<path d="${interpPath}" fill="none" stroke="#059669" stroke-width="4" />`;
   
-  const interpLabelY = activeEq.a * 3.35 * 3.35 + activeEq.b * 3.35 + activeEq.c;
-  if (interpLabelY >= yMin && interpLabelY <= yMax) {
-    curveLines += `<text x="${x(3.35)}" y="${y(interpLabelY) - 8}" font-size="13" fill="#059669" font-weight="bold" text-anchor="start">میان‌یابی (${slump} mm)</text>`;
+  const rightLabelY = activeEq.a * 7.8 * 7.8 + activeEq.b * 7.8 + activeEq.c;
+  if (rightLabelY >= yMin && rightLabelY <= yMax) {
+    curveLines += `<text x="${x(7.8)}" y="${y(rightLabelY) - 10}" font-size="14" fill="#059669" font-weight="bold" text-anchor="end">S = ${slump}</text>`;
   }
 
   let intersectionLines = '';
@@ -1949,11 +1959,11 @@ function renderWater() {
     <div class="grid" style="margin-bottom: 15px;">
       <label class="field">
         <span>مدول نرمی مخلوط (F.M.)</span>
-        <input type="number" inputmode="decimal" readonly value="${fm.toFixed(2)}">
+        <input type="number" inputmode="decimal" enterkeyhint="next" readonly value="${fm.toFixed(2)}">
       </label>
       <label class="field">
         <span>میزان آب آزاد انتخابی (kg/m³)</span>
-        <input type="number" inputmode="decimal" data-key="water" step="0.1" value="${data.water}">
+        <input type="number" inputmode="decimal" enterkeyhint="next" data-key="water" step="0.1" value="${data.water}">
       </label>
     </div>
 
@@ -1969,7 +1979,7 @@ function renderWater() {
         <tr>
           <td>۵. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده (%)</td>
           <td>
-            <input type="number" inputmode="decimal" data-key="admixturePct" step="0.1" value="${data.admixture === 'water_reducer' ? data.admixturePct : 0}" ${data.admixture !== 'water_reducer' ? 'disabled' : ''} style="width: 80px; padding: 4px;">
+            <input type="number" inputmode="decimal" enterkeyhint="next" data-key="admixturePct" step="0.1" value="${data.admixture === 'water_reducer' ? data.admixturePct : 0}" ${data.admixture !== 'water_reducer' ? 'disabled' : ''} style="width: 80px; padding: 4px;">
           </td>
         </tr>
         <tr><td>۶. مقدار کاهش آب آزاد (kg/m³)</td><td>${reduction.toFixed(1)}</td></tr>
@@ -2041,7 +2051,7 @@ function renderCement() {
          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
             <span>حداکثر مقدار سیمان</span>
             <div style="display: flex; align-items: center;">
-                <input type="number" inputmode="decimal" value="${maxC}" readonly style="width: 85px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
+                <input type="number" inputmode="decimal" enterkeyhint="next" value="${maxC}" readonly style="width: 85px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
                 <span>Kg/m3</span>
             </div>
          </div>
@@ -2057,7 +2067,7 @@ function renderCement() {
          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
             <span>حداقل مقدار سیمان</span>
             <div style="display: flex; align-items: center;">
-                <input type="number" inputmode="decimal" value="${minC}" readonly style="width: 85px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
+                <input type="number" inputmode="decimal" enterkeyhint="next" value="${minC}" readonly style="width: 85px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
                 <span>Kg/m3</span>
             </div>
          </div>
@@ -2358,25 +2368,24 @@ function view() {
         if (e.key === 'Enter') {
           e.preventDefault();
           const aggIdx = element.dataset.agg;
+          let nextInput = null;
           if (element.dataset.aggField === 'fracture') {
-            const firstSieve = document.querySelector(`[data-agg="${aggIdx}"][data-sieve]`);
-            if (firstSieve) {
-              firstSieve.focus();
-              firstSieve.select();
-            }
+            nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-sieve="0"]`);
           } else {
             const columnInputs = Array.from(document.querySelectorAll(`[data-agg="${aggIdx}"][data-sieve]`));
             const currentIdx = columnInputs.indexOf(element);
             if (currentIdx !== -1 && currentIdx < columnInputs.length - 1) {
-              columnInputs[currentIdx + 1].focus();
-              columnInputs[currentIdx + 1].select();
+              nextInput = columnInputs[currentIdx + 1];
             } else {
               const nextAggFracture = document.querySelector(`[data-agg="${Number(aggIdx)+1}"][data-agg-field="fracture"]`);
-              if (nextAggFracture) {
-                nextAggFracture.focus();
-                nextAggFracture.select();
-              }
+              if (nextAggFracture) nextInput = nextAggFracture;
             }
+          }
+          if (nextInput) {
+            setTimeout(() => {
+              nextInput.focus();
+              nextInput.select();
+            }, 10);
           }
         }
       };
@@ -2505,7 +2514,6 @@ function injectWindowsTheme() {
       border: 1px solid var(--border);
     }
 
-    /* Tabs exactly 2 rows (4 + 3) */
     #tabs {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -2552,7 +2560,6 @@ function injectWindowsTheme() {
       margin-bottom: 16px;
     }
 
-    /* Inputs next to labels */
     .field {
       display: inline-flex;
       flex-direction: row;
@@ -2647,6 +2654,29 @@ function injectWindowsTheme() {
 
     tr:nth-child(even) {
       background: #faf9f8;
+    }
+
+    /* Sticky first column for aggregate table */
+    .aggregate-table th:first-child {
+      position: sticky;
+      right: 0;
+      background-color: #f3f2f1;
+      z-index: 10;
+      box-shadow: -2px 0 5px rgba(0,0,0,0.05);
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 10px;
+    }
+
+    .table-scroll::-webkit-scrollbar {
+      height: 8px;
+    }
+    .table-scroll::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 4px;
     }
 
     @media (max-width: 600px) {
@@ -2828,4 +2858,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-   }
+       }
