@@ -2082,8 +2082,8 @@ function renderCement() {
           </div>
         </div>
 
-        <div style="margin-top:12px;">
-          <select id="cement-action" style="width:100%; padding:8px; border-radius:6px; border:1px solid #fcd34d; font-family:inherit; font-size:12px; background:white; color:#92400e; cursor:pointer; outline:none;">
+        <div style="display: flex; justify-content: center; width: 100%; margin-top: 15px;">
+          <select id="cement-action" style="width: 300px; height: 45px; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; font-family: inherit; font-size: 13px; background: white; color: #92400e; cursor: pointer; outline: none; text-align: center;">
             <option value="" disabled ${data.cementAction === '' ? 'selected' : ''}>--- انتخاب کنید ---</option>
             <option value="proceed" ${data.cementAction === 'proceed' ? 'selected' : ''}>1. نادیده گرفتن مقدار سیمان و ادامه</option>
             <option value="grading" ${data.cementAction === 'grading' ? 'selected' : ''}>2. اصلاح بافت دانه‌بندی</option>
@@ -2579,8 +2579,16 @@ function view() {
 
         data.aggregateShares[index] = value;
         syncWater();
+        save();
+        view(); // <-- RE-ADDED to fix mix curve not drawing
 
-        save(); // Removed view() here too
+        setTimeout(() => {
+          const newEl = document.querySelector(`[data-share="${index}"]`);
+          if (newEl) {
+            newEl.focus();
+            newEl.select();
+          }
+        }, 10);
       };
 
       element.oninput = (e) => {
@@ -2761,7 +2769,6 @@ function injectWindowsTheme() {
       margin-bottom: 16px;
     }
 
-    /* Reduced label space and increased input width */
     .field {
       display: inline-flex;
       flex-direction: row;
@@ -2784,7 +2791,7 @@ function injectWindowsTheme() {
     input[type="number"],
     input[type="text"],
     select {
-      width: 85px !important; 
+      width: 130px !important; 
       padding: 4px 6px;
       border: 1px solid #c8c6c4;
       border-radius: 4px;
