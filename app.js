@@ -348,13 +348,9 @@ function requireNumber(key, label) {
 
 function effectiveWater() {
   const water = num('water');
-
-  if (data.admixture === 'water_reducer') {
-    return water * (
-      1 - num('admixturePct') / 100
-    );
+  if (data.admixture !== 'none') {
+    return water * (1 - num('admixturePct') / 100);
   }
-
   return water;
 }
 
@@ -1186,7 +1182,6 @@ function renderGradingChart(combined) {
       if (Number(p.value) === 0) last0Index = idx;
     });
 
-    // Filter out intermediate 100s and 0s to prevent drawing horizontal plateau lines
     valid = valid.filter((p, idx) => {
       const v = Number(p.value);
       if (v === 100 && idx !== first100Index) return false;
@@ -1242,16 +1237,14 @@ function renderGradingChart(combined) {
       `;
     }).join('');
 
-    const circles = valid.map((p, idx) => {
-      return `
-        <circle
-          cx="${x(p.mm)}"
-          cy="${y(Number(p.value))}"
-          r="3"
-          fill="${color}"
-        />
-      `;
-    }).join('');
+    const circles = valid.map((p) => `
+      <circle
+        cx="${x(p.mm)}"
+        cy="${y(Number(p.value))}"
+        r="3"
+        fill="${color}"
+      />
+    `).join('');
 
     return lines + circles;
   }
@@ -1949,8 +1942,8 @@ function renderWater() {
   const activeEq = getInterpolatedWaterCurve(isCrushed, num('slump'));
   const waterFromCurve = activeEq.a * fm * fm + activeEq.b * fm + activeEq.c;
 
-  const reduction = data.admixture === 'water_reducer' ? (waterFromCurve * num('admixturePct') / 100) : 0;
-  const reductionPct = data.admixture === 'water_reducer' ? num('admixturePct') : 0;
+  const reduction = data.admixture !== 'none' ? (waterFromCurve * num('admixturePct') / 100) : 0;
+  const reductionPct = data.admixture !== 'none' ? num('admixturePct') : 0;
   const calculatedWater = waterFromCurve - reduction;
 
   return `
@@ -1979,7 +1972,7 @@ function renderWater() {
         <tr>
           <td>۵. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده (%)</td>
           <td>
-            <input type="number" inputmode="decimal" enterkeyhint="next" data-key="admixturePct" step="0.1" value="${data.admixture === 'water_reducer' ? data.admixturePct : 0}" ${data.admixture !== 'water_reducer' ? 'disabled' : ''} style="width: 80px; padding: 4px;">
+            <input type="number" inputmode="decimal" enterkeyhint="next" data-key="admixturePct" step="0.1" value="${data.admixture !== 'none' ? data.admixturePct : 0}" ${data.admixture === 'none' ? 'disabled' : ''} style="width: 80px; padding: 4px;">
           </td>
         </tr>
         <tr><td>۶. مقدار کاهش آب آزاد (kg/m³)</td><td>${reduction.toFixed(1)}</td></tr>
@@ -1997,86 +1990,98 @@ function renderCement() {
   const result = new Step4().run();
   const wf = effectiveWater();
   const wc = num('wc');
-  const cement = result.cement;
+  let cement = result.cement;
   
-  const maxC = data.limitMaxCementOn ? num('limitMaxCement') : 350;
-  const minC = data.limitMinCementOn ? num('limitMinCement') : 280;
-  
-  const isOk = cement < maxC;
+  const maxC = 350;
+  let isLimited = cement > maxC;
+
+  let extraC = 0;
+  let extraW = 0;
+  let wfNew = wf;
+  let cNew = cement;
+
+  if (isLimited) {
+    extraC = cement - maxC;
+    extraW = extraC * 0.15; 
+    wfNew = wf + extraW;
+    cNew = wfNew / wc;
+  }
+
+  let formulaBox = `
+    <div class="formula-box" style="display:flex; align-items:center; gap:15px; font-size:1.1em; padding:15px; background:#f8fafc; border-radius:8px; margin-bottom:20px;">
+      <div style="font-weight:bold;">C =</div>
+      <div style="display:flex; flex-direction:column; align-items:center;">
+        <span style="border-bottom:1px solid #333; padding:0 5px; font-size:0.9em;">میزان آب مورد نیاز انتخاب شده (Wf)</span>
+        <span style="padding:0 5px; font-size:0.9em;">نسبت آب به سیمان انتخاب شده (W/C)</span>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center;">
+        <span style="border-bottom:1px solid #333; padding:0 5px;">${wf.toFixed(2)}</span>
+        <span style="padding:0 5px;">${wc.toFixed(3)}</span>
+      </div>
+      <div style="font-weight:bold; font-size:1.5em;">=</div>
+      <div style="background:#f1f5f9; padding:8px 20px; border:1px solid #cbd5e1; font-weight:bold; font-size:1.3em; border-radius:4px;">${cement.toFixed(2)}</div>
+      <div>Kg/m3</div>
+    </div>
+  `;
+
+  let contentHtml = '';
+
+  if (!isLimited) {
+    contentHtml = `
+      <div class="success-card" style="background:#ecfdf5; border:1px solid #10b981; color:#065f46; padding:20px; border-radius:8px; text-align:center;">
+        <h3 style="margin-top:0;">مقدار سیمان محاسبه شده در محدوده مجاز است.</h3>
+        <p>مقدار سیمان (${cement.toFixed(2)} kg/m³) کمتر از حد مجاز (${maxC} kg/m³) است.</p>
+        <p>می‌توانید به صفحه بعد بروید.</p>
+      </div>
+    `;
+  } else {
+    contentHtml = `
+      <div class="warning-card" style="background:#fffbeb; border:1px solid #f59e0b; color:#92400e; padding:20px; border-radius:8px;">
+        <h3 style="margin-top:0;">هشدار: مقدار سیمان بیش از حد مجاز است.</h3>
+        <p>مقدار سیمان محاسبه شده (${cement.toFixed(2)} kg/m³) بیشتر از حد مجاز (${maxC} kg/m³) است.</p>
+        
+        <div style="background:white; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #fcd34d;">
+          <h4 style="margin-top:0; color:#92400e;">اصلاح مقدار آب و محاسبه مجدد مقدار سیمان</h4>
+          <p style="font-size:0.9em; margin-bottom:10px;">به ازای هر ۱۰ کیلوگرم سیمان اضافی، ۱.۵ کیلوگرم آب اضافه می‌شود.</p>
+          
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:0.95em;">
+            <div>مقدار سیمان اضافی: <strong>${extraC.toFixed(2)}</strong> kg</div>
+            <div>مقدار آب اضافی: <strong>${extraW.toFixed(2)}</strong> kg</div>
+          </div>
+          
+          <div class="formula-box" style="display:flex; align-items:center; gap:15px; font-size:1.1em; padding:15px; background:#f8fafc; border-radius:8px; margin-top:15px; border:1px solid #e2e8f0;">
+            <div style="font-weight:bold;">C_new =</div>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+              <span style="border-bottom:1px solid #333; padding:0 5px; font-size:0.9em;">میزان آب اصلاح شده (Wf_new)</span>
+              <span style="padding:0 5px; font-size:0.9em;">نسبت آب به سیمان انتخاب شده (W/C)</span>
+            </div>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+              <span style="border-bottom:1px solid #333; padding:0 5px;">${wfNew.toFixed(2)}</span>
+              <span style="padding:0 5px;">${wc.toFixed(3)}</span>
+            </div>
+            <div style="font-weight:bold; font-size:1.5em;">=</div>
+            <div style="background:#f1f5f9; padding:8px 20px; border:1px solid #cbd5e1; font-weight:bold; font-size:1.3em; border-radius:4px;">${cNew.toFixed(2)}</div>
+            <div>Kg/m3</div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;">
+          <label style="font-weight:bold; margin-bottom:10px; display:block;">لطفاً یک گزینه را انتخاب کنید:</label>
+          <select id="cement-action" style="width:100%; padding:12px; border-radius:8px; border:1px solid #fcd34d; font-family:inherit; font-size:1em; background:white; color:#92400e; cursor:pointer; outline:none;">
+            <option value="" disabled selected>--- انتخاب کنید ---</option>
+            <option value="proceed">۱. مقدار سیمان را نادیده بگیر و ادامه بده</option>
+            <option value="grading">۲. اصلاح بافت دانه‌بندی (بازگشت به سهم‌بندی)</option>
+            <option value="wc">۳. اصلاح نسبت آب به سیمان (بازگشت به صفحه W/C)</option>
+          </select>
+        </div>
+      </div>
+    `;
+  }
 
   return `
     <h2>تعیین مقدار سیمان</h2>
-
-    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 15px; margin-bottom: 30px; font-size: 1.1em; padding: 15px; border-bottom: 2px solid #e2e8f0;">
-      <div style="display: flex; align-items: center;">
-        <span style="font-weight: bold; margin-left: 10px;">C =</span>
-        <div style="display: flex; flex-direction: column; align-items: center; margin-left: 10px;">
-          <span style="border-bottom: 1px solid #333; padding: 0 5px; font-size: 0.9em;">میزان آب مورد نیاز انتخاب شده (Wf)</span>
-          <span style="padding: 0 5px; font-size: 0.9em;">نسبت آب به سیمان انتخاب شده (W/C)</span>
-        </div>
-      </div>
-      
-      <div style="display: flex; flex-direction: column; align-items: center; margin: 0 10px;">
-        <span style="border-bottom: 1px solid #333; padding: 0 5px;">${wf.toFixed(2)}</span>
-        <span style="padding: 0 5px;">${wc.toFixed(3)}</span>
-      </div>
-
-      <span style="font-weight: bold; font-size: 1.5em;">=</span>
-      
-      <div style="background: #f1f5f9; padding: 8px 20px; border: 1px solid #cbd5e1; font-weight: bold; font-size: 1.3em; margin: 0 10px; border-radius: 4px;">
-        ${cement.toFixed(2)}
-      </div>
-      
-      <span>Kg/m3</span>
-      
-      <span style="margin-right: 20px;">&lt; ${maxC} Kg/m3</span>
-      
-      ${isOk ? '<span style="color: #16a34a; font-weight: bold; margin-right: 10px;">OK</span>' : '<span style="color: #dc2626; font-weight: bold; margin-right: 10px;">محدودیت دارد</span>'}
-    </div>
-
-    <div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 20px; margin-bottom: 30px; border-radius: 8px;">
-      <h4 style="margin-top: 0; margin-bottom: 15px; color: #475569; text-align: right;">اصلاح مقدار آب و محاسبه مجدد مقدار سیمان</h4>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-         <div style="font-size: 0.95em;">مقدار افزایش آب به ازای هر ۱۰ کیلوگرم سیمان اضافی</div>
-         <div style="display: flex; align-items: center;">
-             <div style="background: white; border: 1px solid #94a3b8; padding: 6px 12px; margin-left: 10px; min-width: 60px; text-align: center; font-weight: bold; border-radius: 4px;">1/50</div>
-             <div>Kg/10 kg</div>
-         </div>
-      </div>
-    </div>
-
-    <div style="display: flex; justify-content: flex-end;">
-      <div style="border: 1px solid #cbd5e1; padding: 25px; width: 100%; max-width: 450px; background: #f8fafc; border-radius: 8px;">
-         
-         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-            <span>حداکثر مقدار سیمان</span>
-            <div style="display: flex; align-items: center;">
-                <input type="number" inputmode="decimal" enterkeyhint="next" value="${maxC}" readonly style="width: 85px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
-                <span>Kg/m3</span>
-            </div>
-         </div>
-
-         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-            <span>مقدار سیمان محاسبه شده</span>
-            <div style="display: flex; align-items: center;">
-                <span style="background: #e2e8f0; padding: 6px 15px; font-weight: bold; border-radius: 4px; margin-left: 10px; width: 85px; text-align: center;">${cement.toFixed(2)}</span>
-                <span>Kg/m3</span>
-            </div>
-         </div>
-
-         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-            <span>حداقل مقدار سیمان</span>
-            <div style="display: flex; align-items: center;">
-                <input type="number" inputmode="decimal" enterkeyhint="next" value="${minC}" readonly style="width: 85px; text-align: center; border: 1px solid #cbd5e1; padding: 4px; background: #fff; border-radius: 4px; margin-left: 10px;">
-                <span>Kg/m3</span>
-            </div>
-         </div>
-
-         <div style="text-align: center; font-size: 0.9em; color: #64748b; margin-top: 15px;">
-            نتیجه: مقدار سیمان بین حدود تعیین شده در مشخصات طرح قرار دارد.
-         </div>
-      </div>
-    </div>
+    ${formulaBox}
+    ${contentHtml}
   `;
 }
 
@@ -2472,6 +2477,21 @@ function view() {
     printButton.onclick = () => window.print();
   }
 
+  const cementAction = document.getElementById('cement-action');
+  if (cementAction) {
+    cementAction.onchange = (e) => {
+      const val = e.target.value;
+      if (val === 'proceed') {
+        page = 6;
+      } else if (val === 'grading') {
+        page = 2;
+      } else if (val === 'wc') {
+        page = 3;
+      }
+      view();
+    };
+  }
+
   prev.disabled = page === 0;
   next.disabled = page === titles.length - 1;
 }
@@ -2656,7 +2676,6 @@ function injectWindowsTheme() {
       background: #faf9f8;
     }
 
-    /* Sticky first column for aggregate table */
     .aggregate-table th:first-child {
       position: sticky;
       right: 0;
@@ -2858,4 +2877,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-       }
+}
