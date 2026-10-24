@@ -908,7 +908,7 @@ function renderAggregateTable() {
 
     return `
       <tr>
-        <th>درصد گذشته از الک ${sieve.label} mm</th>
+        <th>درصد عبوری ${sieve.label} mm</th>
         ${Array.from({ length: count }, (_, i) => `
           <td>
             <input
@@ -1398,19 +1398,22 @@ function renderShares() {
 
   const shareInputs = Array.from(
     { length: count },
-    (_, i) => `
-      <label class="field">
-        <span>سهم ${escapeHtml(data.aggregates[i].name)} (%)</span>
-        <input
-          type="number"
-          min="0"
-          max="100"
-          step="0.1"
-          data-share="${i}"
-          value="${data.aggregateShares[i] ?? ''}"
-        >
-      </label>
-    `
+    (_, i) => {
+      const name = data.aggregates[i].name || `سنگدانه ${i + 1}`;
+      return `
+        <label class="field">
+          <span>سهم ${escapeHtml(name)} (%)</span>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="0.1"
+            data-share="${i}"
+            value="${data.aggregateShares[i] ?? ''}"
+          >
+        </label>
+      `;
+    }
   ).join('');
 
   const combined = combinedGrading();
@@ -1418,18 +1421,21 @@ function renderShares() {
 
   const curveCheckboxes = Array.from(
     { length: count },
-    (_, i) => `
-      <label class="checkline" style="margin:8px 0">
-        <input
-          type="checkbox"
-          data-curve-aggregate="${i}"
-          ${data.showAggregateCurves[i] ? 'checked' : ''}
-        >
-        <span>
-          نمایش منحنی ${escapeHtml(data.aggregates[i].name)}
-        </span>
-      </label>
-    `
+    (_, i) => {
+      const name = data.aggregates[i].name || `سنگدانه ${i + 1}`;
+      return `
+        <label class="checkline" style="margin:8px 0">
+          <input
+            type="checkbox"
+            data-curve-aggregate="${i}"
+            ${data.showAggregateCurves[i] ? 'checked' : ''}
+          >
+          <span>
+            نمایش منحنی ${escapeHtml(name)}
+          </span>
+        </label>
+      `;
+    }
   ).join('');
 
   return `
@@ -1822,6 +1828,7 @@ function renderWaterChart(fm, water, isCrushed) {
     let path = '';
     for (let xv = 3.35; xv <= 8.01; xv += 0.1) {
       let yv = c.a * xv * xv + c.b * xv + c.c;
+      if (yv < 105) break; // Prevent hitting the horizontal axis
       path += `${path === '' ? 'M' : 'L'} ${x(xv)} ${y(yv)} `;
     }
     curveLines += `<path d="${path}" fill="none" stroke="${c.color}" stroke-width="2.5" />`;
@@ -2298,6 +2305,26 @@ function view() {
           alert(error.message);
         }
       };
+
+      element.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (element.dataset.aggField === 'fracture') {
+            const firstSieve = document.querySelector(`[data-agg="${element.dataset.agg}"][data-sieve="0"]`);
+            if (firstSieve) {
+              firstSieve.focus();
+              firstSieve.select();
+            }
+          } else {
+            const columnInputs = Array.from(document.querySelectorAll(`[data-agg="${element.dataset.agg}"][data-sieve]`));
+            const currentIdx = columnInputs.indexOf(element);
+            if (currentIdx !== -1 && currentIdx < columnInputs.length - 1) {
+              columnInputs[currentIdx + 1].focus();
+              columnInputs[currentIdx + 1].select();
+            }
+          }
+        }
+      };
     }
   );
 
@@ -2395,19 +2422,18 @@ function injectWindowsTheme() {
     /* Modern Fluent / Windows 11 Theme */
     :root {
       --primary: #0078d4;
-      --primary-hover: #106ebe;
+      --primary-hover: #005a9e;
       --bg: #f3f2f1;
       --panel-bg: #ffffff;
-      --border: #e1dfdd;
-      --text: #323130;
+      --border: #d2d0ce;
+      --text: #201f1e;
       --text-muted: #605e5c;
+      --shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
     
     body {
       font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
-      background: #f0f2f5;
-      background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
-      background-size: 20px 20px;
+      background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
       color: var(--text);
       margin: 0;
       padding: 20px;
@@ -2416,8 +2442,8 @@ function injectWindowsTheme() {
 
     #app {
       background: var(--panel-bg);
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.5) inset;
       max-width: 1100px;
       margin: 20px auto;
       overflow: hidden;
@@ -2428,7 +2454,8 @@ function injectWindowsTheme() {
     #tabs {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      background: #f8f9fa;
+      background: rgba(248, 249, 250, 0.8);
+      backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border);
       gap: 4px;
       padding: 8px 8px 0 8px;
@@ -2437,7 +2464,7 @@ function injectWindowsTheme() {
     #tabs button {
       background: transparent;
       border: none;
-      border-radius: 8px 8px 0 0;
+      border-radius: 10px 10px 0 0;
       padding: 10px;
       cursor: pointer;
       font-size: 14px;
@@ -2479,14 +2506,15 @@ function injectWindowsTheme() {
       background: #f8f9fa;
       padding: 8px 12px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 13px;
       color: var(--text);
       transition: box-shadow 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
 
     .field:hover {
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.06);
     }
 
     input[type="number"],
@@ -2495,7 +2523,7 @@ function injectWindowsTheme() {
       width: 85px !important; 
       padding: 6px;
       border: 1px solid #c8c6c4;
-      border-radius: 4px;
+      border-radius: 6px;
       font-family: inherit;
       font-size: 13px;
       background: #fff;
@@ -2509,7 +2537,7 @@ function injectWindowsTheme() {
     select:focus {
       border-color: var(--primary);
       outline: none;
-      box-shadow: 0 0 0 2px rgba(0,120,212,0.2);
+      box-shadow: 0 0 0 3px rgba(0,120,212,0.2);
     }
 
     input.table-input[type="text"] {
@@ -2518,20 +2546,29 @@ function injectWindowsTheme() {
     }
 
     button {
-      background: var(--primary);
+      background: linear-gradient(180deg, #0078d4, #005a9e);
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 8px 16px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
       font-family: inherit;
+      box-shadow: 0 4px 6px rgba(0,120,212,0.2), 0 1px 3px rgba(0,0,0,0.1);
+      transform: translateY(0);
     }
 
     button:hover {
-      background: var(--primary-hover);
+      background: linear-gradient(180deg, #106ebe, #004578);
+      box-shadow: 0 6px 12px rgba(0,120,212,0.3);
+      transform: translateY(-1px);
+    }
+    
+    button:active {
+      transform: translateY(1px);
+      box-shadow: none;
     }
 
     table {
@@ -2631,7 +2668,7 @@ if ('serviceWorker' in navigator) {
 function initNewMenu() {
   const menuHTML = `
     <div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
-      <button id="app-menu-btn" style="background: #0078d4; color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: background 0.2s;">⋮</button>
+      <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
       <div id="app-menu-dropdown" style="display: none; position: absolute; top: 45px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
         <button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">💾 ذخیره طرح</button>
         <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">📂 بازیابی طرح</button>
@@ -2736,4 +2773,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-   }
+        }
