@@ -131,10 +131,6 @@ const fields = {
   sgAdmixture: ['چگالی نسبی افزودنی', 0.01]
 };
 
-/* =========================================
-   داده‌ها و ذخیره‌سازی
-========================================= */
-
 let stored = {};
 try {
   stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {};
@@ -311,10 +307,6 @@ function selectInput(key, label, options) {
   `;
 }
 
-/* =========================================
-   اعتبارسنجی
-========================================= */
-
 function slumpRange() {
   return slumpClasses[data.slumpClass] || slumpClasses.S3;
 }
@@ -441,10 +433,6 @@ function validateAggregates() {
   }
 }
 
-/* =========================================
-   محاسبات
-========================================= */
-
 class Step1 {
   run() {
     return { wc: num('wc'), strength: num('strength') };
@@ -460,9 +448,7 @@ class Step3 {
 class Step4 {
   run() {
     validate();
-    // نسبت آب به سیمان از ورودی صفحه «1. آب به سیمان» (data.wc) خوانده می‌شود
-    const wc = num('wc');
-    return { cement: effectiveWater() / wc };
+    return { cement: effectiveWater() / num('wc') };
   }
 }
 
@@ -510,10 +496,6 @@ function getSoftMaxCement() {
   }
   return 350;
 }
-
-/* =========================================
-   صفحه اول
-========================================= */
 
 function checkboxField(key, label, valueKey, valueLabel, step) {
   return `
@@ -578,10 +560,6 @@ function renderHome() {
       'limitWc', 'حداکثر نسبت آب به سیمان', 0.001)}
   `;
 }
-
-/* =========================================
-   مقاومت هدف
-========================================= */
 
 function getClosestDeviationRow(fc) {
   const keys = Object.keys(standardDeviationTable).map(Number);
@@ -663,10 +641,6 @@ function renderTargetStrength() {
         : `<p class="hint">محاسبه خودکار در دسترس نیست.</p>`}
   `;
 }
-
-/* =========================================
-   صفحه دوم ـ سنگدانه‌ها
-========================================= */
 
 function renderAggregateTable() {
   const count = data.aggregateCount;
@@ -773,10 +747,6 @@ function renderAggregateTable() {
   `;
 }
 
-/* =========================================
-   سهم‌بندی
-========================================= */
-
 function getSharesInfo() {
   const count = data.aggregateCount;
   const shares = data.aggregateShares.slice(0, count);
@@ -830,10 +800,6 @@ function finenessModulus(points) {
   return total / 100;
 }
 
-/* =========================================
-   داده‌های مرجع A/B/C
-========================================= */
-
 function getReferenceSeries() {
   const msa = Number(data.msa);
   const source = referenceCurves[String(msa)];
@@ -864,10 +830,6 @@ function getReferenceSeries() {
   }
   return result;
 }
-
-/* =========================================
-   نمودار دانه‌بندی
-========================================= */
 
 function renderGradingChart(combined) {
   const width = 680;
@@ -977,10 +939,6 @@ function renderGradingChart(combined) {
   `;
 }
 
-/* =========================================
-   صفحه سوم
-========================================= */
-
 function renderShares() {
   const count = data.aggregateCount;
 
@@ -1032,10 +990,6 @@ function renderShares() {
     ${renderGradingChart(combined)}
   `;
 }
-
-/* =========================================
-   نمودار نسبت آب به سیمان
-========================================= */
 
 function getActiveCurve() {
   const cement = String(data.cementClass || '42.5');
@@ -1246,10 +1200,6 @@ function renderWCChart() {
   `;
 }
 
-/* =========================================
-   صفحات محاسبات
-========================================= */
-
 function renderStep1() {
   const wcDisplay = Number.isFinite(Number(data.wc)) ? Number(data.wc).toFixed(3) : '';
   const target = getTargetStrength();
@@ -1274,10 +1224,6 @@ function renderStep1() {
     ${renderWCChart()}
   `;
 }
-
-/* =========================================
-   نمودار آب آزاد
-========================================= */
 
 function getInterpolatedWaterCurve(isCrushed, slump) {
   const eqs = isCrushed ? {
@@ -1483,14 +1429,10 @@ function renderWater() {
   `;
 }
 
-/* =========================================
-   صفحه ششم (تعیین مقدار سیمان)
-========================================= */
-
 function renderCement() {
   const result = new Step4().run();
   const wf = effectiveWater();
-  const wc = num('wc');           // ← همان W/C واردشده در صفحه «1. آب به سیمان»
+  const wc = num('wc');
   const cement = result.cement;
 
   const softMax = getSoftMaxCement();
@@ -1576,10 +1518,6 @@ function renderCement() {
     ${contentHtml}
   `;
 }
-
-/* =========================================
-   گزارش نهایی
-========================================= */
 
 function renderReport() {
   let result = new Step5().run();
@@ -1726,10 +1664,6 @@ function renderReport() {
   `;
 }
 
-/* =========================================
-   نمایش و رویدادها
-========================================= */
-
 const TEXT_KEYS = new Set([
   'slumpClass', 'cementClass', 'admixture',
   'targetMethod', 'workshopRank'
@@ -1829,12 +1763,9 @@ function view() {
         }
 
         if (key === 'wc') {
-          const curve = getActiveCurve();
-          const y = calculateStrength(num('wc'), curve);
-          if (y !== null) {
-            data.targetStrengthManual = y;
-            data.targetMethod = 'manual';
-          }
+          // ⬇⬇⬇ تنها تغییر: کاربر W/C انتخابی را دستی عوض می‌کند؛
+          // مقاومت هدف اولیه و W/C متناظر آن (نشانگر قرمز روی نمودار) ثابت می‌مانند.
+          // فقط برای اعتبارسنجی مقدار جدید W/C بررسی می‌شود.
           validate();
         } else if (key === 'targetStrengthManual') {
           const curve = getActiveCurve();
@@ -2076,10 +2007,6 @@ function view() {
   }
 }
 
-/* =========================================
-   تم و راه‌اندازی
-========================================= */
-
 function injectWindowsTheme() {
   const style = document.createElement('style');
   style.innerHTML = `
@@ -2254,10 +2181,6 @@ if (document.readyState === 'loading') {
   startApp();
 }
 
-/* =========================================
-   Service Worker
-========================================= */
-
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
@@ -2265,10 +2188,6 @@ if ('serviceWorker' in navigator) {
       .catch(error => console.warn('Service Worker ثبت نشد:', error));
   });
 }
-
-/* =========================================
-   منوی سه نقطه‌ای
-========================================= */
 
 function initNewMenu() {
   const menuHTML = `
@@ -2373,4 +2292,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-                                   }
+}
