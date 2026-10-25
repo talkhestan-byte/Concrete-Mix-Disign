@@ -391,6 +391,11 @@ throw Error('درصد کاهش آب باید بین صفر و ۱۰۰ باشد.')
 }
 }
 
+const sharesInfo = getSharesInfo();
+if (!sharesInfo.valid) {
+throw Error('سهم‌بندی سنگدانه‌ها در صفحه سهم‌بندی باید کامل و مجموعاً ۱۰۰٪ باشد.');
+}
+
 const cement = effectiveWater() / num('wc');
 
 if (data.limitMinCementOn) {
@@ -487,8 +492,12 @@ const va_adm = data.admixture === 'none' ? 0 : admixtureMass / (sgAdm * 1000);
 const aggregateVolume = 1 - vc - vw - va - va_adm;
 if (aggregateVolume <= 0) throw Error('حجم باقی‌مانده برای سنگدانه مثبت نیست.');
 
-const gravelVolume = aggregateVolume * num('coarseShare');
-const sandVolume = aggregateVolume - gravelVolume;
+const info = getSharesInfo();
+const gravelFrac = 1 - Number(info.shares[0]) / 100;
+const sandFrac = 1 - gravelFrac;
+
+const gravelVolume = aggregateVolume * gravelFrac;
+const sandVolume = aggregateVolume * sandFrac;
 
 const ssdSand = sandVolume * num('sgSand') * 1000;
 const ssdGravel = gravelVolume * num('sgGravel') * 1000;
@@ -499,7 +508,8 @@ const dryGravel = ssdGravel / (1 + num('waterAbsGravel') / 100);
 return {
 cement, water, ssdSand, ssdGravel, drySand, dryGravel,
 admixtureMass, vc, vw, va, va_adm,
-aggregateVolume, sandVolume, gravelVolume
+aggregateVolume, sandVolume, gravelVolume,
+sandFrac, gravelFrac
 };
 }
 }
@@ -1544,9 +1554,6 @@ const c = result.cement;
 const w = result.water;
 const air = data.air / 100;
 
-const shareGravel = data.coarseShare;
-const shareSand = 1 - shareGravel;
-
 const totalDry = result.dryGravel + result.drySand;
 const totalWater = w + (result.ssdSand - result.drySand) + (result.ssdGravel - result.dryGravel);
 const finalDensity = c + totalWater + totalDry;
@@ -1625,8 +1632,8 @@ return `
           </tr>
           <tr>
             <td style="padding: 6px 8px; border: 1px solid #e2e8f0;">سهم در مخلوط (%)</td>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${(shareSand * 100).toFixed(1)}</td>
-            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${(shareGravel * 100).toFixed(1)}</td>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${(result.sandFrac * 100).toFixed(1)}</td>
+            <td style="padding: 6px 8px; border: 1px solid #e2e8f0; text-align: center;">${(result.gravelFrac * 100).toFixed(1)}</td>
           </tr>
           <tr style="background: #f8fafc;">
             <td style="padding: 6px 8px; border: 1px solid #e2e8f0; font-weight: bold;">حجم در 1m³ (m³)</td>
@@ -2213,7 +2220,6 @@ prev.onclick = () => { page = Math.max(0, page - 1); view(); };
 next.onclick = () => { page = Math.min(titles.length - 1, page + 1); view(); };
 
 if (data.admixture === 'none') {
-// درصد افزودنی و درصد کاهش آب در حالت بدون افزودنی معنا ندارد
 if (data.admixturePct == null) data.admixturePct = 0;
 }
 
@@ -2346,4 +2352,4 @@ if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
 initNewMenu();
-  }
+                                           }
