@@ -2395,15 +2395,18 @@ menuDropdown.style.display = 'none';
 }
 });
 
+const buildJson = () => JSON.stringify(data, null, 2);
+
 const downloadProject = async () => {
 const defaultName = `beton_project_${new Date().toISOString().slice(0, 10)}`;
-const jsonStr = JSON.stringify(data, null, 2);
+const jsonStr = buildJson();
+const fileName = `${defaultName}.json`;
 
 // ۱) File System Access API (کروم/اج دسکتاپ)
 if (window.showSaveFilePicker) {
 try {
 const handle = await window.showSaveFilePicker({
-suggestedName: `${defaultName}.json`,
+suggestedName: fileName,
 types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
 });
 const writable = await handle.createWritable();
@@ -2412,16 +2415,26 @@ await writable.close();
 return true;
 } catch (err) {
 if (err && err.name === 'AbortError') return false;
-// اگر خطای دیگری بود، برو سراغ روش دوم
 }
 }
 
-// ۲) روش پشتیبان: لینک واقعی در DOM
+// ۲) Web Share API (موبایل)
+const file = new File([jsonStr], fileName, { type: 'application/json' });
+if (navigator.canShare && navigator.canShare({ files: [file] })) {
+try {
+await navigator.share({ files: [file], title: 'طرح بتن' });
+return true;
+} catch (err) {
+if (err && err.name === 'AbortError') return false;
+}
+}
+
+// ۳) لینک دانلود واقعی در DOM (fallback)
 const blob = new Blob([jsonStr], { type: 'application/json' });
 const url = URL.createObjectURL(blob);
 const a = document.createElement('a');
 a.href = url;
-a.download = `${defaultName}.json`;
+a.download = fileName;
 a.rel = 'noopener';
 a.style.display = 'none';
 document.body.appendChild(a);
@@ -2429,22 +2442,13 @@ a.click();
 setTimeout(() => {
 document.body.removeChild(a);
 URL.revokeObjectURL(url);
-}, 1500);
-
-if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-try {
-const file = new File([jsonStr], `${defaultName}.json`, { type: 'application/json' });
-if (navigator.canShare && navigator.canShare({ files: [file] })) {
-await navigator.share({ files: [file], title: 'طرح بتن' });
-return true;
-}
-} catch (_) {}
-}
-
+}, 2000);
 return true;
 };
 
-menuSave.onclick = async () => {
+menuSave.onclick = async (e) => {
+e.preventDefault();
+e.stopPropagation();
 menuDropdown.style.display = 'none';
 try {
 const ok = await downloadProject();
