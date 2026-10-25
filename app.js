@@ -29,10 +29,10 @@ limitWcOn: false,
 limitWc: 0.50,
 air: 2,
 sgCement: 3.15,
-sgSand: 2.65,
-waterAbsSand: 0.5,
-sgGravel: 2.70,
-waterAbsGravel: 0.5,
+sgSand: 2.60,
+waterAbsSand: 2,
+sgGravel: 2.65,
+waterAbsGravel: 1,
 targetMethod: 'manual',
 workshopRank: 'A',
 targetStrengthManual: '',
@@ -46,25 +46,25 @@ cementAction: ''
 };
 
 const sieves = [
-{ mm: 37.5, label: '37.5' },
-{ mm: 25, label: '25' },
-{ mm: 19, label: '19' },
-{ mm: 12.5, label: '12.5' },
-{ mm: 9.5, label: '9.5' },
-{ mm: 6.35, label: '6.35' },
-{ mm: 4.75, label: '4.75' },
-{ mm: 2.36, label: '2.36' },
-{ mm: 1.18, label: '1.18' },
-{ mm: 0.6, label: '0.6' },
-{ mm: 0.3, label: '0.3' },
-{ mm: 0.15, label: '0.15' }
+{ mm: 37.5, label: '1 1/2' },
+{ mm: 25, label: '1' },
+{ mm: 19, label: '3/4' },
+{ mm: 12.5, label: '1/2' },
+{ mm: 9.5, label: '3/8' },
+{ mm: 6.35, label: '1/4' },
+{ mm: 4.75, label: '4' },
+{ mm: 2.36, label: '8' },
+{ mm: 1.18, label: '16' },
+{ mm: 0.6, label: '30' },
+{ mm: 0.3, label: '50' },
+{ mm: 0.15, label: '100' }
 ];
 
 const slumpClasses = {
-S1: { label: 'S1 (10-40 mm)', min: 10, max: 40 },
-S2: { label: 'S2 (50-90 mm)', min: 50, max: 90 },
-S3: { label: 'S3 (100-150 mm)', min: 100, max: 150 },
-S4: { label: 'S4 (160-210 mm)', min: 160, max: 210 }
+S1: { label: 'S1 (10-50 mm)', min: 10, max: 49 },
+S2: { label: 'S2 (50-100 mm)', min: 50, max: 99 },
+S3: { label: 'S3 (100-150 mm)', min: 100, max: 149 },
+S4: { label: 'S4 (150-210 mm)', min: 150, max: 210 }
 };
 
 const standardDeviationTable = {
@@ -111,9 +111,9 @@ const titles = [
 'اطلاعات اولیه',
 'مشخصات سنگدانه‌ها',
 'سهم‌بندی سنگدانه‌ها',
-'1. آب به سیمان',
-'2. آب آزاد',
-'3. مقدار سیمان',
+'آب به سیمان',
+'آب آزاد',
+'مقدار سیمان',
 'گزارش نهایی'
 ];
 
@@ -181,8 +181,8 @@ data.limitWcOn = data.limitWcOn === true;
 
 const numericFallbacks = {
 strength: 30, slump: 125, water: 185, wc: 0.5,
-coarseShare: 0.6, air: 2, sgCement: 3.15, sgSand: 2.65,
-sgGravel: 2.7, waterAbsSand: 0.5, waterAbsGravel: 0.5,
+coarseShare: 0.6, air: 2, sgCement: 3.15, sgSand: 2.60,
+sgGravel: 2.65, waterAbsSand: 2, waterAbsGravel: 1,
 sgAdmixture: 1.1, admixturePct: 0, limitMinCement: 280,
 limitMaxCement: 450, limitWc: 0.5, correctionFactor: 1.5
 };
@@ -538,7 +538,7 @@ return `
     { value: 'water_reducer', label: 'افزودنی کاهنده نیاز آب' }
   ])}
 
-  ${numberInput('admixturePct', 'درصد افزودنی نسبت به جرم سیمان (%)', 0.1,
+  ${numberInput('admixturePct', 'نسبت افزودنی به سیمان(%)', 0.1,
     data.admixture === 'none' ? 'min="0" max="99.9" disabled' : 'min="0" max="99.9"')}
 
   ${numberInput('sgAdmixture', 'چگالی افزودنی', 0.01,
