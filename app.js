@@ -1489,52 +1489,6 @@ const formulaBox = `<div class="compact-formula" style="display:flex; align-item
 <span>kg/m³</span>
 </div>`;
 
-let contentHtml = '';
-
-if (!isLimited) {
-contentHtml = `<div style="background:#ecfdf5; border:1px solid #10b981; color:#065f46; padding:12px; border-radius:6px; text-align:center; font-size:13px;">
-<strong>مقدار سیمان در محدوده مجاز است.</strong>
-<div style="font-size:11px; margin-top:5px;">(${cement.toFixed(2)} kg/m³ ≤ ${softMax} kg/m³)</div>
-</div>`;
-} else {
-contentHtml = `
-<div style="background:#fffbeb; border:1px solid #f59e0b; color:#92400e; padding:12px; border-radius:6px; font-size:13px;">
-<strong>هشدار:</strong> مقدار سیمان (${cement.toFixed(2)}) بیش از حد مجاز (${softMax}) است.
-<div style="background:white; padding:10px; border-radius:6px; margin-top:10px; border:1px solid #fcd34d;">
-<div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:12px;">
-<span>ضریب اصلاح آب (kg/10kg):</span>
-<input type="text" inputmode="decimal" data-key="correctionFactor" value="${factor}"
-style="width:60px; padding:2px 4px; text-align:center; border:1px solid #cbd5e1; border-radius:4px;">
-</div>
-<div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:11px; margin-bottom:10px;">
-<div>سیمان اضافی: <strong>${extraC.toFixed(2)}</strong> kg</div>
-<div>آب اضافی: <strong>${extraW.toFixed(2)}</strong> kg</div>
-</div>
-<div class="compact-formula" style="display:flex; align-items:center; gap:10px; padding:8px; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0; direction:ltr; font-size:12px;">
-<span style="font-weight:bold;">C_new =</span>
-<div style="display:flex; flex-direction:column; align-items:center; font-size:11px;">
-<span style="border-bottom:1px solid #333; padding:0 5px;">${wfNew.toFixed(2)}</span>
-<span style="padding:0 5px;">${wc.toFixed(3)}</span>
-</div>
-<span style="font-weight:bold;">=</span>
-<span style="background:#e2e8f0; padding:4px 8px; border-radius:4px; font-weight:bold;">${cNew.toFixed(2)}</span>
-</div>
-</div>
-
-<div style="display: flex; justify-content: center; width: 100%; margin-top: 15px;">
-      <select id="cement-action" style="width: 320px; height: 45px; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; font-family: inherit; font-size: 13px; background: white; color: #92400e; cursor: pointer; outline: none; text-align: center;">
-        <option value="" disabled ${data.cementAction === '' ? 'selected' : ''}>--- انتخاب کنید ---</option>
-        <option value="proceed" ${data.cementAction === 'proceed' ? 'selected' : ''}>1. نادیده گرفتن مقدار سیمان و ادامه</option>
-        <option value="grading" ${data.cementAction === 'grading' ? 'selected' : ''}>2. اصلاح بافت دانه‌بندی</option>
-        <option value="wc" ${data.cementAction === 'wc' ? 'selected' : ''}>3. اصلاح نسبت آب به سیمان</option>
-        ${minActive ? `<option value="min_cement" ${data.cementAction === 'min_cement' ? 'selected' : ''}>چون حداقل سیمان انتخاب شده، با همین مقدار ادامه بده</option>` : ''}
-        ${maxActive ? `<option value="max_cement" ${data.cementAction === 'max_cement' ? 'selected' : ''}>چون حداکثر سیمان انتخاب شده، با همین مقدار ادامه بده</option>` : ''}
-      </select>
-    </div>
-  </div>
-`;
-}
-
 return `<h2>تعیین مقدار سیمان</h2>${formulaBox}${contentHtml}`;
 }
 
