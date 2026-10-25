@@ -391,11 +391,6 @@ throw Error('درصد کاهش آب باید بین صفر و ۱۰۰ باشد.')
 }
 }
 
-const sharesInfo = getSharesInfo();
-if (!sharesInfo.valid) {
-throw Error('سهم‌بندی سنگدانه‌ها در صفحه سهم‌بندی باید کامل و مجموعاً ۱۰۰٪ باشد.');
-}
-
 const cement = effectiveWater() / num('wc');
 
 if (data.limitMinCementOn) {
@@ -450,6 +445,14 @@ previous = value;
 }
 }
 
+function requireShares() {
+const sharesInfo = getSharesInfo();
+if (!sharesInfo.valid) {
+throw Error('سهم‌بندی سنگدانه‌ها در صفحه سهم‌بندی باید کامل و مجموعاً ۱۰۰٪ باشد.');
+}
+return sharesInfo;
+}
+
 /* =========================================
 محاسبات
 ========================================= */
@@ -469,6 +472,7 @@ return { baseWater: num('water'), water: effectiveWater() };
 class Step4 {
 run() {
 validate();
+requireShares();
 return { cement: effectiveWater() / num('wc') };
 }
 }
@@ -476,6 +480,7 @@ return { cement: effectiveWater() / num('wc') };
 class Step5 {
 run(overrides = {}) {
 validate();
+const info = requireShares();
 
 const water = Number.isFinite(overrides.water) ? overrides.water : effectiveWater();
 const cement = Number.isFinite(overrides.cement) ? overrides.cement : (water / num('wc'));
@@ -492,7 +497,6 @@ const va_adm = data.admixture === 'none' ? 0 : admixtureMass / (sgAdm * 1000);
 const aggregateVolume = 1 - vc - vw - va - va_adm;
 if (aggregateVolume <= 0) throw Error('حجم باقی‌مانده برای سنگدانه مثبت نیست.');
 
-const info = getSharesInfo();
 const gravelFrac = 1 - Number(info.shares[0]) / 100;
 const sandFrac = 1 - gravelFrac;
 
@@ -2352,4 +2356,4 @@ if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
 initNewMenu();
-                                           }
+  }
