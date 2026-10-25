@@ -2010,25 +2010,27 @@ const softMax = getSoftMaxCement();
 const minActive = data.limitMinCementOn && Number(data.limitMinCement) > 0;
 const maxActive = data.limitMaxCementOn && Number(data.limitMaxCement) > 0;
 
-const allowedActions = new Set(['proceed']);
+const isLimited = cement > softMax;
+const belowMin = minActive && cement < Number(data.limitMinCement);
+const aboveMax = maxActive && cement > Number(data.limitMaxCement);
+const needsChoice = isLimited || belowMin || aboveMax;
+
+const allowedActions = new Set();
+if (isLimited) allowedActions.add('proceed');
 if (minActive) allowedActions.add('min_cement');
 if (maxActive) allowedActions.add('max_cement');
 
-const needsChoice = cement > softMax ||
-  (minActive && cement < Number(data.limitMinCement)) ||
-  (maxActive && cement > Number(data.limitMaxCement));
-
 if (needsChoice && !allowedActions.has(data.cementAction)) {
-  next.disabled = true;
+next.disabled = true;
 } else {
-  next.disabled = page === titles.length - 1;
+next.disabled = page === titles.length - 1;
 }
 } else {
 next.disabled = page === titles.length - 1;
 }
 } catch (_) {
 next.disabled = false;
-}
+  }
 }
 
 /* =========================================
