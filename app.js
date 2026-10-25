@@ -2395,29 +2395,62 @@ menuDropdown.style.display = 'none';
 }
 });
 
-const downloadProject = () => {
+const downloadProject = async () => {
 const defaultName = `beton_project_${new Date().toISOString().slice(0, 10)}`;
-const input = prompt('نام فایل ذخیره را وارد کنید:', defaultName);
-if (input === null) return false;
-const safeName = String(input).trim() || defaultName;
 const jsonStr = JSON.stringify(data, null, 2);
+
+// ۱) File System Access API (کروم/اج دسکتاپ)
+if (window.showSaveFilePicker) {
+try {
+const handle = await window.showSaveFilePicker({
+suggestedName: `${defaultName}.json`,
+types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+});
+const writable = await handle.createWritable();
+await writable.write(jsonStr);
+await writable.close();
+return true;
+} catch (err) {
+if (err && err.name === 'AbortError') return false;
+// اگر خطای دیگری بود، برو سراغ روش دوم
+}
+}
+
+// ۲) روش پشتیبان: لینک واقعی در DOM
 const blob = new Blob([jsonStr], { type: 'application/json' });
 const url = URL.createObjectURL(blob);
 const a = document.createElement('a');
 a.href = url;
-a.download = safeName.endsWith('.json') ? safeName : `${safeName}.json`;
+a.download = `${defaultName}.json`;
+a.rel = 'noopener';
+a.style.display = 'none';
 document.body.appendChild(a);
 a.click();
+setTimeout(() => {
 document.body.removeChild(a);
 URL.revokeObjectURL(url);
+}, 1500);
+
+if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+try {
+const file = new File([jsonStr], `${defaultName}.json`, { type: 'application/json' });
+if (navigator.canShare && navigator.canShare({ files: [file] })) {
+await navigator.share({ files: [file], title: 'طرح بتن' });
+return true;
+}
+} catch (_) {}
+}
+
 return true;
 };
 
-menuSave.onclick = () => {
+menuSave.onclick = async () => {
 menuDropdown.style.display = 'none';
-if (confirm('آیا از ذخیره طرح اطمینان دارید؟')) {
-downloadProject();
-alert('فایل طرح با موفقیت ذخیره شد.');
+try {
+const ok = await downloadProject();
+if (ok) alert('فایل طرح با موفقیت ذخیره شد.');
+} catch (err) {
+alert('خطا در ذخیره: ' + (err && err.message ? err.message : err));
 }
 };
 
@@ -2430,11 +2463,13 @@ menuExit.onclick = () => {
 menuDropdown.style.display = 'none';
 const confirmSave = confirm('آیا مایل به ذخیره اطلاعات طرح قبل از خروج هستید؟');
 if (confirmSave) {
-downloadProject();
+downloadProject().then((ok) => {
+if (!ok) return;
 setTimeout(() => {
 window.close();
 setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
 }, 800);
+}).catch(() => {});
 } else {
 window.close();
 setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
