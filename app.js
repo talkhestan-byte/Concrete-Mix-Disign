@@ -1535,13 +1535,13 @@ style="width:60px; padding:2px 4px; text-align:center; border:1px solid #cbd5e1;
 </div>` : ''}
 
 <div style="display: flex; justify-content: center; width: 100%; margin-top: 15px;">
-      <select id="cement-action" style="width: 340px; height: 45px; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; font-family: inherit; font-size: 13px; background: white; color: #92400e; cursor: pointer; outline: none; text-align: center;">
+      <select id="cement-action" style="width: 360px; height: 45px; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; font-family: inherit; font-size: 13px; background: white; color: #92400e; cursor: pointer; outline: none; text-align: center;">
         <option value="" disabled ${data.cementAction === '' ? 'selected' : ''}>--- انتخاب کنید ---</option>
         ${isLimited ? `<option value="proceed" ${data.cementAction === 'proceed' ? 'selected' : ''}>1. نادیده گرفتن مقدار سیمان و ادامه</option>` : ''}
         ${isLimited ? `<option value="grading" ${data.cementAction === 'grading' ? 'selected' : ''}>2. اصلاح بافت دانه‌بندی</option>` : ''}
         ${isLimited ? `<option value="wc" ${data.cementAction === 'wc' ? 'selected' : ''}>3. اصلاح نسبت آب به سیمان</option>` : ''}
-        ${minActive ? `<option value="min_cement" ${data.cementAction === 'min_cement' ? 'selected' : ''}>چون حداقل سیمان انتخاب شده، با همین مقدار ادامه بده</option>` : ''}
-        ${maxActive ? `<option value="max_cement" ${data.cementAction === 'max_cement' ? 'selected' : ''}>چون حداکثر سیمان انتخاب شده، با همین مقدار ادامه بده</option>` : ''}
+        ${minActive ? `<option value="min_cement" ${data.cementAction === 'min_cement' ? 'selected' : ''}>پذیرش حداقل مقدار مجاز سیمان و ادامه (محاسبهٔ مجدد آب)</option>` : ''}
+        ${maxActive ? `<option value="max_cement" ${data.cementAction === 'max_cement' ? 'selected' : ''}>پذیرش حداکثر مقدار مجاز سیمان و ادامه (محاسبهٔ مجدد آب)</option>` : ''}
       </select>
     </div>
   </div>
@@ -1559,7 +1559,18 @@ function renderReport() {
 let result = new Step5().run();
 
 const softMax = getSoftMaxCement();
-if (result.cement > softMax && data.cementAction === 'proceed') {
+const minActive = data.limitMinCementOn && Number(data.limitMinCement) > 0;
+const maxActive = data.limitMaxCementOn && Number(data.limitMaxCement) > 0;
+
+if (data.cementAction === 'min_cement' && minActive) {
+const targetC = Number(data.limitMinCement);
+const newWater = targetC * num('wc');
+result = new Step5().run({ cement: targetC, water: newWater });
+} else if (data.cementAction === 'max_cement' && maxActive) {
+const targetC = Number(data.limitMaxCement);
+const newWater = targetC * num('wc');
+result = new Step5().run({ cement: targetC, water: newWater });
+} else if (result.cement > softMax && data.cementAction === 'proceed') {
 const factor = Number(data.correctionFactor) || 1.5;
 const extraC = result.cement - softMax;
 const extraW = extraC * (factor / 10);
