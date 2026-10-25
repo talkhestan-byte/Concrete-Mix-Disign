@@ -391,26 +391,20 @@ throw Error('درصد کاهش آب باید بین صفر و ۱۰۰ باشد.')
 }
 }
 
-const cement = effectiveWater() / num('wc');
-
 if (data.limitMinCementOn) {
 const minimum = requireNumber('limitMinCement', 'حداقل سیمان');
-if (minimum <= 0 || cement < minimum) {
-throw Error('مقدار سیمان از حداقل تعیین‌شده کمتر است.');
-}
+if (minimum <= 0) throw Error('حداقل سیمان باید مثبت باشد.');
 }
 
 if (data.limitMaxCementOn) {
 const maximum = requireNumber('limitMaxCement', 'حداکثر سیمان');
-if (maximum <= 0 || cement > maximum) {
-throw Error('مقدار سیمان از حداکثر تعیین‌شده بیشتر است.');
-}
+if (maximum <= 0) throw Error('حداکثر سیمان باید مثبت باشد.');
 }
 
 if (data.limitWcOn) {
 const maximum = requireNumber('limitWc', 'حداکثر نسبت آب به سیمان');
-if (maximum <= 0 || maximum >= 1 || num('wc') > maximum) {
-throw Error('نسبت آب به سیمان از حداکثر مجاز بیشتر است.');
+if (maximum <= 0 || maximum >= 1) {
+throw Error('حداکثر نسبت آب به سیمان باید بین صفر و یک باشد.');
 }
 }
 }
@@ -531,12 +525,14 @@ return 350;
 صفحه اول
 ========================================= */
 
-function checkboxField(key, label, valueKey, valueLabel, step) {
-return `<div class="limit-box"><label class="checkline"><input type="checkbox" data-check="${key}" ${data[key] ? 'checked' : ''}><span>${label}</span></label>${data[key] ? numberInput(valueKey, valueLabel, step) : ''}</div>`;
+function checkboxField(key, label, valueKey, valueLabel, step, disabled = false) {
+return `<div class="limit-box"><label class="checkline"><input type="checkbox" data-check="${key}" ${data[key] ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span>${label}</span></label>${data[key] ? numberInput(valueKey, valueLabel, step) : ''}</div>`;
 }
 
 function renderHome() {
 const range = slumpRange();
+const minDisabled = data.limitMaxCementOn;
+const maxDisabled = data.limitMinCementOn;
 return `
 <h2>اطلاعات اولیه طرح</h2>
 
@@ -577,10 +573,10 @@ return `
 <h3>کنترل‌های اختیاری طرح</h3>
 
 ${checkboxField('limitMinCementOn', 'اعمال حداقل مقدار سیمان',
-  'limitMinCement', 'حداقل سیمان (kg/m³)', 1)}
+  'limitMinCement', 'حداقل سیمان (kg/m³)', 1, minDisabled)}
 
 ${checkboxField('limitMaxCementOn', 'اعمال حداکثر مقدار سیمان',
-  'limitMaxCement', 'حداکثر سیمان (kg/m³)', 1)}
+  'limitMaxCement', 'حداکثر سیمان (kg/m³)', 1, maxDisabled)}
 
 ${checkboxField('limitWcOn', 'اعمال حداکثر نسبت آب به سیمان',
   'limitWc', 'حداکثر نسبت آب به سیمان', 0.001)}
@@ -1464,6 +1460,9 @@ const cement = result.cement;
 const softMax = getSoftMaxCement();
 const isLimited = cement > softMax;
 
+const minActive = data.limitMinCementOn && Number(data.limitMinCement) > 0;
+const maxActive = data.limitMaxCementOn && Number(data.limitMaxCement) > 0;
+
 let extraC = 0, extraW = 0, wfNew = wf, cNew = cement;
 const factor = Number(data.correctionFactor) || 1.5;
 
@@ -1523,11 +1522,13 @@ style="width:60px; padding:2px 4px; text-align:center; border:1px solid #cbd5e1;
 </div>
 
 <div style="display: flex; justify-content: center; width: 100%; margin-top: 15px;">
-      <select id="cement-action" style="width: 300px; height: 45px; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; font-family: inherit; font-size: 13px; background: white; color: #92400e; cursor: pointer; outline: none; text-align: center;">
+      <select id="cement-action" style="width: 320px; height: 45px; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; font-family: inherit; font-size: 13px; background: white; color: #92400e; cursor: pointer; outline: none; text-align: center;">
         <option value="" disabled ${data.cementAction === '' ? 'selected' : ''}>--- انتخاب کنید ---</option>
         <option value="proceed" ${data.cementAction === 'proceed' ? 'selected' : ''}>1. نادیده گرفتن مقدار سیمان و ادامه</option>
         <option value="grading" ${data.cementAction === 'grading' ? 'selected' : ''}>2. اصلاح بافت دانه‌بندی</option>
         <option value="wc" ${data.cementAction === 'wc' ? 'selected' : ''}>3. اصلاح نسبت آب به سیمان</option>
+        ${minActive ? `<option value="min_cement" ${data.cementAction === 'min_cement' ? 'selected' : ''}>چون حداقل سیمان انتخاب شده، با همین مقدار ادامه بده</option>` : ''}
+        ${maxActive ? `<option value="max_cement" ${data.cementAction === 'max_cement' ? 'selected' : ''}>چون حداکثر سیمان انتخاب شده، با همین مقدار ادامه بده</option>` : ''}
       </select>
     </div>
   </div>
@@ -1759,7 +1760,7 @@ if (rawVal === '') {
 } else if (TEXT_KEYS.has(key)) {
   value = rawVal;
 } else if (key === 'waterReductionPct') {
-  value = rawVal; // خالی یا متن نگه داشته شود تا در validate چک شود
+  value = rawVal;
 } else {
   value = Number(rawVal);
 }
@@ -1791,8 +1792,6 @@ try {
   }
 
   if (key === 'wc') {
-    // فقط نشانگر سبز و آیتم دوم (step1Strength) را عوض کن؛
-    // به مقاومت هدف صفحه ۲ و عدد قرمز پایین دست نزن
     const curve = getActiveCurve();
     const y = calculateStrength(num('wc'), curve);
     if (y !== null) {
@@ -1800,18 +1799,16 @@ try {
     }
     validate();
   } else if (key === 'step1Strength') {
-    // فقط wc را از منحنی مشتق کن؛ صفحه ۲ دست نخورده
     const curve = getActiveCurve();
     const x = calculateWc(num('step1Strength'), curve);
     if (x !== null) data.wc = x;
     validate();
   } else if (key === 'targetStrengthManual') {
-    // تغییر در صفحه ۲ → صفحه ۳ همگام شود (رفتار قبلی حفظ شده)
     const curve = getActiveCurve();
     const x = calculateWc(num('targetStrengthManual'), curve);
     if (x !== null) data.wc = x;
     data.targetMethod = 'manual';
-    data.step1Strength = null; // ورودی بالا به مقدار جدید fallback کند
+    data.step1Strength = null;
     validate();
   } else if (['cementClass', 'admixture', 'admixturePct', 'slump'].includes(key)) {
     const curve = getActiveCurve();
@@ -1822,7 +1819,6 @@ try {
     }
     syncWater();
   } else if (key === 'waterReductionPct') {
-    // مقدار خالی مجاز است
     if (value !== '') {
       const rp = Number(value);
       if (!Number.isFinite(rp) || rp < 0 || rp >= 100) {
@@ -1870,6 +1866,14 @@ document.querySelectorAll('[data-check]').forEach(element => {
 element.onchange = () => {
 const key = element.dataset.check;
 const oldValue = data[key];
+
+if (key === 'limitMinCementOn' && element.checked) {
+    data.limitMaxCementOn = false;
+}
+if (key === 'limitMaxCementOn' && element.checked) {
+    data.limitMinCementOn = false;
+}
+
 data[key] = element.checked;
 try {
 validate();
@@ -2048,10 +2052,22 @@ if (page === 5) {
 const result = new Step4().run();
 const cement = result.cement;
 const softMax = getSoftMaxCement();
-if (cement > softMax && data.cementAction !== 'proceed') {
-next.disabled = true;
+
+const minActive = data.limitMinCementOn && Number(data.limitMinCement) > 0;
+const maxActive = data.limitMaxCementOn && Number(data.limitMaxCement) > 0;
+
+const allowedActions = new Set(['proceed']);
+if (minActive) allowedActions.add('min_cement');
+if (maxActive) allowedActions.add('max_cement');
+
+const needsChoice = cement > softMax ||
+  (minActive && cement < Number(data.limitMinCement)) ||
+  (maxActive && cement > Number(data.limitMaxCement));
+
+if (needsChoice && !allowedActions.has(data.cementAction)) {
+  next.disabled = true;
 } else {
-next.disabled = page === titles.length - 1;
+  next.disabled = page === titles.length - 1;
 }
 } else {
 next.disabled = page === titles.length - 1;
