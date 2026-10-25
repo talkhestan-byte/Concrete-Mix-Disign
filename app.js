@@ -866,52 +866,53 @@ const x = mm => left + (Math.log10(mm) - minLog) / (maxLog - minLog) * plotWidth
 const y = value => top + (100 - value) / 100 * plotHeight;
 
 function drawSeries(points, color, dash = '', thickness = 2.5, sieveList = sieves) {
-let valid = points
-.filter(p => p.value !== '' && p.value != null &&
-Number.isFinite(Number(p.value)) &&
-Number(p.value) >= 0 && Number(p.value) <= 100)
-.sort((a, b) => a.mm - b.mm);
-if (!valid.length) return '';
+  let valid = points
+    .filter(p => p.value !== '' && p.value != null &&
+      Number.isFinite(Number(p.value)) &&
+      Number(p.value) >= 0 && Number(p.value) <= 100)
+    .sort((a, b) => a.mm - b.mm);
+  if (!valid.length) return '';
 
-const first100Index = valid.findIndex(p => Number(p.value) === 100);
-let last0Index = -1;
-valid.forEach((p, idx) => { if (Number(p.value) === 0) last0Index = idx; });
+  const first100Index = valid.findIndex(p => Number(p.value) === 100);
+  let last0Index = -1;
+  valid.forEach((p, idx) => { if (Number(p.value) === 0) last0Index = idx; });
 
-valid = valid.filter((p, idx) => {
-  const v = Number(p.value);
-  if (v === 100 && idx !== first100Index) return false;
-  if (v === 0 && idx !== last0Index) return false;
-  return true;
-});
+  valid = valid.filter((p, idx) => {
+    const v = Number(p.value);
+    if (v === 100 && idx !== first100Index) return false;
+    if (v === 0 && idx !== last0Index) return false;
+    return true;
+  });
 
-const segments = [];
-let current = [];
-for (const p of valid) {
-  const originalIndex = sieveList.findIndex(s => Math.abs(s.mm - p.mm) < 0.0001);
-  if (current.length && originalIndex !== -1 &&
-      current[current.length - 1].index !== -1 &&
-      Math.abs(originalIndex - current[current.length - 1].index) !== 1) {
-    segments.push(current); current = [];
+  // تعیین اندیس واقعی بر اساس sieveList، و شکست اگر پرش mm داشته باشیم
+  const segments = [];
+  let current = [];
+  let prevIdx = null;
+  for (const p of valid) {
+    const idx = sieveList.findIndex(s => Math.abs(s.mm - p.mm) < 0.0001);
+    if (current.length && prevIdx !== null && idx !== -1 && idx - prevIdx > 1) {
+      segments.push(current);
+      current = [];
+    }
+    current.push({ ...p, index: idx });
+    prevIdx = idx;
   }
-  current.push({ ...p, index: originalIndex });
-}
-if (current.length) segments.push(current);
+  if (current.length) segments.push(current);
 
-const lines = segments.map(segment => {
-  if (segment.length < 2) return '';
-  const coords = segment.map(p => `${x(p.mm)},${y(Number(p.value))}`).join(' ');
-  return `<polyline points="${coords}" fill="none" stroke="${color}"
-          stroke-width="${thickness}" stroke-dasharray="${dash}"
-          stroke-linejoin="round" />`;
-}).join('');
+  const lines = segments.map(segment => {
+    if (segment.length < 2) return '';
+    const coords = segment.map(p => `${x(p.mm)},${y(Number(p.value))}`).join(' ');
+    return `<polyline points="${coords}" fill="none" stroke="${color}"
+            stroke-width="${thickness}" stroke-dasharray="${dash}"
+            stroke-linejoin="round" />`;
+  }).join('');
 
-const circles = valid.map(p =>
-  `<circle cx="${x(p.mm)}" cy="${y(Number(p.value))}" r="3" fill="${color}" />`
-).join('');
+  const circles = valid.map(p =>
+    `<circle cx="${x(p.mm)}" cy="${y(Number(p.value))}" r="3" fill="${color}" />`
+  ).join('');
 
-return lines + circles;
-
-}
+  return lines + circles;
+              }
 
 const aggregateColors = ['#2563eb', '#ea580c', '#16a34a', '#9333ea'];
 const referenceColor = '#0ea5e9';
