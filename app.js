@@ -2,7 +2,7 @@
 
 /* =========================================
    طرح ملی مخلوط بتن
-   app.js  (اصلاح‌شده)
+   app.js
 ========================================= */
 
 const STORAGE_KEY = 'beton479';
@@ -153,8 +153,6 @@ function defaultAggregate(index) {
     passing: Array(sieves.length).fill('')
   };
 }
-
-/* ---- نرمال‌سازی (قابل فراخوانی مجدد پس از بارگذاری JSON) ---- */
 
 function sanitizeData() {
   if (!['S1', 'S2', 'S3', 'S4'].includes(data.slumpClass)) {
@@ -462,15 +460,13 @@ class Step3 {
 class Step4 {
   run() {
     validate();
-    return { cement: effectiveWater() / num('wc') };
+    // نسبت آب به سیمان از ورودی صفحه «1. آب به سیمان» (data.wc) خوانده می‌شود
+    const wc = num('wc');
+    return { cement: effectiveWater() / wc };
   }
 }
 
 class Step5 {
-  /**
-   * @param {Object} overrides - { water?: number, cement?: number }
-   *   اعمال مقادیر اصلاح‌شده بدون نیاز به بازنویسی state اصلی
-   */
   run(overrides = {}) {
     validate();
 
@@ -1494,7 +1490,7 @@ function renderWater() {
 function renderCement() {
   const result = new Step4().run();
   const wf = effectiveWater();
-  const wc = num('wc');
+  const wc = num('wc');           // ← همان W/C واردشده در صفحه «1. آب به سیمان»
   const cement = result.cement;
 
   const softMax = getSoftMaxCement();
@@ -1588,7 +1584,6 @@ function renderCement() {
 function renderReport() {
   let result = new Step5().run();
 
-  // اعمال اصلاح سیمان در صورت ادامه توسط کاربر
   const softMax = getSoftMaxCement();
   if (result.cement > softMax && data.cementAction === 'proceed') {
     const factor = Number(data.correctionFactor) || 1.5;
@@ -1855,9 +1850,8 @@ function view() {
             if (newWc !== null) data.wc = newWc;
           }
           syncWater();
-          // validate عمداً اینجا صدا زده نمی‌شود تا admixture بتواند ابتدا مقدار بگیرد
         } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'sgAdmixture') {
-          // بدون validate — تنظیمات بی‌خطر
+          // بدون validate
         } else {
           validate();
         }
@@ -1930,7 +1924,6 @@ function view() {
 
       try {
         validateAggregates();
-        // هر تغییری در سنگدانه‌ها می‌تواند fm را عوض کند → آب را همگام کن
         syncWater();
         save();
       } catch (error) {
@@ -2249,7 +2242,6 @@ function startApp() {
 
   if (data.admixture === 'none') data.admixturePct = 0;
 
-  // همگام‌سازی اولیه آب با منحنی
   syncWater();
 
   save();
@@ -2360,8 +2352,8 @@ function initNewMenu() {
         const loadedData = JSON.parse(event.target.result);
         if (loadedData && typeof loadedData === 'object') {
           Object.assign(data, loadedData);
-          normalizeData();  // ← اعمال مجدد نرمال‌سازی و sanitize
-          syncWater();      // ← همگام‌سازی آب با منحنی
+          normalizeData();
+          syncWater();
           save();
           view();
           alert('طرح با موفقیت بازیابی شد.');
@@ -2381,4 +2373,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-}
+                                   }
