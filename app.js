@@ -28,6 +28,7 @@ limitMaxCementOn: false,
 limitMaxCement: 450,
 limitWcOn: false,
 limitWc: 0.50,
+wcContinueWithExcess: false,
 air: 2,
 sgCement: 3.15,
 sgSand: 2.65,
@@ -179,6 +180,7 @@ data.grading = 'continuous';
 data.limitMinCementOn = data.limitMinCementOn === true;
 data.limitMaxCementOn = data.limitMaxCementOn === true;
 data.limitWcOn = data.limitWcOn === true;
+data.wcContinueWithExcess = data.wcContinueWithExcess === true;
 
 const numericFallbacks = {
 strength: 30, slump: 125, water: 185, wc: 0.5,
@@ -1222,8 +1224,21 @@ const strengthDisplay = step1Valid
 ? Number(data.step1Strength).toFixed(1)
 : (target !== null ? target.toFixed(1) : '');
 
+const wcLimitActive = data.limitWcOn && Number(data.limitWc) > 0 && Number(data.limitWc) < 1;
+const currentWcNum = num('wc');
+const wcExceeds = wcLimitActive && Number.isFinite(currentWcNum) && currentWcNum > Number(data.limitWc);
+
 return `
 <h2>تعیین نسبت آب به سیمان</h2>
+
+${wcExceeds ? `
+<div style="background:#fffbeb; border:1px solid #f59e0b; color:#92400e; padding:12px; border-radius:6px; margin-bottom:15px; font-size:13px;">
+<strong>هشدار:</strong> نسبت آب به سیمان انتخاب‌شده (${currentWcNum.toFixed(3)}) از حداکثر مجاز انتخاب‌شده در صفحه اول (${Number(data.limitWc).toFixed(3)}) بیشتر است.
+<div style="display:flex; gap:10px; margin-top:10px;">
+<button type="button" id="wc-limit-continue" style="flex:1;">ادامه</button>
+<button type="button" id="wc-limit-fix" style="flex:1; background:linear-gradient(180deg,#6b7280,#4b5563);">اصلاح</button>
+</div>
+</div>` : ''}
 
 <div class="grid" style="margin-bottom: 15px;">
   <label class="field">
@@ -1763,6 +1778,28 @@ view();
 };
 });
 
+const wcContinueBtn = document.getElementById('wc-limit-continue');
+const wcFixBtn = document.getElementById('wc-limit-fix');
+if (wcContinueBtn) {
+wcContinueBtn.onclick = () => {
+data.wcContinueWithExcess = true;
+save();
+page = 4;
+view();
+};
+}
+if (wcFixBtn) {
+wcFixBtn.onclick = () => {
+data.wcContinueWithExcess = false;
+data.wc = Number(data.limitWc);
+const curve = getActiveCurve();
+const y = calculateStrength(num('wc'), curve);
+if (y !== null) data.step1Strength = y;
+save();
+view();
+};
+}
+
 document.querySelectorAll('[data-key]').forEach(element => {
 element.onchange = () => {
 const key = element.dataset.key;
@@ -1774,7 +1811,8 @@ waterReductionPct: data.waterReductionPct,
 wc: data.wc,
 step1Strength: data.step1Strength,
 targetStrengthManual: data.targetStrengthManual,
-targetMethod: data.targetMethod
+targetMethod: data.targetMethod,
+wcContinueWithExcess: data.wcContinueWithExcess
 };
 
 const rawVal = element.value;
@@ -1856,6 +1894,14 @@ try {
     validate();
   }
 
+  // اگر wc تغییر کرد و الان از حد مجاز کمتر یا مساوی شد، فلگ ادامه ریست شود
+  if (key === 'wc' && data.limitWcOn) {
+    const mx = Number(data.limitWc);
+    if (Number.isFinite(mx) && Number(data.wc) <= mx) {
+      data.wcContinueWithExcess = false;
+    }
+  }
+
   save();
   view();
 } catch (error) {
@@ -1867,6 +1913,7 @@ try {
   data.step1Strength = oldState.step1Strength;
   data.targetStrengthManual = oldState.targetStrengthManual;
   data.targetMethod = oldState.targetMethod;
+  data.wcContinueWithExcess = oldState.wcContinueWithExcess;
   view();
   alert(error.message);
 }
@@ -2069,8 +2116,21 @@ view();
 };
 }
 
+let wcBlocked = false;
+if (page === 3 && data.limitWcOn &&
+Number(data.limitWc) > 0 && Number(data.limitWc) < 1) {
+const currentWc = num('wc');
+const maxWc = Number(data.limitWc);
+if (Number.isFinite(currentWc) && currentWc > maxWc && !data.wcContinueWithExcess) {
+wcBlocked = true;
+}
+}
+
 prev.disabled = page === 0;
 
+if (page === 3 && wcBlocked) {
+next.disabled = true;
+} else {
 try {
 if (page === 5) {
 const result = new Step4().run();
@@ -2100,6 +2160,7 @@ next.disabled = page === titles.length - 1;
 }
 } catch (_) {
 next.disabled = false;
+}
 }
 }
 
