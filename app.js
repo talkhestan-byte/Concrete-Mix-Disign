@@ -2396,16 +2396,21 @@ menuDropdown.style.display = 'none';
 });
 
 const downloadProject = () => {
+const defaultName = `beton_project_${new Date().toISOString().slice(0, 10)}`;
+const input = prompt('نام فایل ذخیره را وارد کنید:', defaultName);
+if (input === null) return false;
+const safeName = String(input).trim() || defaultName;
 const jsonStr = JSON.stringify(data, null, 2);
 const blob = new Blob([jsonStr], { type: 'application/json' });
 const url = URL.createObjectURL(blob);
 const a = document.createElement('a');
 a.href = url;
-a.download = `beton_project_${new Date().toISOString().slice(0, 10)}.json`;
+a.download = safeName.endsWith('.json') ? safeName : `${safeName}.json`;
 document.body.appendChild(a);
 a.click();
 document.body.removeChild(a);
 URL.revokeObjectURL(url);
+return true;
 };
 
 menuSave.onclick = () => {
