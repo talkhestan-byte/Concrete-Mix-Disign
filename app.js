@@ -20,6 +20,7 @@ coarseShare: 0.60,
 grading: 'continuous',
 admixture: 'none',
 admixturePct: 0,
+waterReductionPct: '',
 sgAdmixture: 1.1,
 limitMinCementOn: false,
 limitMinCement: 280,
@@ -29,10 +30,10 @@ limitWcOn: false,
 limitWc: 0.50,
 air: 2,
 sgCement: 3.15,
-sgSand: 2.60,
-waterAbsSand: 2,
-sgGravel: 2.65,
-waterAbsGravel: 1,
+sgSand: 2.65,
+waterAbsSand: 0.5,
+sgGravel: 2.70,
+waterAbsGravel: 0.5,
 targetMethod: 'manual',
 workshopRank: 'A',
 targetStrengthManual: '',
@@ -46,25 +47,25 @@ cementAction: ''
 };
 
 const sieves = [
-{ mm: 37.5, label: '1 1/2' },
-{ mm: 25, label: '1' },
-{ mm: 19, label: '3/4' },
-{ mm: 12.5, label: '1/2' },
-{ mm: 9.5, label: '3/8' },
-{ mm: 6.35, label: '1/4' },
-{ mm: 4.75, label: '4' },
-{ mm: 2.36, label: '8' },
-{ mm: 1.18, label: '16' },
-{ mm: 0.6, label: '30' },
-{ mm: 0.3, label: '50' },
-{ mm: 0.15, label: '100' }
+{ mm: 37.5, label: '37.5' },
+{ mm: 25, label: '25' },
+{ mm: 19, label: '19' },
+{ mm: 12.5, label: '12.5' },
+{ mm: 9.5, label: '9.5' },
+{ mm: 6.35, label: '6.35' },
+{ mm: 4.75, label: '4.75' },
+{ mm: 2.36, label: '2.36' },
+{ mm: 1.18, label: '1.18' },
+{ mm: 0.6, label: '0.6' },
+{ mm: 0.3, label: '0.3' },
+{ mm: 0.15, label: '0.15' }
 ];
 
 const slumpClasses = {
-S1: { label: 'S1 (10-50 mm)', min: 10, max: 49 },
-S2: { label: 'S2 (50-100 mm)', min: 50, max: 99 },
-S3: { label: 'S3 (100-150 mm)', min: 100, max: 149 },
-S4: { label: 'S4 (150-210 mm)', min: 150, max: 210 }
+S1: { label: 'S1 (10-40 mm)', min: 10, max: 40 },
+S2: { label: 'S2 (50-90 mm)', min: 50, max: 90 },
+S3: { label: 'S3 (100-150 mm)', min: 100, max: 150 },
+S4: { label: 'S4 (160-210 mm)', min: 160, max: 210 }
 };
 
 const standardDeviationTable = {
@@ -111,9 +112,9 @@ const titles = [
 'اطلاعات اولیه',
 'مشخصات سنگدانه‌ها',
 'سهم‌بندی سنگدانه‌ها',
-'آب به سیمان',
-'آب آزاد',
-'مقدار سیمان',
+'1. آب به سیمان',
+'2. آب آزاد',
+'3. مقدار سیمان',
 'گزارش نهایی'
 ];
 
@@ -181,13 +182,19 @@ data.limitWcOn = data.limitWcOn === true;
 
 const numericFallbacks = {
 strength: 30, slump: 125, water: 185, wc: 0.5,
-coarseShare: 0.6, air: 2, sgCement: 3.15, sgSand: 2.60,
-sgGravel: 2.65, waterAbsSand: 2, waterAbsGravel: 1,
+coarseShare: 0.6, air: 2, sgCement: 3.15, sgSand: 2.65,
+sgGravel: 2.7, waterAbsSand: 0.5, waterAbsGravel: 0.5,
 sgAdmixture: 1.1, admixturePct: 0, limitMinCement: 280,
 limitMaxCement: 450, limitWc: 0.5, correctionFactor: 1.5
 };
 for (const [k, fb] of Object.entries(numericFallbacks)) {
 if (!Number.isFinite(Number(data[k]))) data[k] = fb;
+}
+
+// waterReductionPct می‌تواند خالی بماند
+if (data.waterReductionPct !== '' && data.waterReductionPct != null &&
+!Number.isFinite(Number(data.waterReductionPct))) {
+data.waterReductionPct = '';
 }
 
 if (data.step1Strength === undefined || data.step1Strength === '') {
@@ -319,7 +326,8 @@ return Number(raw);
 function effectiveWater() {
 const water = num('water');
 if (data.admixture !== 'none') {
-return water * (1 - num('admixturePct') / 100);
+const pct = Number(data.waterReductionPct) || 0;
+return water * (1 - pct / 100);
 }
 return water;
 }
@@ -374,6 +382,13 @@ if (data.admixture !== 'none') {
 const pct = requireNumber('admixturePct', 'درصد افزودنی');
 if (pct < 0 || pct >= 100) throw Error('درصد افزودنی باید بین صفر و ۱۰۰ باشد.');
 if (num('sgAdmixture') <= 0) throw Error('چگالی افزودنی باید مثبت باشد.');
+
+if (data.waterReductionPct !== '' && data.waterReductionPct != null) {
+const rp = Number(data.waterReductionPct);
+if (!Number.isFinite(rp) || rp < 0 || rp >= 100) {
+throw Error('درصد کاهش آب باید بین صفر و ۱۰۰ باشد.');
+}
+}
 }
 
 const cement = effectiveWater() / num('wc');
@@ -538,7 +553,7 @@ return `
     { value: 'water_reducer', label: 'افزودنی کاهنده نیاز آب' }
   ])}
 
-  ${numberInput('admixturePct', 'نسبت افزودنی به سیمان(%)', 0.1,
+  ${numberInput('admixturePct', 'درصد افزودنی نسبت به جرم سیمان (%)', 0.1,
     data.admixture === 'none' ? 'min="0" max="99.9" disabled' : 'min="0" max="99.9"')}
 
   ${numberInput('sgAdmixture', 'چگالی افزودنی', 0.01,
@@ -840,51 +855,51 @@ const x = mm => left + (Math.log10(mm) - minLog) / (maxLog - minLog) * plotWidth
 const y = value => top + (100 - value) / 100 * plotHeight;
 
 function drawSeries(points, color, dash = '', thickness = 2.5, sieveList = sieves) {
-  let valid = points
-    .filter(p => p.value !== '' && p.value != null &&
-      Number.isFinite(Number(p.value)) &&
-      Number(p.value) >= 0 && Number(p.value) <= 100)
-    .sort((a, b) => a.mm - b.mm);
-  if (!valid.length) return '';
+let valid = points
+.filter(p => p.value !== '' && p.value != null &&
+Number.isFinite(Number(p.value)) &&
+Number(p.value) >= 0 && Number(p.value) <= 100)
+.sort((a, b) => a.mm - b.mm);
+if (!valid.length) return '';
 
-  const first100Index = valid.findIndex(p => Number(p.value) === 100);
-  let last0Index = -1;
-  valid.forEach((p, idx) => { if (Number(p.value) === 0) last0Index = idx; });
+const first100Index = valid.findIndex(p => Number(p.value) === 100);
+let last0Index = -1;
+valid.forEach((p, idx) => { if (Number(p.value) === 0) last0Index = idx; });
 
-  valid = valid.filter((p, idx) => {
-    const v = Number(p.value);
-    if (v === 100 && idx !== first100Index) return false;
-    if (v === 0 && idx !== last0Index) return false;
-    return true;
-  });
+valid = valid.filter((p, idx) => {
+  const v = Number(p.value);
+  if (v === 100 && idx !== first100Index) return false;
+  if (v === 0 && idx !== last0Index) return false;
+  return true;
+});
 
-  // ایندکس را بر اساس sieveList (نه sieves) محاسبه کن
-  const segments = [];
-  let current = [];
-  for (const p of valid) {
-    const originalIndex = sieveList.findIndex(s => Math.abs(s.mm - p.mm) < 0.0001);
-    if (current.length && originalIndex !== -1 &&
-        current[current.length - 1].index !== -1 &&
-        Math.abs(originalIndex - current[current.length - 1].index) !== 1) {
-      segments.push(current); current = [];
-    }
-    current.push({ ...p, index: originalIndex });
+const segments = [];
+let current = [];
+for (const p of valid) {
+  const originalIndex = sieveList.findIndex(s => Math.abs(s.mm - p.mm) < 0.0001);
+  if (current.length && originalIndex !== -1 &&
+      current[current.length - 1].index !== -1 &&
+      Math.abs(originalIndex - current[current.length - 1].index) !== 1) {
+    segments.push(current); current = [];
   }
-  if (current.length) segments.push(current);
+  current.push({ ...p, index: originalIndex });
+}
+if (current.length) segments.push(current);
 
-  const lines = segments.map(segment => {
-    if (segment.length < 2) return '';
-    const coords = segment.map(p => `${x(p.mm)},${y(Number(p.value))}`).join(' ');
-    return `<polyline points="${coords}" fill="none" stroke="${color}"
-            stroke-width="${thickness}" stroke-dasharray="${dash}"
-            stroke-linejoin="round" />`;
-  }).join('');
+const lines = segments.map(segment => {
+  if (segment.length < 2) return '';
+  const coords = segment.map(p => `${x(p.mm)},${y(Number(p.value))}`).join(' ');
+  return `<polyline points="${coords}" fill="none" stroke="${color}"
+          stroke-width="${thickness}" stroke-dasharray="${dash}"
+          stroke-linejoin="round" />`;
+}).join('');
 
-  const circles = valid.map(p =>
-    `<circle cx="${x(p.mm)}" cy="${y(Number(p.value))}" r="3" fill="${color}" />`
-  ).join('');
+const circles = valid.map(p =>
+  `<circle cx="${x(p.mm)}" cy="${y(Number(p.value))}" r="3" fill="${color}" />`
+).join('');
 
-  return lines + circles;
+return lines + circles;
+
 }
 
 const aggregateColors = ['#2563eb', '#ea580c', '#16a34a', '#9333ea'];
@@ -1386,9 +1401,8 @@ transform="rotate(-90 ${left - 45} ${height / 2})">آب آزاد (kg/m³)</text>
 function renderWater() {
 const { fm, isCrushed, avgFracture, water } = computeWaterFromCurve();
 
-const reduction = data.admixture !== 'none'
-? (water * num('admixturePct') / 100)
-: 0;
+const reductionPct = Number(data.waterReductionPct) || 0;
+const reduction = (data.admixture !== 'none') ? (water * reductionPct / 100) : 0;
 const calculatedWater = water - reduction;
 
 const fmt = v => Number.isFinite(v) ? v.toFixed(1) : 'نامشخص';
@@ -1409,8 +1423,8 @@ ${renderWaterChart(fm, water, isCrushed, num('slump'))}
       <td>5. درصد کاهش مقدار آب آزاد ناشی از مصرف روان‌کننده (%)</td>
       <td>
         <input type="text" inputmode="decimal" enterkeyhint="next"
-          data-key="admixturePct"
-          value="${data.admixture !== 'none' ? data.admixturePct : 0}"
+          data-key="waterReductionPct"
+          value="${escapeHtml(data.waterReductionPct ?? '')}"
           ${data.admixture === 'none' ? 'disabled' : ''}
           style="width: 80px; padding: 4px;">
       </td>
@@ -1720,6 +1734,7 @@ const oldState = {
 value: data[key],
 slump: data.slump,
 admixturePct: data.admixturePct,
+waterReductionPct: data.waterReductionPct,
 wc: data.wc,
 step1Strength: data.step1Strength,
 targetStrengthManual: data.targetStrengthManual,
@@ -1727,9 +1742,16 @@ targetMethod: data.targetMethod
 };
 
 const rawVal = element.value;
-const value = rawVal === ''
-  ? ''
-  : (TEXT_KEYS.has(key) ? rawVal : Number(rawVal));
+let value;
+if (rawVal === '') {
+  value = '';
+} else if (TEXT_KEYS.has(key)) {
+  value = rawVal;
+} else if (key === 'waterReductionPct') {
+  value = rawVal; // خالی یا متن نگه داشته شود تا در validate چک شود
+} else {
+  value = Number(rawVal);
+}
 
 data[key] = value;
 
@@ -1750,7 +1772,7 @@ try {
 
   if (key === 'admixture') {
     if (value === 'none') {
-      data.admixturePct = 0;
+      data.waterReductionPct = '';
     } else {
       if (data.admixturePct === '' || data.admixturePct == null) data.admixturePct = 0;
       if (data.sgAdmixture === '' || data.sgAdmixture == null) data.sgAdmixture = 1.1;
@@ -1788,6 +1810,15 @@ try {
       if (newWc !== null) data.wc = newWc;
     }
     syncWater();
+  } else if (key === 'waterReductionPct') {
+    // مقدار خالی مجاز است
+    if (value !== '') {
+      const rp = Number(value);
+      if (!Number.isFinite(rp) || rp < 0 || rp >= 100) {
+        throw Error('درصد کاهش آب باید بین صفر و ۱۰۰ باشد.');
+      }
+    }
+    validate();
   } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'sgAdmixture') {
     // بدون validate
   } else {
@@ -1800,6 +1831,7 @@ try {
   data[key] = oldState.value;
   data.slump = oldState.slump;
   data.admixturePct = oldState.admixturePct;
+  data.waterReductionPct = oldState.waterReductionPct;
   data.wc = oldState.wc;
   data.step1Strength = oldState.step1Strength;
   data.targetStrengthManual = oldState.targetStrengthManual;
@@ -2180,7 +2212,10 @@ return;
 prev.onclick = () => { page = Math.max(0, page - 1); view(); };
 next.onclick = () => { page = Math.min(titles.length - 1, page + 1); view(); };
 
-if (data.admixture === 'none') data.admixturePct = 0;
+if (data.admixture === 'none') {
+// درصد افزودنی و درصد کاهش آب در حالت بدون افزودنی معنا ندارد
+if (data.admixturePct == null) data.admixturePct = 0;
+}
 
 syncWater();
 
@@ -2311,4 +2346,4 @@ if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
 initNewMenu();
-}
+  }
