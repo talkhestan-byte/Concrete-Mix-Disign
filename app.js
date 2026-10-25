@@ -148,6 +148,8 @@ function defaultAggregate(index) {
   return {
     name: `سنگدانه ${index + 1}`,
     fracture: 0,
+    sg: index === 0 ? 2.65 : 2.70,
+    waterAbs: 0.5,
     passing: Array(sieves.length).fill('')
   };
 }
@@ -202,9 +204,17 @@ function normalizeData() {
     if (sourcePassing.length === 11) {
       sourcePassing.splice(SIEVE_635_INDEX, 0, '');
     }
+    const legacySg = i === 0 ? data.sgSand : data.sgGravel;
+    const legacyAbs = i === 0 ? data.waterAbsSand : data.waterAbsGravel;
     return {
       ...base,
       ...a,
+      sg: (a.sg === undefined || a.sg === '')
+        ? (Number.isFinite(Number(legacySg)) ? Number(legacySg) : base.sg)
+        : Number(a.sg),
+      waterAbs: (a.waterAbs === undefined || a.waterAbs === '')
+        ? (Number.isFinite(Number(legacyAbs)) ? Number(legacyAbs) : base.waterAbs)
+        : Number(a.waterAbs),
       passing: sieves.map((sieve, j) => {
         if (sieve.mm === 6.35) return '';
         const v = sourcePassing[j];
@@ -241,6 +251,17 @@ normalizeData();
 let page = 0;
 
 function save() {
+  const n = Math.max(2, Math.min(4, Number(data.aggregateCount) || 2));
+  const sand = data.aggregates[0];
+  if (sand && Number.isFinite(Number(sand.sg))) {
+    data.sgSand = Number(sand.sg);
+    data.waterAbsSand = Number(sand.waterAbs) || 0;
+  }
+  const gr = data.aggregates.slice(1, n);
+  if (gr.length) {
+    data.sgGravel = gr.reduce((s, a) => s + (Number(a.sg) || 0), 0) / gr.length;
+    data.waterAbsGravel = gr.reduce((s, a) => s + (Number(a.waterAbs) || 0), 0) / gr.length;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch (error) {
@@ -398,6 +419,12 @@ function validateAggregates() {
     if (a.fracture === '' || !Number.isFinite(Number(a.fracture)) ||
         Number(a.fracture) < 0 || Number(a.fracture) > 100) {
       throw Error(`درصد شکستگی سنگدانه ${i + 1} نامعتبر است.`);
+    }
+    if (a.sg === '' || !Number.isFinite(Number(a.sg)) || Number(a.sg) <= 0) {
+      throw Error(`چگالی نسبی سنگدانه ${i + 1} نامعتبر است.`);
+    }
+    if (a.waterAbs === '' || !Number.isFinite(Number(a.waterAbs)) || Number(a.waterAbs) < 0) {
+      throw Error(`درصد جذب آب سنگدانه ${i + 1} نامعتبر است.`);
     }
     let previous = null;
     for (let j = 0; j < sieves.length; j++) {
@@ -662,6 +689,34 @@ function renderAggregateTable() {
     </tr>
   `;
 
+  const sgRow = `
+    <tr>
+      <th>چگالی نسبی سنگدانه</th>
+      ${Array.from({ length: count }, (_, i) => `
+        <td>
+          <input class="table-input" type="text" inputmode="decimal"
+            enterkeyhint="next" min="0"
+            data-agg="${i}" data-agg-field="sg"
+            value="${escapeHtml(data.aggregates[i].sg ?? '')}">
+        </td>
+      `).join('')}
+    </tr>
+  `;
+
+  const waterAbsRow = `
+    <tr>
+      <th>درصد جذب آب سنگدانه (%)</th>
+      ${Array.from({ length: count }, (_, i) => `
+        <td>
+          <input class="table-input" type="text" inputmode="decimal"
+            enterkeyhint="next" min="0"
+            data-agg="${i}" data-agg-field="waterAbs"
+            value="${escapeHtml(data.aggregates[i].waterAbs ?? '')}">
+        </td>
+      `).join('')}
+    </tr>
+  `;
+
   const fractureRow = `
     <tr>
       <th>درصد شکستگی (%)</th>
@@ -714,17 +769,8 @@ function renderAggregateTable() {
     <div class="table-scroll">
       <table class="aggregate-table">
         <thead><tr><th style="width: 140px;">مشخصات</th>${headers}</tr></thead>
-        <tbody>${nameRow}${fractureRow}${sieveRows}</tbody>
+        <tbody>${nameRow}${sgRow}${waterAbsRow}${fractureRow}${sieveRows}</tbody>
       </table>
-    </div>
-
-    <h3>مشخصات تکمیلی مصالح</h3>
-
-    <div class="grid">
-      ${numberInput('sgSand', fields.sgSand[0], 0.01)}
-      ${numberInput('waterAbsSand', fields.waterAbsSand[0], 0.1)}
-      ${numberInput('sgGravel', fields.sgGravel[0], 0.01)}
-      ${numberInput('waterAbsGravel', fields.waterAbsGravel[0], 0.1)}
     </div>
 
     ${renderTargetStrength()}
@@ -1874,6 +1920,9 @@ function view() {
       } else if (field === 'fracture') {
         oldValue = aggregate.fracture;
         aggregate.fracture = element.value === '' ? '' : Number(element.value);
+      } else if (field === 'sg' || field === 'waterAbs') {
+        oldValue = aggregate[field];
+        aggregate[field] = element.value === '' ? '' : Number(element.value);
       } else {
         oldValue = aggregate.passing[sieveIndex];
         aggregate.passing[sieveIndex] = element.value === '' ? '' : Number(element.value);
@@ -1887,32 +1936,40 @@ function view() {
       } catch (error) {
         if (field === 'name') aggregate.name = oldValue;
         else if (field === 'fracture') aggregate.fracture = oldValue;
+        else if (field === 'sg' || field === 'waterAbs') aggregate[field] = oldValue;
         else aggregate.passing[sieveIndex] = oldValue;
         alert(error.message);
       }
     };
 
     element.onkeydown = (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const aggIdx = element.dataset.agg;
-        let nextInput = null;
-        if (element.dataset.aggField === 'fracture') {
-          nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-sieve="0"]`);
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const aggIdx = Number(element.dataset.agg);
+      const field = element.dataset.aggField;
+      let nextInput = null;
+
+      if (field === 'name') {
+        nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-agg-field="sg"]`);
+      } else if (field === 'sg') {
+        nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-agg-field="waterAbs"]`);
+      } else if (field === 'waterAbs') {
+        nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-agg-field="fracture"]`);
+      } else if (field === 'fracture') {
+        nextInput = document.querySelector(`[data-agg="${aggIdx}"][data-sieve="0"]`);
+      } else {
+        const columnInputs = Array.from(document.querySelectorAll(`[data-agg="${aggIdx}"][data-sieve]`));
+        const currentIdx = columnInputs.indexOf(element);
+        if (currentIdx !== -1 && currentIdx < columnInputs.length - 1) {
+          nextInput = columnInputs[currentIdx + 1];
         } else {
-          const columnInputs = Array.from(document.querySelectorAll(`[data-agg="${aggIdx}"][data-sieve]`));
-          const currentIdx = columnInputs.indexOf(element);
-          if (currentIdx !== -1 && currentIdx < columnInputs.length - 1) {
-            nextInput = columnInputs[currentIdx + 1];
-          } else {
-            const nextAggFracture = document.querySelector(`[data-agg="${Number(aggIdx) + 1}"][data-agg-field="fracture"]`);
-            if (nextAggFracture) nextInput = nextAggFracture;
-          }
+          nextInput = document.querySelector(`[data-agg="${aggIdx + 1}"][data-agg-field="name"]`);
         }
-        if (nextInput) {
-          nextInput.focus();
-          nextInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        }
+      }
+
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     };
 
@@ -2324,4 +2381,4 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
   initNewMenu();
-                                                      }
+}
