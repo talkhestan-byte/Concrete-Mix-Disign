@@ -1501,12 +1501,12 @@ contentHtml = `<div style="background:#ecfdf5; border:1px solid #10b981; color:#
 </div>`;
 } else {
 let reasonHtml = '';
-if (isLimited) {
-reasonHtml = `<strong>هشدار:</strong> مقدار سیمان (${cement.toFixed(2)}) بیش از حد مجاز پیش‌فرض (${softMax}) است.`;
+if (aboveMax) {
+reasonHtml = `<strong>هشدار:</strong> مقدار سیمان محاسبه‌شده (${cement.toFixed(2)} kg/m³) از حداکثر مجاز انتخاب‌شده (${Number(data.limitMaxCement)} kg/m³) بیشتر است.`;
 } else if (belowMin) {
-reasonHtml = `<strong>هشدار:</strong> مقدار سیمان (${cement.toFixed(2)}) کمتر از حداقل انتخاب‌شده (${Number(data.limitMinCement)}) است.`;
-} else if (aboveMax) {
-reasonHtml = `<strong>هشدار:</strong> مقدار سیمان (${cement.toFixed(2)}) بیشتر از حداکثر انتخاب‌شده (${Number(data.limitMaxCement)}) است.`;
+reasonHtml = `<strong>هشدار:</strong> مقدار سیمان محاسبه‌شده (${cement.toFixed(2)} kg/m³) از حداقل مجاز انتخاب‌شده (${Number(data.limitMinCement)} kg/m³) کمتر است.`;
+} else if (isLimited) {
+reasonHtml = `<strong>هشدار:</strong> مقدار سیمان محاسبه‌شده (${cement.toFixed(2)} kg/m³) از حد مجاز پیش‌فرض (${softMax} kg/m³) بیشتر است.`;
 }
 
 contentHtml = `
