@@ -659,12 +659,12 @@ ${data.targetMethod === 'manual'
   : result
     ? `
       <p>رابطه اول: fcm1 = fc + 1.34 × S</p>
-      <p>${fc.toFixed(2)} + 1.34 × ${result.S.toFixed(2)} = ${result.fcm1.toFixed(2)} MPa</p>
+      <p>${fc.toFixed(2)} + 1.34 × ${result.S.toFixed(2)} = <strong>${Math.round(result.fcm1)}</strong> MPa</p>
 
       <p>رابطه دوم: fcm2 = 0.9 × fc + 2.33 × S</p>
-      <p>0.9 × ${fc.toFixed(2)} + 2.33 × ${result.S.toFixed(2)} = ${result.fcm2.toFixed(2)} MPa</p>
+      <p>0.9 × ${fc.toFixed(2)} + 2.33 × ${result.S.toFixed(2)} = <strong>${Math.round(result.fcm2)}</strong> MPa</p>
 
-      <p>مقاومت هدف انتخابی: <strong>${result.target.toFixed(2)} MPa</strong></p>
+      <p>مقاومت هدف انتخابی: <strong>${Math.round(result.target)} MPa</strong></p>
     `
     : `<p class="hint">محاسبه خودکار در دسترس نیست.</p>`}
 
@@ -884,7 +884,6 @@ function drawSeries(points, color, dash = '', thickness = 2.5, sieveList = sieve
     return true;
   });
 
-  // تعیین اندیس واقعی بر اساس sieveList، و شکست اگر پرش mm داشته باشیم
   const segments = [];
   let current = [];
   let prevIdx = null;
@@ -912,7 +911,7 @@ function drawSeries(points, color, dash = '', thickness = 2.5, sieveList = sieve
   ).join('');
 
   return lines + circles;
-              }
+}
 
 const aggregateColors = ['#2563eb', '#ea580c', '#16a34a', '#9333ea'];
 const referenceColor = '#0ea5e9';
@@ -1845,6 +1844,14 @@ try {
     syncWater();
   }
 
+  if (key === 'slump') {
+    const r = slumpRange();
+    const v = Number(data.slump);
+    if (!Number.isFinite(v) || v < r.min || v > r.max) {
+      throw Error(`اسلامپ باید بین ${r.min} و ${r.max} باشد.`);
+    }
+  }
+
   if (key === 'admixture') {
     if (value === 'none') {
       data.waterReductionPct = '';
@@ -1895,7 +1902,6 @@ try {
     validate();
   }
 
-  // اگر wc تغییر کرد و الان از حد مجاز کمتر یا مساوی شد، فلگ ادامه ریست شود
   if (key === 'wc' && data.limitWcOn) {
     const mx = Number(data.limitWc);
     if (Number.isFinite(mx) && Number(data.wc) <= mx) {
