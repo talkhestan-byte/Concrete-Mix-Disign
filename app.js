@@ -44,7 +44,8 @@ showAggregateCurves: [true, true, true, true],
 showMixCurve: true,
 showReferenceCurves: true,
 correctionFactor: 1.5,
-cementAction: ''
+cementAction: '',
+projectName: ''
 };
 
 const sieves = [
@@ -536,6 +537,14 @@ const minDisabled = data.limitMaxCementOn;
 const maxDisabled = data.limitMinCementOn;
 return `
 <h2>اطلاعات اولیه طرح</h2>
+
+<div class="grid">
+  <label class="field" style="width:100%;">
+    <span>نام طرح</span>
+    <input type="text" enterkeyhint="next" data-key="projectName"
+      value="${escapeHtml(data.projectName ?? '')}" style="width: 300px !important; text-align: right;">
+  </label>
+</div>
 
 <div class="grid">
   ${numberInput('strength', fields.strength[0], 0.1)}
@@ -1730,7 +1739,7 @@ return `
 
 const TEXT_KEYS = new Set([
 'slumpClass', 'cementClass', 'admixture',
-'targetMethod', 'workshopRank'
+'targetMethod', 'workshopRank', 'projectName'
 ]);
 
 function view() {
@@ -1896,7 +1905,7 @@ try {
       }
     }
     validate();
-  } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'sgAdmixture') {
+  } else if (key === 'targetMethod' || key === 'workshopRank' || key === 'aggregateCount' || key === 'correctionFactor' || key === 'sgAdmixture' || key === 'projectName') {
     // بدون validate
   } else {
     validate();
@@ -2410,6 +2419,9 @@ const ssdSand = step5 ? step5.ssdSand : null;
 const ssdGravel = step5 ? step5.ssdGravel : null;
 const admMass = step5 ? step5.admixtureMass : 0;
 
+const projectLabel = data.projectName ? escapeHtml(data.projectName) + ' — ' : '';
+const footerText = `${projectLabel}تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
+
 const html = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -2433,10 +2445,14 @@ const html = `<!DOCTYPE html>
   .result-card .value { font-size: 13px; font-weight: bold; color: #0078d4; }
   .page-break { page-break-before: always; }
   .footer { margin-top: 15px; text-align: center; font-size: 9px; color: #888; border-top: 1px solid #ccc; padding-top: 5px; }
-  @media print { body { padding: 0; } .no-print { display: none; } }
+  .back-btn { position: fixed; top: 12px; left: 12px; background: #0078d4; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-family: inherit; font-size: 12px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 1000; }
+  .back-btn:hover { background: #005a9e; }
+  @media print { body { padding: 0; } .no-print { display: none !important; } .back-btn { display: none !important; } }
 </style>
 </head>
 <body>
+
+<button class="back-btn no-print" onclick="window.close()">← بازگشت به برنامه</button>
 
 <h1>گزارش طرح مخلوط بتن</h1>
 
@@ -2505,7 +2521,7 @@ const html = `<!DOCTYPE html>
 </table>
 
 <div class="footer">
-  تاریخ: ${new Date().toLocaleDateString('fa-IR')} — سامانه طرح مخلوط بتن
+  ${footerText}
 </div>
 
 <script>
@@ -2631,4 +2647,4 @@ if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
 initNewMenu();
-}
+  }
