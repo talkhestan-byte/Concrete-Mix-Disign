@@ -2369,15 +2369,10 @@ navigator.serviceWorker
 .catch(error => console.warn('Service Worker ثبت نشد:', error));
 });
 }
-
-/* =========================================
-منوی سه نقطه‌ای
-========================================= */
-
 /* ============================================================
-تابع چاپ برای APK ساخته‌شده با Capacitor
-با استفاده از پلاگین @capgo/capacitor-printer
-============================================================ */
+   تابع چاپ برای APK ساخته‌شده با Capacitor
+   با استفاده از پلاگین @bcyesil/capacitor-plugin-printer
+   ============================================================ */
 async function printFullReport() {
   let step5 = null;
   try { step5 = new Step5().run(); } catch (err) { step5 = null; }
@@ -2427,6 +2422,7 @@ async function printFullReport() {
   const docTitle = projectName ? `گزارش طرح مخلوط بتن — ${projectName}` : 'گزارش طرح مخلوط بتن';
   const footerText = `${projectName ? escapeHtml(projectName) + ' — ' : ''}تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
 
+  // ساخت HTML (همان کد قبلی - بدون تغییر)
   const html = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -2455,9 +2451,7 @@ async function printFullReport() {
 </head>
 <body>
 <div class="sheet">
-
 <h1>گزارش طرح مخلوط بتن</h1>
-
 <h2>۱. اطلاعات اولیه</h2>
 <table>
   <tr><th>نام طرح</th><td colspan="5">${projectName ? escapeHtml(projectName) : '—'}</td></tr>
@@ -2465,40 +2459,32 @@ async function printFullReport() {
   <tr><th>NMSA</th><td>${data.msa} mm</td><th>رده سیمان</th><td>${data.cementClass}</td><th>درصد هوا</th><td>${fmt(num('air'), 1)}٪</td></tr>
   <tr><th>افزودنی</th><td>${data.admixture === 'none' ? 'ندارد' : data.admixture}</td><th>درصد افزودنی</th><td>${fmt(num('admixturePct'), 1)}٪</td><th>چگالی سیمان</th><td>${fmt(num('sgCement'))}</td></tr>
 </table>
-
 <h2>۲. مقاومت هدف</h2>
 <table>
   <tr><th>رتبه کارگاه</th><td>${data.workshopRank}</td><th>انحراف معیار S</th><td>${target ? fmt(target.S) + ' MPa' : '—'}</td><th>روش</th><td>${data.targetMethod === 'manual' ? 'دستی' : 'خودکار'}</td></tr>
   <tr><th>fcm1</th><td>${target ? fmt(target.fcm1) : '—'}</td><th>fcm2</th><td>${target ? fmt(target.fcm2) : '—'}</td><th>مقاومت هدف</th><td><strong>${targetStrength ? fmt(targetStrength) + ' MPa' : '—'}</strong></td></tr>
 </table>
-
 <h2>۳. مشخصات سنگدانه‌ها</h2>
 <table>
   <tr><th>نام</th><th>چگالی نسبی</th><th>جذب آب (٪)</th><th>شکستگی (٪)</th><th>سهم (٪)</th></tr>
   ${aggRows}
 </table>
-
 <h2>۴. منحنی دانه‌بندی</h2>
 <div class="chart-box">${gradingSvg}</div>
 <p style="text-align:center; margin:4px 0;"><strong>مدول نرمی مخلوط (F.M.): ${fmt(fm)}</strong></p>
-
 <div class="page-break"></div>
-
 <h2>۵. نسبت آب به سیمان</h2>
 <table>
   <tr><th>W/C</th><td>${fmt(num('wc'), 3)}</td><th>مقاومت متناظر</th><td>${fmt(num('step1Strength'), 1)} MPa</td><th>منحنی</th><td>${activeCurve ? activeCurve.name : '—'}</td></tr>
 </table>
 <div class="chart-box">${wcSvg}</div>
-
 <h2>۶. آب آزاد</h2>
 <table>
   <tr><th>مدول نرمی</th><td>${fmt(waterCalc.fm)}</td><th>نوع</th><td>${waterCalc.isCrushed ? 'تیزگوشه' : 'گردگوشه'}</td><th>آب آزاد پایه</th><td>${fmt(waterCalc.water, 1)} kg/m³</td></tr>
   <tr><th>درصد کاهش</th><td>${data.waterReductionPct || 0}٪</td><th>آب مؤثر</th><td colspan="3">${fmt(effectiveWater(), 1)} kg/m³</td></tr>
 </table>
 <div class="chart-box">${waterSvg}</div>
-
 <div class="page-break"></div>
-
 <h2>۷. نتایج نهایی</h2>
 <div class="result-grid">
   <div class="result-card"><div class="label">سیمان</div><div class="value">${fmt(c, 1)} kg</div></div>
@@ -2510,7 +2496,6 @@ async function printFullReport() {
   <div class="result-card"><div class="label">شن SSD</div><div class="value">${fmt(ssdGravel, 0)} kg</div></div>
   <div class="result-card"><div class="label">سنگدانه خشک کل</div><div class="value">${step5 ? fmt(step5.drySand + step5.dryGravel, 0) : '—'} kg</div></div>
 </div>
-
 <table>
   <tr><th>پارامتر</th><th>مقدار</th><th>واحد</th></tr>
   <tr><td>سیمان (C)</td><td>${fmt(c, 2)}</td><td>kg/m³</td></tr>
@@ -2522,31 +2507,34 @@ async function printFullReport() {
   <tr><td>افزودنی</td><td>${fmt(admMass, 2)}</td><td>kg/m³</td></tr>
   <tr><td>حجم سنگدانه</td><td>${step5 ? fmt(step5.aggregateVolume, 3) : '—'}</td><td>m³</td></tr>
 </table>
-
 <div class="footer">${footerText}</div>
-
 </div>
 </body>
 </html>`;
 
-  // === چاپ از طریق پلاگین Capacitor ===
+  // === چاپ از طریق پلاگین @bcyesil/capacitor-plugin-printer ===
   try {
-    // پلاگین به صورت global در دسترس است اگر در index.html یا از طریق Capacitor بارگذاری شده باشد
-    const PrinterPlugin = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Printer)
-      || (window.Printer);
+    // پلاگین به صورت global در دسترس است (از طریق Capacitor)
+    const PrinterPlugin = window.Capacitor?.Plugins?.Printer;
 
-    if (PrinterPlugin && typeof PrinterPlugin.printHtml === 'function') {
-      await PrinterPlugin.printHtml({ html: html, name: 'Beton-Report' });
+    if (PrinterPlugin && typeof PrinterPlugin.print === 'function') {
+      // متد صحیح برای این پلاگین: print({ content, name, orientation })
+      await PrinterPlugin.print({
+        content: html,
+        name: 'Beton-Report',
+        orientation: 'portrait'
+      });
       return;
     }
 
-    // اگر پلاگین موجود نبود، پیام خطا بده
-    alert('پلاگین چاپ در دسترس نیست. لطفاً APK را با پلاگین Capacitor Printer مجدداً بسازید.');
+    // اگر پلاگین موجود نبود
+    alert('پلاگین چاپ در دسترس نیست. لطفاً APK را با پلاگین سازگار مجدداً بسازید.');
   } catch (error) {
     console.error('خطا در چاپ:', error);
     alert('خطا در چاپ: ' + (error.message || error));
   }
-                                                                                    }
+            }
+  
 
 function initNewMenu() {
 const menuHTML = `<div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
