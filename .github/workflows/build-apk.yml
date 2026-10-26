@@ -35,10 +35,10 @@ jobs:
           npm init -y
           npm install @capacitor/core@6 @capacitor/android@6
           npm install --save-dev @capacitor/cli@6
-
+          npm install @capgo/capacitor-printer
       - name: Configure Capacitor
         run: |
-          npx cap init Iranian Concrete Mix Disign org.Iranian Concrete Mix Disign --web-dir www
+          npx cap init "Iranian Concrete Mix Design" com.iranianconcrete.mixdesign --web-dir www
           npx cap add android
           npx cap sync android
 
