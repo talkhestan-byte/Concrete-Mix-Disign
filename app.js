@@ -1186,7 +1186,6 @@ intersectionText = `<div class="hint" style="margin-top: 15px; font-size: 1.1em;
 intersectionText = `<div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">لطفاً مقاومت هدف را تعیین کنید.</div>`;
 }
 
-// نشانگر سبز موقعیت جاری کاربر (بدون تغییر نشانگر قرمز)
 let userMarker = '';
 const currentWc = num('wc');
 const currentStrength = calculateStrength(currentWc, activeCurve);
@@ -2375,55 +2374,55 @@ navigator.serviceWorker
 ========================================= */
 
 function printFullReport() {
-let step5 = null;
-try { step5 = new Step5().run(); } catch (err) { step5 = null; }
-const target = targetCalculations();
-const combined = combinedGrading();
-const fm = finenessModulus(combined);
-const waterCalc = computeWaterFromCurve();
-const activeCurve = getActiveCurve();
-const targetStrength = getTargetStrength();
-const sharesInfo = getSharesInfo();
+  let step5 = null;
+  try { step5 = new Step5().run(); } catch (err) { step5 = null; }
+  const target = targetCalculations();
+  const combined = combinedGrading();
+  const fm = finenessModulus(combined);
+  const waterCalc = computeWaterFromCurve();
+  const activeCurve = getActiveCurve();
+  const targetStrength = getTargetStrength();
+  const sharesInfo = getSharesInfo();
 
-const gradingSvg = renderGradingChart(combined)
-  .replace(/<h3>.*?<\/h3>/, '')
-  .replace(/<div class="table-scroll">/, '')
-  .replace(/<\/div>$/, '');
+  const gradingSvg = renderGradingChart(combined)
+    .replace(/<h3>.*?<\/h3>/, '')
+    .replace(/<div class="table-scroll">/, '')
+    .replace(/<\/div>$/, '');
 
-const wcSvg = renderWCChart()
-  .replace(/<h3>.*?<\/h3>/, '')
-  .replace(/<div class="table-scroll">/, '')
-  .replace(/<\/div>[\s\S]*$/, '');
+  const wcSvg = renderWCChart()
+    .replace(/<h3>.*?<\/h3>/, '')
+    .replace(/<div class="table-scroll">/, '')
+    .replace(/<\/div>[\s\S]*$/, '');
 
-const waterSvg = renderWaterChart(waterCalc.fm, waterCalc.water, waterCalc.isCrushed, num('slump'))
-  .replace(/<h3>.*?<\/h3>/, '')
-  .replace(/<div class="table-scroll">/, '')
-  .replace(/<\/div>$/, '');
+  const waterSvg = renderWaterChart(waterCalc.fm, waterCalc.water, waterCalc.isCrushed, num('slump'))
+    .replace(/<h3>.*?<\/h3>/, '')
+    .replace(/<div class="table-scroll">/, '')
+    .replace(/<\/div>$/, '');
 
-const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v).toFixed(d) : '—';
+  const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v).toFixed(d) : '—';
 
-const aggRows = data.aggregates.slice(0, data.aggregateCount).map((a, i) => `
-  <tr>
-    <td>${escapeHtml(a.name)}</td>
-    <td>${fmt(a.sg)}</td>
-    <td>${fmt(a.waterAbs)}</td>
-    <td>${fmt(a.fracture)}</td>
-    <td>${sharesInfo.shares[i] ?? '—'}</td>
-  </tr>`).join('');
+  const aggRows = data.aggregates.slice(0, data.aggregateCount).map((a, i) => `
+    <tr>
+      <td>${escapeHtml(a.name)}</td>
+      <td>${fmt(a.sg)}</td>
+      <td>${fmt(a.waterAbs)}</td>
+      <td>${fmt(a.fracture)}</td>
+      <td>${sharesInfo.shares[i] ?? '—'}</td>
+    </tr>`).join('');
 
-const c = step5 ? step5.cement : null;
-const w = step5 ? step5.water : null;
-const drySand = step5 ? step5.drySand : null;
-const dryGravel = step5 ? step5.dryGravel : null;
-const ssdSand = step5 ? step5.ssdSand : null;
-const ssdGravel = step5 ? step5.ssdGravel : null;
-const admMass = step5 ? step5.admixtureMass : 0;
+  const c = step5 ? step5.cement : null;
+  const w = step5 ? step5.water : null;
+  const drySand = step5 ? step5.drySand : null;
+  const dryGravel = step5 ? step5.dryGravel : null;
+  const ssdSand = step5 ? step5.ssdSand : null;
+  const ssdGravel = step5 ? step5.ssdGravel : null;
+  const admMass = step5 ? step5.admixtureMass : 0;
 
-const projectName = (data.projectName || '').trim();
-const docTitle = projectName ? `گزارش طرح مخلوط بتن — ${projectName}` : 'گزارش طرح مخلوط بتن';
-const footerText = `${projectName ? escapeHtml(projectName) + ' — ' : ''}تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
+  const projectName = (data.projectName || '').trim();
+  const docTitle = projectName ? `گزارش طرح مخلوط بتن — ${projectName}` : 'گزارش طرح مخلوط بتن';
+  const footerText = `${projectName ? escapeHtml(projectName) + ' — ' : ''}تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
 
-const html = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -2433,7 +2432,7 @@ const html = `<!DOCTYPE html>
   @page { size: A4; margin: 10mm; }
   * { box-sizing: border-box; }
   html, body { background: #eef2f7; }
-  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 60px 10px 20px; direction: rtl; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 70px 10px 20px; direction: rtl; }
   .toolbar { position: fixed; top: 0; right: 0; left: 0; background: #0078d4; color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; gap: 8px; flex-wrap: wrap; }
   .toolbar .title { font-weight: bold; font-size: 13px; }
   .toolbar .actions { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -2468,12 +2467,10 @@ const html = `<!DOCTYPE html>
 <div class="toolbar">
   <div class="title">پیش‌نمایش برگه چاپ — ${escapeHtml(projectName || 'طرح مخلوط بتن')}</div>
   <div class="actions">
-    <button class="primary" onclick="document.getElementById('btnPrintTrigger').click()">🖨️ چاپ / ذخیره PDF</button>
-    <button onclick="document.getElementById('btnCloseTrigger').click()">✕ بستن و بازگشت</button>
+    <button class="primary" id="btnPrint">🖨️ چاپ / ذخیره PDF</button>
+    <button id="btnClose">✕ بستن و بازگشت</button>
   </div>
 </div>
-<button id="btnPrintTrigger" style="display:none" onclick="window.parent.postMessage({type:'do-print'}, '*')"></button>
-<button id="btnCloseTrigger" style="display:none" onclick="window.parent.postMessage({type:'close-print-preview'}, '*')"></button>
 
 <div class="sheet">
 
@@ -2547,71 +2544,47 @@ const html = `<!DOCTYPE html>
 <div class="footer">${footerText}</div>
 
 </div>
+
+<script>
+  document.getElementById('btnPrint').addEventListener('click', function() {
+    window.print();
+  });
+  document.getElementById('btnClose').addEventListener('click', function() {
+    try { window.close(); } catch(e) {}
+    if (!window.closed) {
+      history.length > 1 ? history.back() : window.location.href = 'about:blank';
+    }
+  });
+</script>
 </body>
 </html>`;
 
-  const existing = document.getElementById('print-preview-overlay');
-  if (existing) existing.remove();
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
 
-  const overlay = document.createElement('div');
-  overlay.id = 'print-preview-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:#0f172a;z-index:2147483647;display:flex;flex-direction:column;';
+  let win = null;
+  try {
+    win = window.open(url, '_blank');
+  } catch (e) {
+    win = null;
+  }
 
-  const iframe = document.createElement('iframe');
-  iframe.id = 'print-preview-iframe';
-  iframe.style.cssText = 'flex:1;width:100%;border:0;background:#eef2f7;';
-  iframe.setAttribute('srcdoc', html);
+  if (win) {
+    setTimeout(() => { try { URL.revokeObjectURL(url); } catch(e){} }, 60000);
+    return;
+  }
 
-  overlay.appendChild(iframe);
-  document.body.appendChild(overlay);
-
-  const doPrint = () => {
-    try {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      return;
-    } catch (e) {
-      // fall-through
-    }
-    try {
-      window.focus();
-      iframe.focus();
-      iframe.contentWindow.print();
-    } catch (e2) {
-      try {
-        const styleEl = document.createElement('style');
-        styleEl.id = 'print-fallback-style';
-        styleEl.innerHTML = '@media print { body > *:not(#print-preview-overlay) { display: none !important; } #print-preview-overlay { position: static !important; background:#fff !important; } #print-preview-overlay iframe { height: auto !important; } .toolbar { display: none !important; } }';
-        document.head.appendChild(styleEl);
-        window.print();
-        setTimeout(() => { try { document.head.removeChild(styleEl); } catch(_){} }, 1000);
-      } catch (e3) {
-        alert('مرورگر اجازه چاپ خودکار نمی‌دهد. لطفاً از منوی مرورگر (Ctrl+P) چاپ کنید.');
-      }
-    }
-  };
-
-  const closeHandler = (event) => {
-    if (!event || !event.data) return;
-    if (event.data.type === 'do-print') {
-      doPrint();
-    } else if (event.data.type === 'close-print-preview') {
-      overlay.remove();
-      window.removeEventListener('message', closeHandler);
-      window.removeEventListener('keydown', escHandler);
-    }
-  };
-
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      overlay.remove();
-      window.removeEventListener('message', closeHandler);
-      window.removeEventListener('keydown', escHandler);
-    }
-  };
-
-  window.addEventListener('message', closeHandler);
-  window.addEventListener('keydown', escHandler);
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    try { document.body.removeChild(a); } catch(e) {}
+  }, 500);
+  setTimeout(() => { try { URL.revokeObjectURL(url); } catch(e){} }, 60000);
 }
 
 function initNewMenu() {
@@ -2721,4 +2694,4 @@ if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
 initNewMenu();
-}
+                       }
