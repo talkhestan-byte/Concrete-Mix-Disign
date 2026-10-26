@@ -1,5 +1,5 @@
 
-const CACHE = 'beton479-v1';
+const CACHE = 'Iranian Concrete Mix Disign-v1';
 
 const ASSETS = [
   './',
