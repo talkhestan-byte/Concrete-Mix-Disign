@@ -17,10 +17,10 @@ projectName: '', reportFileName: ''
 };
 
 const sieves = [
-{ mm: 37.5, label: '37.5' }, { mm: 25, label: '25' }, { mm: 19, label: '19' },
-{ mm: 12.5, label: '12.5' }, { mm: 9.5, label: '9.5' }, { mm: 6.35, label: '6.35' },
-{ mm: 4.75, label: '4.75' }, { mm: 2.36, label: '2.36' }, { mm: 1.18, label: '1.18' },
-{ mm: 0.6, label: '0.6' }, { mm: 0.3, label: '0.3' }, { mm: 0.15, label: '0.15' }
+{ mm: 37.5, label: '1/2 1' }, { mm: 25, label: '1' }, { mm: 19, label: '3/4' },
+{ mm: 12.5, label: '1/2' }, { mm: 9.5, label: '3/8' }, { mm: 6.35, label: '1/4' },
+{ mm: 4.75, label: '4' }, { mm: 2.36, label: '8' }, { mm: 1.18, label: '16' },
+{ mm: 0.6, label: '30' }, { mm: 0.3, label: '50' }, { mm: 0.15, label: '100' }
 ];
 
 const slumpClasses = {
@@ -851,7 +851,7 @@ ${formulaHtml}
 </div>
 <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
 <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">سنگدانه‌ها در 1m³</h3>
-<table><thead><tr><th>مشخصات</th><th>سنگدانه 1 (ماسه)</th><th>سنگدانه 2 (شن)</th></tr></thead><tbody>
+<table><thead><tr><th>مشخصات</th><th>سنگدانه1</th><th>سنگدانه2 </th></tr></thead><tbody>
 <tr><td>چگالی SSD</td><td>${data.sgSand.toFixed(2)}</td><td>${data.sgGravel.toFixed(2)}</td></tr>
 <tr><td>جذب آب (%)</td><td>${data.waterAbsSand}</td><td>${data.waterAbsGravel}</td></tr>
 <tr><td>شکستگی (%)</td><td>${data.aggregates[0].fracture || 0}</td><td>${data.aggregates[1] ? data.aggregates[1].fracture || 0 : 0}</td></tr>
