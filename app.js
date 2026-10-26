@@ -45,7 +45,9 @@ showMixCurve: true,
 showReferenceCurves: true,
 correctionFactor: 1.5,
 cementAction: '',
-projectName: ''
+projectName: '',
+reportUserName: '',
+reportUserAddress: ''
 };
 
 const sieves = [
