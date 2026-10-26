@@ -570,11 +570,11 @@ return `
   ${selectInput('admixture', 'نوع افزودنی', [
     { value: 'none', label: 'بدون افزودنی' },
     { value: 'slump', label: 'افزودنی افزایش‌دهنده اسلامپ' },
-    { value: 'water_reducer', label: 'افزودنی کاهنده نیاز آب' }
+    { value: 'water_reducer', label: 'افزودنی کاهنده آب' }
   ])}
 
-  ${numberInput('admixturePct', 'درصد افزودنی نسبت به جرم سیمان (%)', 0.1,
-    data.admixture === 'none' ? 'min="0" max="99.9" disabled' : 'min="0" max="99.9"')}
+  ${numberInput('admixturePct', 'نسبت افزودنی به سیمان (%)', 0.1,
+    data.admixture === 'none' ? 'min="0" max="99.9" ' : 'min="0" max="99.9"')}
 
   ${numberInput('sgAdmixture', 'چگالی افزودنی', 0.01,
     data.admixture === 'none' ? 'disabled' : '')}
@@ -956,7 +956,7 @@ ${xTicks}
 ${referenceLines}
 ${aggregateLines}
 ${mixLine}
-<text x="${width / 2}" y="${height - 16}" text-anchor="middle" font-size="13" fill="#334155">اندازه الک (mm) ـ مقیاس لگاریتمی</text>
+<text x="${width / 2}" y="${height - 16}" text-anchor="middle" font-size="13" fill="#334155">اندازه الک (mm)</text>
 <text x="17" y="${height / 2}" text-anchor="middle" font-size="13" fill="#334155"
 transform="rotate(-90 17 ${height / 2})">درصد عبوری</text>
 </svg></div>`;
