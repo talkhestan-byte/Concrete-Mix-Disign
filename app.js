@@ -2434,10 +2434,10 @@ const html = `<!DOCTYPE html>
   * { box-sizing: border-box; }
   html, body { background: #eef2f7; }
   body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 60px 10px 20px; direction: rtl; }
-  .toolbar { position: fixed; top: 0; right: 0; left: 0; background: #0078d4; color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+  .toolbar { position: fixed; top: 0; right: 0; left: 0; background: #0078d4; color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; gap: 8px; flex-wrap: wrap; }
   .toolbar .title { font-weight: bold; font-size: 13px; }
-  .toolbar .actions { display: flex; gap: 8px; }
-  .toolbar button { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4); padding: 6px 14px; border-radius: 6px; font-family: inherit; font-size: 12px; cursor: pointer; transition: background 0.2s; }
+  .toolbar .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .toolbar button { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4); padding: 8px 16px; border-radius: 6px; font-family: inherit; font-size: 13px; cursor: pointer; transition: background 0.2s; }
   .toolbar button:hover { background: rgba(255,255,255,0.3); }
   .toolbar button.primary { background: #fff; color: #0078d4; font-weight: bold; }
   .toolbar button.primary:hover { background: #e6f0fb; }
@@ -2468,10 +2468,12 @@ const html = `<!DOCTYPE html>
 <div class="toolbar">
   <div class="title">پیش‌نمایش برگه چاپ — ${escapeHtml(projectName || 'طرح مخلوط بتن')}</div>
   <div class="actions">
-    <button class="primary" onclick="window.print()">🖨️ چاپ / ذخیره PDF</button>
-    <button onclick="window.parent.postMessage({type:'close-print-preview'}, '*')">✕ بستن و بازگشت</button>
+    <button class="primary" onclick="document.getElementById('btnPrintTrigger').click()">🖨️ چاپ / ذخیره PDF</button>
+    <button onclick="document.getElementById('btnCloseTrigger').click()">✕ بستن و بازگشت</button>
   </div>
 </div>
+<button id="btnPrintTrigger" style="display:none" onclick="window.parent.postMessage({type:'do-print'}, '*')"></button>
+<button id="btnCloseTrigger" style="display:none" onclick="window.parent.postMessage({type:'close-print-preview'}, '*')"></button>
 
 <div class="sheet">
 
@@ -2548,11 +2550,9 @@ const html = `<!DOCTYPE html>
 </body>
 </html>`;
 
-  // حذف هرگونه preview قبلی
   const existing = document.getElementById('print-preview-overlay');
   if (existing) existing.remove();
 
-  // ساخت overlay + iframe
   const overlay = document.createElement('div');
   overlay.id = 'print-preview-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:#0f172a;z-index:2147483647;display:flex;flex-direction:column;';
@@ -2565,16 +2565,43 @@ const html = `<!DOCTYPE html>
   overlay.appendChild(iframe);
   document.body.appendChild(overlay);
 
-  // گوش دادن به پیام از داخل iframe برای بستن
+  const doPrint = () => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      return;
+    } catch (e) {
+      // fall-through
+    }
+    try {
+      window.focus();
+      iframe.focus();
+      iframe.contentWindow.print();
+    } catch (e2) {
+      try {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'print-fallback-style';
+        styleEl.innerHTML = '@media print { body > *:not(#print-preview-overlay) { display: none !important; } #print-preview-overlay { position: static !important; background:#fff !important; } #print-preview-overlay iframe { height: auto !important; } .toolbar { display: none !important; } }';
+        document.head.appendChild(styleEl);
+        window.print();
+        setTimeout(() => { try { document.head.removeChild(styleEl); } catch(_){} }, 1000);
+      } catch (e3) {
+        alert('مرورگر اجازه چاپ خودکار نمی‌دهد. لطفاً از منوی مرورگر (Ctrl+P) چاپ کنید.');
+      }
+    }
+  };
+
   const closeHandler = (event) => {
-    if (event && event.data && event.data.type === 'close-print-preview') {
+    if (!event || !event.data) return;
+    if (event.data.type === 'do-print') {
+      doPrint();
+    } else if (event.data.type === 'close-print-preview') {
       overlay.remove();
       window.removeEventListener('message', closeHandler);
       window.removeEventListener('keydown', escHandler);
     }
   };
 
-  // Escape هم preview را ببندد
   const escHandler = (e) => {
     if (e.key === 'Escape') {
       overlay.remove();
