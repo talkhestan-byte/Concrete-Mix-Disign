@@ -2365,11 +2365,170 @@ navigator.serviceWorker
 منوی سه نقطه‌ای
 ========================================= */
 
+function printFullReport() {
+let step5 = null;
+try { step5 = new Step5().run(); } catch (err) { step5 = null; }
+const target = targetCalculations();
+const combined = combinedGrading();
+const fm = finenessModulus(combined);
+const waterCalc = computeWaterFromCurve();
+const activeCurve = getActiveCurve();
+const targetStrength = getTargetStrength();
+const sharesInfo = getSharesInfo();
+
+const gradingSvg = renderGradingChart(combined)
+  .replace(/<h3>.*?<\/h3>/, '')
+  .replace(/<div class="table-scroll">/, '')
+  .replace(/<\/div>$/, '');
+
+const wcSvg = renderWCChart()
+  .replace(/<h3>.*?<\/h3>/, '')
+  .replace(/<div class="table-scroll">/, '')
+  .replace(/<\/div>[\s\S]*$/, '');
+
+const waterSvg = renderWaterChart(waterCalc.fm, waterCalc.water, waterCalc.isCrushed, num('slump'))
+  .replace(/<h3>.*?<\/h3>/, '')
+  .replace(/<div class="table-scroll">/, '')
+  .replace(/<\/div>$/, '');
+
+const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v).toFixed(d) : '—';
+
+const aggRows = data.aggregates.slice(0, data.aggregateCount).map((a, i) => `
+  <tr>
+    <td>${escapeHtml(a.name)}</td>
+    <td>${fmt(a.sg)}</td>
+    <td>${fmt(a.waterAbs)}</td>
+    <td>${fmt(a.fracture)}</td>
+    <td>${sharesInfo.shares[i] ?? '—'}</td>
+  </tr>`).join('');
+
+const c = step5 ? step5.cement : null;
+const w = step5 ? step5.water : null;
+const drySand = step5 ? step5.drySand : null;
+const dryGravel = step5 ? step5.dryGravel : null;
+const ssdSand = step5 ? step5.ssdSand : null;
+const ssdGravel = step5 ? step5.ssdGravel : null;
+const admMass = step5 ? step5.admixtureMass : 0;
+
+const html = `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>گزارش طرح مخلوط بتن</title>
+<style>
+  @page { size: A4; margin: 10mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 10px; direction: rtl; }
+  h1 { font-size: 16px; text-align: center; border-bottom: 2px solid #0078d4; padding-bottom: 6px; margin: 0 0 10px; color: #0078d4; }
+  h2 { font-size: 12px; background: #eef2f7; padding: 4px 8px; border-right: 3px solid #0078d4; margin: 10px 0 6px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px; }
+  th, td { border: 1px solid #999; padding: 3px 5px; text-align: right; }
+  th { background: #e2e8f0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chart-box { border: 1px solid #ccc; padding: 4px; page-break-inside: avoid; }
+  .chart-box svg { width: 100%; height: auto; }
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0; }
+  .result-card { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px; border-radius: 4px; text-align: center; }
+  .result-card .label { font-size: 9px; color: #555; }
+  .result-card .value { font-size: 13px; font-weight: bold; color: #0078d4; }
+  .page-break { page-break-before: always; }
+  .footer { margin-top: 15px; text-align: center; font-size: 9px; color: #888; border-top: 1px solid #ccc; padding-top: 5px; }
+  @media print { body { padding: 0; } .no-print { display: none; } }
+</style>
+</head>
+<body>
+
+<h1>گزارش طرح مخلوط بتن</h1>
+
+<h2>۱. اطلاعات اولیه</h2>
+<table>
+  <tr><th>مقاومت مشخصه</th><td>${fmt(num('strength'), 1)} MPa</td><th>رده اسلامپ</th><td>${data.slumpClass}</td><th>اسلامپ</th><td>${data.slump} mm</td></tr>
+  <tr><th>NMSA</th><td>${data.msa} mm</td><th>رده سیمان</th><td>${data.cementClass}</td><th>درصد هوا</th><td>${fmt(num('air'), 1)}٪</td></tr>
+  <tr><th>افزودنی</th><td>${data.admixture === 'none' ? 'ندارد' : data.admixture}</td><th>درصد افزودنی</th><td>${fmt(num('admixturePct'), 1)}٪</td><th>چگالی سیمان</th><td>${fmt(num('sgCement'))}</td></tr>
+</table>
+
+<h2>۲. مقاومت هدف</h2>
+<table>
+  <tr><th>رتبه کارگاه</th><td>${data.workshopRank}</td><th>انحراف معیار S</th><td>${target ? fmt(target.S) + ' MPa' : '—'}</td><th>روش تعیین</th><td>${data.targetMethod === 'manual' ? 'دستی' : 'خودکار'}</td></tr>
+  <tr><th>fcm1 = fc + 1.34S</th><td>${target ? fmt(target.fcm1) : '—'}</td><th>fcm2 = 0.9fc + 2.33S</th><td>${target ? fmt(target.fcm2) : '—'}</td><th>مقاومت هدف</th><td><strong>${targetStrength ? fmt(targetStrength) + ' MPa' : '—'}</strong></td></tr>
+</table>
+
+<h2>۳. مشخصات سنگدانه‌ها</h2>
+<table>
+  <tr><th>نام</th><th>چگالی نسبی</th><th>جذب آب (٪)</th><th>شکستگی (٪)</th><th>سهم (٪)</th></tr>
+  ${aggRows}
+</table>
+
+<h2>۴. منحنی دانه‌بندی و مدول نرمی</h2>
+<div class="chart-box">${gradingSvg}</div>
+<p style="text-align:center; margin:4px 0;"><strong>مدول نرمی مخلوط (F.M.): ${fmt(fm)}</strong></p>
+
+<div class="page-break"></div>
+
+<h2>۵. نسبت آب به سیمان</h2>
+<table>
+  <tr><th>W/C انتخابی</th><td>${fmt(num('wc'), 3)}</td><th>مقاومت متناظر</th><td>${fmt(num('step1Strength'), 1)} MPa</td><th>منحنی فعال</th><td>${activeCurve ? activeCurve.name : '—'}</td></tr>
+</table>
+<div class="chart-box">${wcSvg}</div>
+
+<h2>۶. آب آزاد</h2>
+<table>
+  <tr><th>مدول نرمی</th><td>${fmt(waterCalc.fm)}</td><th>نوع سنگدانه</th><td>${waterCalc.isCrushed ? 'تیزگوشه' : 'گردگوشه'}</td><th>آب آزاد پایه</th><td>${fmt(waterCalc.water, 1)} kg/m³</td></tr>
+  <tr><th>درصد کاهش آب</th><td>${data.waterReductionPct || 0}٪</td><th>آب مؤثر</th><td colspan="3">${fmt(effectiveWater(), 1)} kg/m³</td></tr>
+</table>
+<div class="chart-box">${waterSvg}</div>
+
+<div class="page-break"></div>
+
+<h2>۷. نتایج نهایی طرح مخلوط</h2>
+<div class="result-grid">
+  <div class="result-card"><div class="label">سیمان</div><div class="value">${fmt(c, 1)} kg</div></div>
+  <div class="result-card"><div class="label">آب مؤثر</div><div class="value">${fmt(w, 1)} kg</div></div>
+  <div class="result-card"><div class="label">افزودنی</div><div class="value">${fmt(admMass, 2)} kg</div></div>
+</div>
+<div class="result-grid">
+  <div class="result-card"><div class="label">ماسه SSD</div><div class="value">${fmt(ssdSand, 0)} kg</div></div>
+  <div class="result-card"><div class="label">شن SSD</div><div class="value">${fmt(ssdGravel, 0)} kg</div></div>
+  <div class="result-card"><div class="label">سنگدانه خشک کل</div><div class="value">${step5 ? fmt(step5.drySand + step5.dryGravel, 0) : '—'} kg</div></div>
+</div>
+
+<table>
+  <tr><th>پارامتر</th><th>مقدار</th><th>واحد</th></tr>
+  <tr><td>سیمان (C)</td><td>${fmt(c, 2)}</td><td>kg/m³</td></tr>
+  <tr><td>آب مؤثر (W)</td><td>${fmt(w, 2)}</td><td>kg/m³</td></tr>
+  <tr><td>ماسه SSD</td><td>${fmt(ssdSand, 1)}</td><td>kg/m³</td></tr>
+  <tr><td>شن SSD</td><td>${fmt(ssdGravel, 1)}</td><td>kg/m³</td></tr>
+  <tr><td>ماسه خشک</td><td>${fmt(drySand, 1)}</td><td>kg/m³</td></tr>
+  <tr><td>شن خشک</td><td>${fmt(dryGravel, 1)}</td><td>kg/m³</td></tr>
+  <tr><td>افزودنی</td><td>${fmt(admMass, 2)}</td><td>kg/m³</td></tr>
+  <tr><td>حجم سنگدانه</td><td>${step5 ? fmt(step5.aggregateVolume, 3) : '—'}</td><td>m³</td></tr>
+</table>
+
+<div class="footer">
+  تاریخ: ${new Date().toLocaleDateString('fa-IR')} — سامانه طرح مخلوط بتن
+</div>
+
+<script>
+  window.onload = function() { setTimeout(function(){ window.print(); }, 400); };
+<\/script>
+</body>
+</html>`;
+
+const printWindow = window.open('', '_blank');
+if (!printWindow) {
+alert('امکان باز کردن پنجره چاپ وجود ندارد. لطفاً پاپ‌آپ را مجاز کنید.');
+return;
+}
+printWindow.document.open();
+printWindow.document.write(html);
+printWindow.document.close();
+}
+
 function initNewMenu() {
 const menuHTML = `<div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
 <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
 <div id="app-menu-dropdown" style="display: none; position: absolute; top: 45px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 160px; overflow: hidden;">
-<button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">💾 ذخیره طرح</button>
+<button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">🖨️ چاپ</button>
 <button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333; transition: background 0.2s;">📂 بازیابی طرح</button>
 <button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626; transition: background 0.2s;">🚪 خروج</button>
 </div>
@@ -2395,66 +2554,14 @@ menuDropdown.style.display = 'none';
 }
 });
 
-const buildJson = () => JSON.stringify(data, null, 2);
-
-const downloadProject = async () => {
-const defaultName = `beton_project_${new Date().toISOString().slice(0, 10)}`;
-const jsonStr = buildJson();
-const fileName = `${defaultName}.json`;
-
-// ۱) File System Access API (کروم/اج دسکتاپ)
-if (window.showSaveFilePicker) {
-try {
-const handle = await window.showSaveFilePicker({
-suggestedName: fileName,
-types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
-});
-const writable = await handle.createWritable();
-await writable.write(jsonStr);
-await writable.close();
-return true;
-} catch (err) {
-if (err && err.name === 'AbortError') return false;
-}
-}
-
-// ۲) Web Share API (موبایل)
-const file = new File([jsonStr], fileName, { type: 'application/json' });
-if (navigator.canShare && navigator.canShare({ files: [file] })) {
-try {
-await navigator.share({ files: [file], title: 'طرح بتن' });
-return true;
-} catch (err) {
-if (err && err.name === 'AbortError') return false;
-}
-}
-
-// ۳) لینک دانلود واقعی در DOM (fallback)
-const blob = new Blob([jsonStr], { type: 'application/json' });
-const url = URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url;
-a.download = fileName;
-a.rel = 'noopener';
-a.style.display = 'none';
-document.body.appendChild(a);
-a.click();
-setTimeout(() => {
-document.body.removeChild(a);
-URL.revokeObjectURL(url);
-}, 2000);
-return true;
-};
-
-menuSave.onclick = async (e) => {
+menuSave.onclick = (e) => {
 e.preventDefault();
 e.stopPropagation();
 menuDropdown.style.display = 'none';
 try {
-const ok = await downloadProject();
-if (ok) alert('فایل طرح با موفقیت ذخیره شد.');
+printFullReport();
 } catch (err) {
-alert('خطا در ذخیره: ' + (err && err.message ? err.message : err));
+alert('خطا در چاپ: ' + (err && err.message ? err.message : err));
 }
 };
 
@@ -2467,13 +2574,27 @@ menuExit.onclick = () => {
 menuDropdown.style.display = 'none';
 const confirmSave = confirm('آیا مایل به ذخیره اطلاعات طرح قبل از خروج هستید؟');
 if (confirmSave) {
-downloadProject().then((ok) => {
-if (!ok) return;
-setTimeout(() => {
-window.close();
-setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
-}, 800);
-}).catch(() => {});
+try {
+  const jsonStr = JSON.stringify(data, null, 2);
+  const fileName = `beton_project_${new Date().toISOString().slice(0, 10)}.json`;
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    window.close();
+    setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
+  }, 500);
+} catch (err) {
+  window.close();
+  setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
+}
 } else {
 window.close();
 setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد. لطفاً تب را دستی ببندید.'), 500);
