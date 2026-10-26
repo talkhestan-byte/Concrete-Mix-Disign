@@ -651,7 +651,7 @@ function renderStep1() {
 const wcDisplay = Number.isFinite(Number(data.wc)) ? Number(data.wc).toFixed(3) : '';
 const step1Valid = data.step1Strength !== null && data.step1Strength !== '' && Number.isFinite(Number(data.step1Strength)) && Number(data.step1Strength) > 0;
 const target = getTargetStrength();
-const strengthDisplay = step1Valid ? Number(data.step1Strength).toFixed(1) : (target !== null ? target.toFixed(1) : '');
+const strengthDisplay = step1Valid ? Number(data.step1Strength).toFixed(2) : (target !== null ? target.toFixed(2) : '');
 const wcLimitActive = data.limitWcOn && Number(data.limitWc) > 0 && Number(data.limitWc) < 1;
 const currentWcNum = num('wc');
 const wcExceeds = wcLimitActive && Number.isFinite(currentWcNum) && currentWcNum > Number(data.limitWc);
@@ -1332,7 +1332,7 @@ function showSplash() {
   setTimeout(() => {
     splash.classList.add('fade-out');
     setTimeout(() => splash.remove(), 520);
-  }, 2000);
+  }, 3000);
 }
 
 if ('serviceWorker' in navigator) {
