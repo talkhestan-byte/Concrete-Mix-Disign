@@ -1,5 +1,5 @@
 
-const CACHE = 'beton479-v2';
+const CACHE = 'beton479-v1';
 
 const ASSETS = [
   './',
