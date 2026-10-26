@@ -2370,10 +2370,10 @@ navigator.serviceWorker
 .register('./sw.js')
 .catch(error => console.warn('Service Worker ثبت نشد:', error));
 });
-}
+
 /* ============================================================
-   تابع چاپ برای APK ساخته‌شده با Capacitor
-   با استفاده از پلاگین @bcyesil/capacitor-plugin-printer
+   تابع چاپ: HTML کامل گزارش + یک صفحه A4 + درخواست نام و آدرس
+   با استفاده از پلاگین @bcyesil/capacitor-plugin-printer@0.0.5
    ============================================================ */
 async function printFullReport() {
   let step5 = null;
@@ -2385,6 +2385,17 @@ async function printFullReport() {
   const activeCurve = getActiveCurve();
   const targetStrength = getTargetStrength();
   const sharesInfo = getSharesInfo();
+
+  // --- درخواست نام و آدرس از کاربر ---
+  const userName = (prompt('لطفاً نام خود را وارد کنید (برای درج در گزارش):', data.reportUserName || '') || '').trim();
+  if (userName === null) return; // کاربر لغو کرد
+  const userAddress = (prompt('لطفاً آدرس/شرکت خود را وارد کنید (برای درج در گزارش):', data.reportUserAddress || '') || '').trim();
+  if (userAddress === null) return;
+
+  // ذخیره برای استفاده بعدی
+  data.reportUserName = userName;
+  data.reportUserAddress = userAddress;
+  save();
 
   const gradingSvg = renderGradingChart(combined)
     .replace(/<h3>.*?<\/h3>/, '')
@@ -2422,9 +2433,18 @@ async function printFullReport() {
 
   const projectName = (data.projectName || '').trim();
   const docTitle = projectName ? `گزارش طرح مخلوط بتن — ${projectName}` : 'گزارش طرح مخلوط بتن';
-  const footerText = `${projectName ? escapeHtml(projectName) + ' — ' : ''}تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
+  const today = new Date().toLocaleDateString('fa-IR');
 
-  // ساخت HTML (همان کد قبلی - بدون تغییر)
+  // اطلاعات سربرگ
+  const headerInfo = `
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; font-size:10px;">
+      <div><strong>نام:</strong> ${userName ? escapeHtml(userName) : '—'}</div>
+      <div><strong>تاریخ:</strong> ${today}</div>
+    </div>
+    <div style="font-size:10px; margin-bottom:4px;"><strong>آدرس/شرکت:</strong> ${userAddress ? escapeHtml(userAddress) : '—'}</div>
+  `;
+
+  // ساخت HTML فشرده در یک صفحه A4
   const html = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -2432,95 +2452,169 @@ async function printFullReport() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(docTitle)}</title>
 <style>
-  @page { size: A4; margin: 10mm; }
-  * { box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 10px; direction: rtl; }
-  .sheet { background: #fff; max-width: 210mm; margin: 0 auto; padding: 12mm; }
-  h1 { font-size: 16px; text-align: center; border-bottom: 2px solid #0078d4; padding-bottom: 6px; margin: 0 0 10px; color: #0078d4; }
-  h2 { font-size: 12px; background: #eef2f7; padding: 4px 8px; border-right: 3px solid #0078d4; margin: 10px 0 6px; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px; }
-  th, td { border: 1px solid #999; padding: 3px 5px; text-align: right; }
-  th { background: #e2e8f0; }
-  .chart-box { border: 1px solid #ccc; padding: 4px; page-break-inside: avoid; }
-  .chart-box svg { width: 100%; height: auto; }
-  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0; }
-  .result-card { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px; border-radius: 4px; text-align: center; }
-  .result-card .label { font-size: 9px; color: #555; }
-  .result-card .value { font-size: 13px; font-weight: bold; color: #0078d4; }
-  .page-break { page-break-before: always; }
-  .footer { margin-top: 15px; text-align: center; font-size: 9px; color: #888; border-top: 1px solid #ccc; padding-top: 5px; }
+  @page { size: A4 portrait; margin: 6mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    font-size: 7.5px;
+    color: #111;
+    direction: rtl;
+    line-height: 1.15;
+  }
+  .sheet { padding: 2mm 3mm; }
+
+  /* سربرگ */
+  .header {
+    border-bottom: 1.2px solid #0078d4;
+    padding-bottom: 2px;
+    margin-bottom: 3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .header-title { font-size: 11px; font-weight: bold; color: #0078d4; }
+  .header-info { font-size: 7px; text-align: left; line-height: 1.25; }
+  .header-info div { margin-bottom: 1px; }
+
+  /* بخش‌ها */
+  h2 {
+    font-size: 8px;
+    background: #eef2f7;
+    padding: 1.5px 5px;
+    border-right: 2.5px solid #0078d4;
+    margin: 2.5px 0 2px;
+    font-weight: bold;
+  }
+
+  /* جداول فشرده */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 7px; }
+  th, td { border: 0.5px solid #888; padding: 1px 3px; text-align: right; line-height: 1.1; }
+  th { background: #e2e8f0; font-weight: bold; font-size: 6.8px; }
+
+  /* گرید دو ستونه برای صرفه‌جویی فضا */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; }
+
+  /* نمودارها */
+  .chart-box {
+    border: 0.5px solid #bbb;
+    padding: 2px;
+    page-break-inside: avoid;
+    background: #fff;
+  }
+  .chart-box svg { width: 100%; height: auto; display: block; }
+
+  /* کارت‌های نتیجه */
+  .result-card {
+    background: #f1f5f9;
+    border: 0.5px solid #cbd5e1;
+    padding: 2px;
+    border-radius: 2px;
+    text-align: center;
+    font-size: 7px;
+  }
+  .result-card .label { font-size: 6px; color: #555; }
+  .result-card .value { font-size: 8.5px; font-weight: bold; color: #0078d4; }
+
+  .footer {
+    margin-top: 3px;
+    text-align: center;
+    font-size: 6px;
+    color: #666;
+    border-top: 0.5px solid #ccc;
+    padding-top: 2px;
+  }
 </style>
 </head>
 <body>
 <div class="sheet">
-<h1>گزارش طرح مخلوط بتن</h1>
-<h2>۱. اطلاعات اولیه</h2>
-<table>
-  <tr><th>نام طرح</th><td colspan="5">${projectName ? escapeHtml(projectName) : '—'}</td></tr>
-  <tr><th>مقاومت مشخصه</th><td>${fmt(num('strength'), 1)} MPa</td><th>رده اسلامپ</th><td>${data.slumpClass}</td><th>اسلامپ</th><td>${data.slump} mm</td></tr>
-  <tr><th>NMSA</th><td>${data.msa} mm</td><th>رده سیمان</th><td>${data.cementClass}</td><th>درصد هوا</th><td>${fmt(num('air'), 1)}٪</td></tr>
-  <tr><th>افزودنی</th><td>${data.admixture === 'none' ? 'ندارد' : data.admixture}</td><th>درصد افزودنی</th><td>${fmt(num('admixturePct'), 1)}٪</td><th>چگالی سیمان</th><td>${fmt(num('sgCement'))}</td></tr>
-</table>
-<h2>۲. مقاومت هدف</h2>
-<table>
-  <tr><th>رتبه کارگاه</th><td>${data.workshopRank}</td><th>انحراف معیار S</th><td>${target ? fmt(target.S) + ' MPa' : '—'}</td><th>روش</th><td>${data.targetMethod === 'manual' ? 'دستی' : 'خودکار'}</td></tr>
-  <tr><th>fcm1</th><td>${target ? fmt(target.fcm1) : '—'}</td><th>fcm2</th><td>${target ? fmt(target.fcm2) : '—'}</td><th>مقاومت هدف</th><td><strong>${targetStrength ? fmt(targetStrength) + ' MPa' : '—'}</strong></td></tr>
-</table>
-<h2>۳. مشخصات سنگدانه‌ها</h2>
-<table>
-  <tr><th>نام</th><th>چگالی نسبی</th><th>جذب آب (٪)</th><th>شکستگی (٪)</th><th>سهم (٪)</th></tr>
-  ${aggRows}
-</table>
-<h2>۴. منحنی دانه‌بندی</h2>
-<div class="chart-box">${gradingSvg}</div>
-<p style="text-align:center; margin:4px 0;"><strong>مدول نرمی مخلوط (F.M.): ${fmt(fm)}</strong></p>
-<div class="page-break"></div>
-<h2>۵. نسبت آب به سیمان</h2>
-<table>
-  <tr><th>W/C</th><td>${fmt(num('wc'), 3)}</td><th>مقاومت متناظر</th><td>${fmt(num('step1Strength'), 1)} MPa</td><th>منحنی</th><td>${activeCurve ? activeCurve.name : '—'}</td></tr>
-</table>
-<div class="chart-box">${wcSvg}</div>
-<h2>۶. آب آزاد</h2>
-<table>
-  <tr><th>مدول نرمی</th><td>${fmt(waterCalc.fm)}</td><th>نوع</th><td>${waterCalc.isCrushed ? 'تیزگوشه' : 'گردگوشه'}</td><th>آب آزاد پایه</th><td>${fmt(waterCalc.water, 1)} kg/m³</td></tr>
-  <tr><th>درصد کاهش</th><td>${data.waterReductionPct || 0}٪</td><th>آب مؤثر</th><td colspan="3">${fmt(effectiveWater(), 1)} kg/m³</td></tr>
-</table>
-<div class="chart-box">${waterSvg}</div>
-<div class="page-break"></div>
-<h2>۷. نتایج نهایی</h2>
-<div class="result-grid">
-  <div class="result-card"><div class="label">سیمان</div><div class="value">${fmt(c, 1)} kg</div></div>
-  <div class="result-card"><div class="label">آب مؤثر</div><div class="value">${fmt(w, 1)} kg</div></div>
-  <div class="result-card"><div class="label">افزودنی</div><div class="value">${fmt(admMass, 2)} kg</div></div>
-</div>
-<div class="result-grid">
-  <div class="result-card"><div class="label">ماسه SSD</div><div class="value">${fmt(ssdSand, 0)} kg</div></div>
-  <div class="result-card"><div class="label">شن SSD</div><div class="value">${fmt(ssdGravel, 0)} kg</div></div>
-  <div class="result-card"><div class="label">سنگدانه خشک کل</div><div class="value">${step5 ? fmt(step5.drySand + step5.dryGravel, 0) : '—'} kg</div></div>
-</div>
-<table>
-  <tr><th>پارامتر</th><th>مقدار</th><th>واحد</th></tr>
-  <tr><td>سیمان (C)</td><td>${fmt(c, 2)}</td><td>kg/m³</td></tr>
-  <tr><td>آب مؤثر (W)</td><td>${fmt(w, 2)}</td><td>kg/m³</td></tr>
-  <tr><td>ماسه SSD</td><td>${fmt(ssdSand, 1)}</td><td>kg/m³</td></tr>
-  <tr><td>شن SSD</td><td>${fmt(ssdGravel, 1)}</td><td>kg/m³</td></tr>
-  <tr><td>ماسه خشک</td><td>${fmt(drySand, 1)}</td><td>kg/m³</td></tr>
-  <tr><td>شن خشک</td><td>${fmt(dryGravel, 1)}</td><td>kg/m³</td></tr>
-  <tr><td>افزودنی</td><td>${fmt(admMass, 2)}</td><td>kg/m³</td></tr>
-  <tr><td>حجم سنگدانه</td><td>${step5 ? fmt(step5.aggregateVolume, 3) : '—'}</td><td>m³</td></tr>
-</table>
-<div class="footer">${footerText}</div>
+
+  <!-- سربرگ با نام و آدرس -->
+  <div class="header">
+    <div class="header-title">${escapeHtml(docTitle)}</div>
+    <div class="header-info">
+      ${headerInfo}
+    </div>
+  </div>
+
+  <!-- ۱. اطلاعات اولیه (فشرده) -->
+  <h2>۱. اطلاعات اولیه</h2>
+  <table>
+    <tr><th>مقاومت مشخصه</th><td>${fmt(num('strength'), 1)} MPa</td><th>رده اسلامپ</th><td>${data.slumpClass}</td><th>اسلامپ</th><td>${data.slump} mm</td><th>NMSA</th><td>${data.msa} mm</td></tr>
+    <tr><th>رده سیمان</th><td>${data.cementClass}</td><th>هوا</th><td>${fmt(num('air'), 1)}٪</td><th>افزودنی</th><td>${data.admixture === 'none' ? 'ندارد' : data.admixture}</td><th>درصد افزودنی</th><td>${fmt(num('admixturePct'), 1)}٪</td></tr>
+  </table>
+
+  <!-- ۲. مقاومت هدف (فشرده) -->
+  <h2>۲. مقاومت هدف</h2>
+  <table>
+    <tr><th>رتبه کارگاه</th><td>${data.workshopRank}</td><th>S</th><td>${target ? fmt(target.S) + ' MPa' : '—'}</td><th>fcm1</th><td>${target ? fmt(target.fcm1) : '—'}</td><th>fcm2</th><td>${target ? fmt(target.fcm2) : '—'}</td><th>هدف</th><td><strong>${targetStrength ? fmt(targetStrength) + ' MPa' : '—'}</strong></td></tr>
+  </table>
+
+  <!-- ۳. مشخصات سنگدانه‌ها (فشرده) -->
+  <h2>۳. مشخصات سنگدانه‌ها</h2>
+  <table>
+    <tr><th>نام</th><th>چگالی نسبی</th><th>جذب آب (٪)</th><th>شکستگی (٪)</th><th>سهم (٪)</th></tr>
+    ${aggRows}
+  </table>
+
+  <!-- ۴ و ۵ و ۶ - نمودارها در دو ستون -->
+  <div class="two-col">
+    <div>
+      <h2>۴. منحنی دانه‌بندی (F.M. = ${fmt(fm)})</h2>
+      <div class="chart-box">${gradingSvg}</div>
+    </div>
+    <div>
+      <h2>۵. نسبت آب به سیمان (W/C = ${fmt(num('wc'), 3)})</h2>
+      <div class="chart-box">${wcSvg}</div>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top:2px;">
+    <div>
+      <h2>۶. آب آزاد (F.M. = ${fmt(waterCalc.fm)})</h2>
+      <div class="chart-box">${waterSvg}</div>
+    </div>
+    <div>
+      <h2>۷. نتایج نهایی</h2>
+      <div class="three-col" style="margin-bottom:2px;">
+        <div class="result-card"><div class="label">سیمان</div><div class="value">${fmt(c, 1)} kg</div></div>
+        <div class="result-card"><div class="label">آب مؤثر</div><div class="value">${fmt(w, 1)} kg</div></div>
+        <div class="result-card"><div class="label">افزودنی</div><div class="value">${fmt(admMass, 2)} kg</div></div>
+      </div>
+      <div class="three-col" style="margin-bottom:2px;">
+        <div class="result-card"><div class="label">ماسه SSD</div><div class="value">${fmt(ssdSand, 0)} kg</div></div>
+        <div class="result-card"><div class="label">شن SSD</div><div class="value">${fmt(ssdGravel, 0)} kg</div></div>
+        <div class="result-card"><div class="label">خشک کل</div><div class="value">${step5 ? fmt(step5.drySand + step5.dryGravel, 0) : '—'} kg</div></div>
+      </div>
+      <table>
+        <tr><th>پارامتر</th><th>مقدار</th></tr>
+        <tr><td>سیمان (C)</td><td>${fmt(c, 2)} kg/m³</td></tr>
+        <tr><td>آب مؤثر (W)</td><td>${fmt(w, 2)} kg/m³</td></tr>
+        <tr><td>ماسه SSD</td><td>${fmt(ssdSand, 1)} kg/m³</td></tr>
+        <tr><td>شن SSD</td><td>${fmt(ssdGravel, 1)} kg/m³</td></tr>
+        <tr><td>ماسه خشک</td><td>${fmt(drySand, 1)} kg/m³</td></tr>
+        <tr><td>شن خشک</td><td>${fmt(dryGravel, 1)} kg/m³</td></tr>
+        <tr><td>افزودنی</td><td>${fmt(admMass, 2)} kg/m³</td></tr>
+        <tr><td>حجم سنگدانه</td><td>${step5 ? fmt(step5.aggregateVolume, 3) : '—'} m³</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    ${userName ? 'تهیه‌کننده: ' + escapeHtml(userName) + ' | ' : ''}${today}${projectName ? ' | ' + escapeHtml(projectName) : ''}
+  </div>
+
 </div>
 </body>
 </html>`;
 
   // === چاپ از طریق پلاگین @bcyesil/capacitor-plugin-printer ===
   try {
-    // پلاگین به صورت global در دسترس است (از طریق Capacitor)
     const PrinterPlugin = window.Capacitor?.Plugins?.Printer;
 
     if (PrinterPlugin && typeof PrinterPlugin.print === 'function') {
-      // متد صحیح برای این پلاگین: print({ content, name, orientation })
       await PrinterPlugin.print({
         content: html,
         name: 'Beton-Report',
@@ -2529,15 +2623,13 @@ async function printFullReport() {
       return;
     }
 
-    // اگر پلاگین موجود نبود
     alert('پلاگین چاپ در دسترس نیست. لطفاً APK را با پلاگین سازگار مجدداً بسازید.');
   } catch (error) {
     console.error('خطا در چاپ:', error);
     alert('خطا در چاپ: ' + (error.message || error));
   }
-            }
+}
   
-
 function initNewMenu() {
 const menuHTML = `<div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
 <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
