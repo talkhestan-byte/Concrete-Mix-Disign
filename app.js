@@ -2,10 +2,10 @@
 
 /* =========================================
 طرح ملی مخلوط بتن
-app.js  (اصلاح‌شده)
+app.js
 ========================================= */
 
-const STORAGE_KEY = 'beton479';
+const STORAGE_KEY = 'Iranian Concrete Mix Disign';
 
 const defaults = {
 strength: 30,
@@ -49,18 +49,18 @@ projectName: ''
 };
 
 const sieves = [
-{ mm: 37.5, label: '37.5' },
-{ mm: 25, label: '25' },
-{ mm: 19, label: '19' },
-{ mm: 12.5, label: '12.5' },
-{ mm: 9.5, label: '9.5' },
-{ mm: 6.35, label: '6.35' },
-{ mm: 4.75, label: '4.75' },
-{ mm: 2.36, label: '2.36' },
-{ mm: 1.18, label: '1.18' },
-{ mm: 0.6, label: '0.6' },
-{ mm: 0.3, label: '0.3' },
-{ mm: 0.15, label: '0.15' }
+{ mm: 37.5, label: '1/2 1' },
+{ mm: 25, label: '1' },
+{ mm: 19, label: '3/4' },
+{ mm: 12.5, label: '1/2' },
+{ mm: 9.5, label: '3/8' },
+{ mm: 6.35, label: '1/4' },
+{ mm: 4.75, label: '4' },
+{ mm: 2.36, label: '8' },
+{ mm: 1.18, label: '16' },
+{ mm: 0.6, label: '30' },
+{ mm: 0.3, label: '50' },
+{ mm: 0.15, label: '100' }
 ];
 
 const slumpClasses = {
@@ -114,9 +114,9 @@ const titles = [
 'اطلاعات اولیه',
 'مشخصات سنگدانه‌ها',
 'سهم‌بندی سنگدانه‌ها',
-'1. آب به سیمان',
-'2. آب آزاد',
-'3. مقدار سیمان',
+'آب به سیمان',
+'آب آزاد',
+'مقدار سیمان',
 'گزارش نهایی'
 ];
 
