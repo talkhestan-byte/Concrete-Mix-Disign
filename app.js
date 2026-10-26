@@ -836,15 +836,25 @@ const air = data.air / 100;
 const totalDry = result.dryGravel + result.drySand;
 const totalWater = w + (result.ssdSand - result.drySand) + (result.ssdGravel - result.dryGravel);
 const finalDensity = c + totalWater + totalDry;
+const Vc = result.vc;
+const Vw = result.vw;
+const Va = result.va;
+const Vad = result.va_adm;
+const Vassd = result.aggregateVolume;
+
 return `<div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1;">
 <h2 style="text-align: center; color: #1e293b; margin-bottom: 20px; font-size: 18px;">گزارش نهایی طرح مخلوط بتن</h2>
 <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-<h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">محاسبه حجم سنگدانه‌ها</h3>
-<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center; font-size: 13px; direction: ltr; justify-content: center;">
-<span>Air: <strong>${(air * 100).toFixed(2)}%</strong></span>
-<span>MSA: <strong>${data.msa} mm</strong></span>
-<div style="background: #f1f5f9; padding: 8px 12px; border-radius: 6px;">V_Assd = <strong style="color: #2563eb;">${result.aggregateVolume.toFixed(3)} m³</strong></div>
-</div></div>
+<h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">محاسبه حجم مطلق</h3>
+<div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; font-size: 11px; direction: ltr; justify-content: center; font-family: monospace;">
+<div style="text-align: center;">
+<div>V_Assd</div>
+<div>= 1 - (C / (1000 &times; SG_c)) - W - Air - Adm</div>
+<div>= 1 - (${c.toFixed(2)} / (1000 &times; ${data.sgCement})) - ${w.toFixed(2)}/1000 - ${(air * 100).toFixed(2)}/100 ${data.admixture !== 'none' ? `- ${result.admixtureMass.toFixed(2)}/(1000 &times; ${data.sgAdmixture})` : ''}</div>
+<div style="background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-top: 4px;">= ${Vassd.toFixed(3)} m³</div>
+</div>
+</div>
+</div>
 <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
 <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">سنگدانه‌ها در 1m³</h3>
 <table><thead><tr><th>مشخصات</th><th>سنگدانه 1 (ماسه)</th><th>سنگدانه 2 (شن)</th></tr></thead><tbody>
@@ -862,7 +872,11 @@ return `<div style="background: #f8fafc; padding: 20px; border-radius: 12px; bor
 <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;"><div style="font-size: 11px; color: #64748b;">آب کل (W_total)</div><strong style="font-size: 16px;">${totalWater.toFixed(0)} kg/m³</strong></div>
 <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;"><div style="font-size: 11px; color: #64748b;">جرم خشک (Ad)</div><strong style="font-size: 16px;">${totalDry.toFixed(0)} kg/m³</strong></div>
 <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #bae6fd;"><div style="font-size: 11px; color: #0369a1;">چگالی نهایی (G)</div><strong style="font-size: 16px; color: #0284c7;">${finalDensity.toFixed(0)} kg/m³</strong></div>
-</div></div></div>`;
+</div></div>
+<div style="margin-top: 15px; text-align: center; font-size: 11px; color: #64748b; direction: rtl; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+جمع وزن‌ها: سیمان ${c.toFixed(0)} + آب ${w.toFixed(0)} + ماسه ${result.drySand.toFixed(0)} + شن ${result.dryGravel.toFixed(0)} ${data.admixture !== 'none' ? `+ افزودنی ${result.admixtureMass.toFixed(1)}` : ''} = ${finalDensity.toFixed(0)} kg/m³
+</div>
+</div>`;
 }
 
 const TEXT_KEYS = new Set(['slumpClass', 'cementClass', 'admixture', 'targetMethod', 'workshopRank', 'projectName']);
@@ -1074,7 +1088,7 @@ style.innerHTML = `:root {
   --shadow-md: 0 8px 24px rgba(15, 35, 70, 0.12);
   --shadow-lg: 0 20px 48px rgba(15, 35, 70, 0.18);
 }
-* { box-sizing: border-box; }
+* { box-sizing: border-box; touch-action: pan-x pan-y pinch-zoom; }
 body {
   font-family: 'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
   background:
@@ -1195,6 +1209,8 @@ tr:last-child td { border-bottom: none; }
 th { background: linear-gradient(180deg, #eef3fa, #e3eaf3); font-weight: 600; color: #2a3542; }
 tr:nth-child(even) td { background: #fafcff; }
 tr:hover td { background: #eef6ff; }
+
+/* اصلاح فیکس شدن ستون اول در جدول سنگدانه‌ها */
 .aggregate-table th:first-child {
   position: sticky;
   right: 0;
@@ -1212,6 +1228,7 @@ tr:hover td { background: #eef6ff; }
 }
 .aggregate-table tr:nth-child(even) td:first-child { background: #eef3fa; }
 .aggregate-table tr:hover td:first-child { background: #e0ecff; }
+
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; border-radius: var(--radius-md); }
 h2 { color: var(--primary); border-bottom: 2px solid rgba(0, 120, 212, 0.15); padding-bottom: 8px; }
 h3 { color: #334155; }
