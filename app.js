@@ -13,7 +13,7 @@ waterAbsGravel: 0.5, targetMethod: 'manual', workshopRank: 'A',
 targetStrengthManual: '', step1Strength: null, aggregateShares: ['', '', '', ''],
 showAggregateCurves: [true, true, true, true], showMixCurve: true,
 showReferenceCurves: true, correctionFactor: 1.5, cementAction: '',
-projectName: '', reportUserName: '', reportUserAddress: ''
+projectName: '', reportFileName: ''
 };
 
 const sieves = [
@@ -281,8 +281,8 @@ return `
 <h2>اطلاعات اولیه طرح</h2>
 <div class="grid">
   <label class="field" style="width:100%;">
-    <span>نام طرح</span>
-    <input type="text" enterkeyhint="next" data-key="projectName" value="${escapeHtml(data.projectName ?? '')}" style="width: 300px !important; text-align: right;">
+    <span style="min-width:60px;">نام طرح</span>
+    <input type="text" enterkeyhint="next" data-key="projectName" value="${escapeHtml(data.projectName ?? '')}" style="width: 420px !important; text-align: right;">
   </label>
 </div>
 <div class="grid">
@@ -1065,8 +1065,9 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial
 #tabs button.active { background: #fff; color: var(--primary); border-bottom: 3px solid var(--primary); }
 .panel { padding: 20px; }
 .grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.field { display: inline-flex; align-items: center; gap: 4px; background: #f8f9fa; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 11px; }
-input[type="number"], input[type="text"], select { width: 130px !important; padding: 4px 6px; border: 1px solid #c8c6c4; border-radius: 4px; font-family: Arial, sans-serif !important; font-size: 12px; background: #fff; text-align: center; box-sizing: border-box; }
+.field { display: inline-flex; align-items: center; gap: 5px; background: #f8f9fa; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 11px; white-space: nowrap; }
+.field > span { flex-shrink: 0; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+input[type="number"], input[type="text"], select { width: 150px !important; padding: 4px 6px; border: 1px solid #c8c6c4; border-radius: 4px; font-family: Arial, sans-serif !important; font-size: 12px; background: #fff; text-align: center; box-sizing: border-box; }
 input.table-input[type="text"] { width: 75px !important; text-align: right; }
 button { background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
 table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
@@ -1102,8 +1103,7 @@ navigator.serviceWorker.register('./sw.js').catch(error => console.warn('SW ثب
 }
 
 /* ============================================================
-   تابع چاپ: HTML کامل گزارش + یک صفحه A4 + درخواست نام و آدرس
-   با استفاده از پلاگین @bcyesil/capacitor-plugin-printer@0.0.5
+   تابع چاپ: یک صفحه A4 + فقط نام فایل
    ============================================================ */
 async function printFullReport() {
   let step5 = null;
@@ -1116,17 +1116,14 @@ async function printFullReport() {
   const targetStrength = getTargetStrength();
   const sharesInfo = getSharesInfo();
 
-  // --- درخواست نام و آدرس از کاربر ---
-  const userNameRaw = prompt('لطفاً نام خود را وارد کنید (برای درج در گزارش):', data.reportUserName || '');
-  if (userNameRaw === null) return;
-  const userName = userNameRaw.trim();
-
-  const userAddressRaw = prompt('لطفاً آدرس/شرکت خود را وارد کنید (برای درج در گزارش):', data.reportUserAddress || '');
-  if (userAddressRaw === null) return;
-  const userAddress = userAddressRaw.trim();
-
-  data.reportUserName = userName;
-  data.reportUserAddress = userAddress;
+  // فقط نام فایل (نه نام شخص، نه آدرس)
+  const fileNameRaw = prompt(
+    'نام فایل گزارش را وارد کنید:',
+    data.reportFileName || (data.projectName ? data.projectName : 'گزارش-طرح-مخلوط-بتن')
+  );
+  if (fileNameRaw === null) return;
+  const reportFileName = fileNameRaw.trim() || 'گزارش-طرح-مخلوط-بتن';
+  data.reportFileName = reportFileName;
   save();
 
   const gradingSvg = renderGradingChart(combined)
@@ -1167,12 +1164,6 @@ async function printFullReport() {
   const docTitle = projectName ? `گزارش طرح مخلوط بتن — ${projectName}` : 'گزارش طرح مخلوط بتن';
   const today = new Date().toLocaleDateString('fa-IR');
 
-  const headerInfo = `
-    <div><strong>نام:</strong> ${userName ? escapeHtml(userName) : '—'}</div>
-    <div><strong>آدرس:</strong> ${userAddress ? escapeHtml(userAddress) : '—'}</div>
-    <div><strong>تاریخ:</strong> ${today}</div>
-  `;
-
   const html = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -1180,66 +1171,73 @@ async function printFullReport() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(docTitle)}</title>
 <style>
-  @page { size: A4 portrait; margin: 6mm; }
+  @page { size: A4 portrait; margin: 5mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: #fff; }
   body {
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-    font-size: 7.5px;
+    font-size: 10.5px;
     color: #111;
     direction: rtl;
-    line-height: 1.15;
+    line-height: 1.35;
   }
-  .sheet { padding: 2mm 3mm; }
+  .sheet { padding: 2mm 3mm; min-height: 287mm; display: flex; flex-direction: column; }
+
   .header {
-    border-bottom: 1.2px solid #0078d4;
-    padding-bottom: 2px;
-    margin-bottom: 3px;
+    border-bottom: 1.5px solid #0078d4;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 8px;
   }
-  .header-title { font-size: 11px; font-weight: bold; color: #0078d4; }
-  .header-info { font-size: 7px; text-align: left; line-height: 1.25; }
+  .header-title { font-size: 15px; font-weight: bold; color: #0078d4; }
+  .header-info { font-size: 9px; text-align: left; line-height: 1.4; }
   .header-info div { margin-bottom: 1px; }
+
   h2 {
-    font-size: 8px;
+    font-size: 11px;
     background: #eef2f7;
-    padding: 1.5px 5px;
-    border-right: 2.5px solid #0078d4;
-    margin: 2.5px 0 2px;
+    padding: 3px 8px;
+    border-right: 3px solid #0078d4;
+    margin: 6px 0 4px;
     font-weight: bold;
   }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 2px; font-size: 7px; }
-  th, td { border: 0.5px solid #888; padding: 1px 3px; text-align: right; line-height: 1.1; }
-  th { background: #e2e8f0; font-weight: bold; font-size: 6.8px; }
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 9.5px; }
+  th, td { border: 0.6px solid #999; padding: 2.5px 5px; text-align: right; line-height: 1.25; }
+  th { background: #e2e8f0; font-weight: bold; font-size: 9.5px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+
   .chart-box {
-    border: 0.5px solid #bbb;
-    padding: 2px;
+    border: 0.6px solid #bbb;
+    padding: 3px;
     page-break-inside: avoid;
     background: #fff;
   }
   .chart-box svg { width: 100%; height: auto; display: block; }
+
   .result-card {
     background: #f1f5f9;
-    border: 0.5px solid #cbd5e1;
-    padding: 2px;
-    border-radius: 2px;
+    border: 0.6px solid #cbd5e1;
+    padding: 4px;
+    border-radius: 3px;
     text-align: center;
-    font-size: 7px;
+    font-size: 9px;
   }
-  .result-card .label { font-size: 6px; color: #555; }
-  .result-card .value { font-size: 8.5px; font-weight: bold; color: #0078d4; }
+  .result-card .label { font-size: 8px; color: #555; }
+  .result-card .value { font-size: 11.5px; font-weight: bold; color: #0078d4; }
+
   .footer {
-    margin-top: 3px;
+    margin-top: auto;
+    padding-top: 4px;
     text-align: center;
-    font-size: 6px;
+    font-size: 8px;
     color: #666;
-    border-top: 0.5px solid #ccc;
-    padding-top: 2px;
+    border-top: 0.6px solid #ccc;
   }
 </style>
 </head>
@@ -1249,19 +1247,36 @@ async function printFullReport() {
   <div class="header">
     <div class="header-title">${escapeHtml(docTitle)}</div>
     <div class="header-info">
-      ${headerInfo}
+      <div><strong>تاریخ:</strong> ${today}</div>
+      <div><strong>نام فایل:</strong> ${escapeHtml(reportFileName)}</div>
     </div>
   </div>
 
   <h2>۱. اطلاعات اولیه</h2>
   <table>
-    <tr><th>مقاومت مشخصه</th><td>${fmt(num('strength'), 1)} MPa</td><th>رده اسلامپ</th><td>${data.slumpClass}</td><th>اسلامپ</th><td>${data.slump} mm</td><th>NMSA</th><td>${data.msa} mm</td></tr>
-    <tr><th>رده سیمان</th><td>${data.cementClass}</td><th>هوا</th><td>${fmt(num('air'), 1)}٪</td><th>افزودنی</th><td>${data.admixture === 'none' ? 'ندارد' : data.admixture}</td><th>درصد افزودنی</th><td>${fmt(num('admixturePct'), 1)}٪</td></tr>
+    <tr>
+      <th>مقاومت مشخصه</th><td>${fmt(num('strength'), 1)} MPa</td>
+      <th>رده اسلامپ</th><td>${data.slumpClass}</td>
+      <th>اسلامپ</th><td>${data.slump} mm</td>
+      <th>NMSA</th><td>${data.msa} mm</td>
+    </tr>
+    <tr>
+      <th>رده سیمان</th><td>${data.cementClass}</td>
+      <th>هوا</th><td>${fmt(num('air'), 1)}٪</td>
+      <th>افزودنی</th><td>${data.admixture === 'none' ? 'ندارد' : data.admixture}</td>
+      <th>درصد افزودنی</th><td>${fmt(num('admixturePct'), 1)}٪</td>
+    </tr>
   </table>
 
   <h2>۲. مقاومت هدف</h2>
   <table>
-    <tr><th>رتبه کارگاه</th><td>${data.workshopRank}</td><th>S</th><td>${target ? fmt(target.S) + ' MPa' : '—'}</td><th>fcm1</th><td>${target ? fmt(target.fcm1) : '—'}</td><th>fcm2</th><td>${target ? fmt(target.fcm2) : '—'}</td><th>هدف</th><td><strong>${targetStrength ? fmt(targetStrength) + ' MPa' : '—'}</strong></td></tr>
+    <tr>
+      <th>رتبه کارگاه</th><td>${data.workshopRank}</td>
+      <th>S</th><td>${target ? fmt(target.S) + ' MPa' : '—'}</td>
+      <th>fcm1</th><td>${target ? fmt(target.fcm1) : '—'}</td>
+      <th>fcm2</th><td>${target ? fmt(target.fcm2) : '—'}</td>
+      <th>هدف</th><td><strong>${targetStrength ? fmt(targetStrength) + ' MPa' : '—'}</strong></td>
+    </tr>
   </table>
 
   <h2>۳. مشخصات سنگدانه‌ها</h2>
@@ -1281,19 +1296,19 @@ async function printFullReport() {
     </div>
   </div>
 
-  <div class="two-col" style="margin-top:2px;">
+  <div class="two-col" style="margin-top:6px;">
     <div>
       <h2>۶. آب آزاد (F.M. = ${fmt(waterCalc.fm)})</h2>
       <div class="chart-box">${waterSvg}</div>
     </div>
     <div>
       <h2>۷. نتایج نهایی</h2>
-      <div class="three-col" style="margin-bottom:2px;">
+      <div class="three-col" style="margin-bottom:4px;">
         <div class="result-card"><div class="label">سیمان</div><div class="value">${fmt(c, 1)} kg</div></div>
         <div class="result-card"><div class="label">آب مؤثر</div><div class="value">${fmt(w, 1)} kg</div></div>
         <div class="result-card"><div class="label">افزودنی</div><div class="value">${fmt(admMass, 2)} kg</div></div>
       </div>
-      <div class="three-col" style="margin-bottom:2px;">
+      <div class="three-col" style="margin-bottom:4px;">
         <div class="result-card"><div class="label">ماسه SSD</div><div class="value">${fmt(ssdSand, 0)} kg</div></div>
         <div class="result-card"><div class="label">شن SSD</div><div class="value">${fmt(ssdGravel, 0)} kg</div></div>
         <div class="result-card"><div class="label">خشک کل</div><div class="value">${step5 ? fmt(step5.drySand + step5.dryGravel, 0) : '—'} kg</div></div>
@@ -1313,20 +1328,19 @@ async function printFullReport() {
   </div>
 
   <div class="footer">
-    ${userName ? 'تهیه‌کننده: ' + escapeHtml(userName) + ' | ' : ''}${today}${projectName ? ' | ' + escapeHtml(projectName) : ''}
+    ${today}${projectName ? ' | ' + escapeHtml(projectName) : ''} | ${escapeHtml(reportFileName)}
   </div>
 
 </div>
 </body>
 </html>`;
 
-  // === چاپ از طریق پلاگین @bcyesil/capacitor-plugin-printer ===
   try {
     const PrinterPlugin = window.Capacitor?.Plugins?.Printer;
     if (PrinterPlugin && typeof PrinterPlugin.print === 'function') {
       await PrinterPlugin.print({
         content: html,
-        name: 'Beton-Report',
+        name: reportFileName,
         orientation: 'portrait'
       });
       return;
