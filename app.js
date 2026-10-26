@@ -353,9 +353,9 @@ ${result ? `<p>انحراف معیار S: <strong>${result.S.toFixed(2)} MPa</st
 ${data.targetMethod === 'manual'
   ? numberInput('targetStrengthManual', 'مقاومت هدف طرح (MPa)', 0.1, 'min="0"')
   : result
-    ? `<p>fcm1 = fc + 1.34 × S = <strong>${Math.round(result.fcm1)}</strong> MPa</p>
-       <p>fcm2 = 0.9 × fc + 2.33 × S = <strong>${Math.round(result.fcm2)}</strong> MPa</p>
-       <p>مقاومت هدف انتخابی: <strong>${Math.round(result.target)} MPa</strong></p>`
+    ? `<p>fcm1 = fc + 1.34 × S = <strong>${result.fcm1.toFixed(2)}</strong> MPa</p>
+       <p>fcm2 = 0.9 × fc + 2.33 × S = <strong>${result.fcm2.toFixed(2)}</strong> MPa</p>
+       <p>مقاومت هدف انتخابی: <strong>${result.target.toFixed(2)} MPa</strong></p>`
     : `<p class="hint">محاسبه خودکار در دسترس نیست.</p>`}
 `;
 }
@@ -805,7 +805,7 @@ ${isLimited ? `<div style="background:white; padding:10px; border-radius:6px; ma
 <div style="display:flex; flex-wrap:wrap; gap:8px; font-size:11px; margin-bottom:10px;"><div>سیمان اضافی: <strong>${extraC.toFixed(2)}</strong> kg</div><div>آب اضافی: <strong>${extraW.toFixed(2)}</strong> kg</div></div>
 </div>` : ''}
 <div style="display: flex; justify-content: center; width: 100%; margin-top: 15px;">
-<select id="cement-action" style="width: 360px; height: 45px; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; font-family: inherit; font-size: 13px; background: white; color: #92400e; text-align: center;">
+<select id="cement-action" style="width: 720px; height: 45px; padding: 10px; border-radius: 8px; border: 1px solid #fcd34d; font-family: inherit; font-size: 13px; background: white; color: #92400e; text-align: center; max-width: 100%;">
 <option value="" disabled ${data.cementAction === '' ? 'selected' : ''}>--- انتخاب کنید ---</option>
 ${isLimited ? `<option value="proceed" ${data.cementAction === 'proceed' ? 'selected' : ''}>1. نادیده گرفتن و ادامه</option>` : ''}
 ${isLimited ? `<option value="grading" ${data.cementAction === 'grading' ? 'selected' : ''}>2. اصلاح بافت دانه‌بندی</option>` : ''}
@@ -838,28 +838,15 @@ const finalDensity = c + totalWater + totalDry;
 const Vassd = result.aggregateVolume;
 
 const formulaHtml = `
-<div style="text-align: center; direction: ltr; font-size: 12px; margin-bottom: 12px; font-family: monospace;">
-  V<sub>Assd</sub> = 1 &minus; 
-  <span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; margin:0 4px;">
-    <span style="border-bottom:1px solid #333; padding:0 4px;">${c.toFixed(2)}</span>
-    <span style="padding:0 4px;">1000 &times; ${data.sgCement}</span>
-  </span>
-  &minus; 
-  <span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; margin:0 4px;">
-    <span style="border-bottom:1px solid #333; padding:0 4px;">${w.toFixed(2)}</span>
-    <span style="padding:0 4px;">1000</span>
-  </span>
-  &minus; ${air.toFixed(3)}
-  ${data.admixture !== 'none' ? `&minus; <span style="display:inline-flex; flex-direction:column; vertical-align:middle; text-align:center; margin:0 4px;"><span style="border-bottom:1px solid #333; padding:0 4px;">${result.admixtureMass.toFixed(2)}</span><span style="padding:0 4px;">1000 &times; ${data.sgAdmixture}</span></span>` : ''}
-  <div style="margin-top: 8px; font-weight: bold; background: #f1f5f9; display: inline-block; padding: 4px 12px; border-radius: 4px;">
-    = ${Vassd.toFixed(3)} m³
-  </div>
+<div style="text-align: center; direction: ltr; font-size: 11px; margin-bottom: 12px; font-family: monospace; white-space: nowrap; overflow-x: auto;">
+  V<sub>Assd</sub> = 1 &minus; (${c.toFixed(2)} / (1000&times;${data.sgCement})) &minus; (${w.toFixed(2)} / 1000) &minus; ${air.toFixed(3)}
+  ${data.admixture !== 'none' ? `&minus; (${result.admixtureMass.toFixed(2)} / (1000&times;${data.sgAdmixture}))` : ''}
+  = <strong>${Vassd.toFixed(3)} m³</strong>
 </div>`;
 
 return `<div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1;">
 <h2 style="text-align: center; color: #1e293b; margin-bottom: 20px; font-size: 18px;">گزارش نهایی طرح مخلوط بتن</h2>
 <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-<h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">محاسبه حجم مطلق (V_Assd)</h3>
 ${formulaHtml}
 </div>
 <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
@@ -880,8 +867,8 @@ ${formulaHtml}
 <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;"><div style="font-size: 11px; color: #64748b;">جرم خشک (Ad)</div><strong style="font-size: 16px;">${totalDry.toFixed(0)} kg/m³</strong></div>
 <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #bae6fd;"><div style="font-size: 11px; color: #0369a1;">چگالی نهایی (G)</div><strong style="font-size: 16px; color: #0284c7;">${finalDensity.toFixed(0)} kg/m³</strong></div>
 </div></div>
-<div style="margin-top: 15px; text-align: center; font-size: 11px; color: #64748b; direction: rtl; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-جمع وزن‌ها: سیمان ${c.toFixed(0)} + آب ${w.toFixed(0)} + ماسه ${result.drySand.toFixed(0)} + شن ${result.dryGravel.toFixed(0)} ${data.admixture !== 'none' ? `+ افزودنی ${result.admixtureMass.toFixed(1)}` : ''} = ${finalDensity.toFixed(0)} kg/m³
+<div style="margin-top: 15px; text-align: center; font-size: 11px; color: #64748b; direction: ltr; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+C: ${c.toFixed(0)} + W: ${w.toFixed(0)} + Sand: ${result.drySand.toFixed(0)} + Gravel: ${result.dryGravel.toFixed(0)} ${data.admixture !== 'none' ? `+ Adm: ${result.admixtureMass.toFixed(1)}` : ''} = G: ${finalDensity.toFixed(0)} kg/m³
 </div>
 </div>`;
 }
