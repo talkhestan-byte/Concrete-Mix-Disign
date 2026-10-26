@@ -2432,14 +2432,12 @@ function printFullReport() {
   @page { size: A4; margin: 10mm; }
   * { box-sizing: border-box; }
   html, body { background: #eef2f7; }
-  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 70px 10px 20px; direction: rtl; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 60px 10px 20px; direction: rtl; }
   .toolbar { position: fixed; top: 0; right: 0; left: 0; background: #0078d4; color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; gap: 8px; flex-wrap: wrap; }
   .toolbar .title { font-weight: bold; font-size: 13px; }
-  .toolbar .actions { display: flex; gap: 8px; flex-wrap: wrap; }
   .toolbar button { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4); padding: 8px 16px; border-radius: 6px; font-family: inherit; font-size: 13px; cursor: pointer; transition: background 0.2s; }
   .toolbar button:hover { background: rgba(255,255,255,0.3); }
   .toolbar button.primary { background: #fff; color: #0078d4; font-weight: bold; }
-  .toolbar button.primary:hover { background: #e6f0fb; }
   .sheet { background: #fff; max-width: 210mm; margin: 0 auto; padding: 12mm; box-shadow: 0 4px 16px rgba(0,0,0,0.12); border-radius: 4px; }
   h1 { font-size: 16px; text-align: center; border-bottom: 2px solid #0078d4; padding-bottom: 6px; margin: 0 0 10px; color: #0078d4; }
   h2 { font-size: 12px; background: #eef2f7; padding: 4px 8px; border-right: 3px solid #0078d4; margin: 10px 0 6px; }
@@ -2465,10 +2463,9 @@ function printFullReport() {
 <body>
 
 <div class="toolbar">
-  <div class="title">پیش‌نمایش برگه چاپ — ${escapeHtml(projectName || 'طرح مخلوط بتن')}</div>
-  <div class="actions">
+  <div class="title">گزارش آماده است — برای چاپ دکمه را بزنید</div>
+  <div>
     <button class="primary" id="btnPrint">🖨️ چاپ / ذخیره PDF</button>
-    <button id="btnClose">✕ بستن و بازگشت</button>
   </div>
 </div>
 
@@ -2549,67 +2546,62 @@ function printFullReport() {
   document.getElementById('btnPrint').addEventListener('click', function() {
     window.print();
   });
-  document.getElementById('btnClose').addEventListener('click', function() {
-    try { window.close(); } catch(e) {}
-    if (!window.closed) {
-      history.length > 1 ? history.back() : window.location.href = 'about:blank';
-    }
-  });
 </script>
 </body>
 </html>`;
 
-    // ایجاد پنجره چاپ بدون استفاده از Blob
-  let printFrame = document.getElementById('beton-print-frame');
+  // === استراتژی چندلایه برای APK/WebView ===
+  try {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const fileName = `beton-report-${new Date().toISOString().slice(0,10)}.html`;
 
-  if (printFrame) {
-    printFrame.remove();
-  }
-
-  printFrame = document.createElement('iframe');
-  printFrame.id = 'beton-print-frame';
-
-  printFrame.style.position = 'fixed';
-  printFrame.style.left = '0';
-  printFrame.style.top = '0';
-  printFrame.style.width = '100%';
-  printFrame.style.height = '100%';
-  printFrame.style.border = 'none';
-  printFrame.style.zIndex = '999999';
-  printFrame.style.background = 'white';
-
-  document.body.appendChild(printFrame);
-
-  const doc = printFrame.contentDocument ||
-              printFrame.contentWindow.document;
-
-  doc.open();
-  doc.write(html);
-  doc.close();
-
-  // اتصال دکمه چاپ
-  const printBtn = doc.getElementById('btnPrint');
-
-  if (printBtn) {
-    printBtn.onclick = function () {
-      try {
-        printFrame.contentWindow.focus();
-        printFrame.contentWindow.print();
-      } catch (error) {
-        alert('امکان اجرای چاپ در این محیط وجود ندارد.');
+    if (navigator.canShare && typeof File !== 'undefined') {
+      const file = new File([blob], fileName, { type: 'text/html' });
+      if (navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: docTitle
+        }).then(() => {
+          // موفق
+        }).catch((err) => {
+          if (err && err.name === 'AbortError') return;
+          downloadHtml(blob, fileName);
+        });
+        return;
       }
-    };
-  }
-
-  // اتصال دکمه بازگشت
-  const closeBtn = doc.getElementById('btnClose');
-
-  if (closeBtn) {
-    closeBtn.onclick = function () {
-      printFrame.remove();
-    };
-  }
     }
+
+    downloadHtml(blob, fileName);
+  } catch (e) {
+    alert('خطا در تولید فایل: ' + (e.message || e));
+  }
+
+  function downloadHtml(blob, fileName) {
+    try {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        try { document.body.removeChild(a); } catch(e) {}
+        try { URL.revokeObjectURL(url); } catch(e) {}
+      }, 1000);
+      alert('فایل گزارش ذخیره شد. برای مشاهده و چاپ، فایل "' + fileName + '" را در پوشه Downloads با Chrome باز کنید.');
+    } catch (e) {
+      try {
+        const url = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+        window.location.href = url;
+      } catch (e2) {
+        alert('متأسفانه ذخیره فایل ممکن نشد. لطفاً از طریق مرورگر برنامه را باز کنید.');
+      }
+    }
+  }
+}
+
 function initNewMenu() {
 const menuHTML = `<div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
 <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
@@ -2717,4 +2709,4 @@ if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
 initNewMenu();
-                       }
+}
