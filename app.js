@@ -2374,56 +2374,60 @@ navigator.serviceWorker
 منوی سه نقطه‌ای
 ========================================= */
 
-function printFullReport() {
-let step5 = null;
-try { step5 = new Step5().run(); } catch (err) { step5 = null; }
-const target = targetCalculations();
-const combined = combinedGrading();
-const fm = finenessModulus(combined);
-const waterCalc = computeWaterFromCurve();
-const activeCurve = getActiveCurve();
-const targetStrength = getTargetStrength();
-const sharesInfo = getSharesInfo();
+/* ============================================================
+تابع چاپ برای APK ساخته‌شده با Capacitor
+با استفاده از پلاگین @capgo/capacitor-printer
+============================================================ */
+async function printFullReport() {
+  let step5 = null;
+  try { step5 = new Step5().run(); } catch (err) { step5 = null; }
+  const target = targetCalculations();
+  const combined = combinedGrading();
+  const fm = finenessModulus(combined);
+  const waterCalc = computeWaterFromCurve();
+  const activeCurve = getActiveCurve();
+  const targetStrength = getTargetStrength();
+  const sharesInfo = getSharesInfo();
 
-const gradingSvg = renderGradingChart(combined)
-  .replace(/<h3>.*?<\/h3>/, '')
-  .replace(/<div class="table-scroll">/, '')
-  .replace(/<\/div>$/, '');
+  const gradingSvg = renderGradingChart(combined)
+    .replace(/<h3>.*?<\/h3>/, '')
+    .replace(/<div class="table-scroll">/, '')
+    .replace(/<\/div>$/, '');
 
-const wcSvg = renderWCChart()
-  .replace(/<h3>.*?<\/h3>/, '')
-  .replace(/<div class="table-scroll">/, '')
-  .replace(/<\/div>[\s\S]*$/, '');
+  const wcSvg = renderWCChart()
+    .replace(/<h3>.*?<\/h3>/, '')
+    .replace(/<div class="table-scroll">/, '')
+    .replace(/<\/div>[\s\S]*$/, '');
 
-const waterSvg = renderWaterChart(waterCalc.fm, waterCalc.water, waterCalc.isCrushed, num('slump'))
-  .replace(/<h3>.*?<\/h3>/, '')
-  .replace(/<div class="table-scroll">/, '')
-  .replace(/<\/div>$/, '');
+  const waterSvg = renderWaterChart(waterCalc.fm, waterCalc.water, waterCalc.isCrushed, num('slump'))
+    .replace(/<h3>.*?<\/h3>/, '')
+    .replace(/<div class="table-scroll">/, '')
+    .replace(/<\/div>$/, '');
 
-const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v).toFixed(d) : '—';
+  const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v).toFixed(d) : '—';
 
-const aggRows = data.aggregates.slice(0, data.aggregateCount).map((a, i) => `
-  <tr>
-    <td>${escapeHtml(a.name)}</td>
-    <td>${fmt(a.sg)}</td>
-    <td>${fmt(a.waterAbs)}</td>
-    <td>${fmt(a.fracture)}</td>
-    <td>${sharesInfo.shares[i] ?? '—'}</td>
-  </tr>`).join('');
+  const aggRows = data.aggregates.slice(0, data.aggregateCount).map((a, i) => `
+    <tr>
+      <td>${escapeHtml(a.name)}</td>
+      <td>${fmt(a.sg)}</td>
+      <td>${fmt(a.waterAbs)}</td>
+      <td>${fmt(a.fracture)}</td>
+      <td>${sharesInfo.shares[i] ?? '—'}</td>
+    </tr>`).join('');
 
-const c = step5 ? step5.cement : null;
-const w = step5 ? step5.water : null;
-const drySand = step5 ? step5.drySand : null;
-const dryGravel = step5 ? step5.dryGravel : null;
-const ssdSand = step5 ? step5.ssdSand : null;
-const ssdGravel = step5 ? step5.ssdGravel : null;
-const admMass = step5 ? step5.admixtureMass : 0;
+  const c = step5 ? step5.cement : null;
+  const w = step5 ? step5.water : null;
+  const drySand = step5 ? step5.drySand : null;
+  const dryGravel = step5 ? step5.dryGravel : null;
+  const ssdSand = step5 ? step5.ssdSand : null;
+  const ssdGravel = step5 ? step5.ssdGravel : null;
+  const admMass = step5 ? step5.admixtureMass : 0;
 
-const projectName = (data.projectName || '').trim();
-const docTitle = projectName ? `گزارش طرح مخلوط بتن — ${projectName}` : 'گزارش طرح مخلوط بتن';
-const footerText = `${projectName ? escapeHtml(projectName) + ' — ' : ''}تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
+  const projectName = (data.projectName || '').trim();
+  const docTitle = projectName ? `گزارش طرح مخلوط بتن — ${projectName}` : 'گزارش طرح مخلوط بتن';
+  const footerText = `${projectName ? escapeHtml(projectName) + ' — ' : ''}تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
 
-const html = `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -2432,16 +2436,8 @@ const html = `<!DOCTYPE html>
 <style>
   @page { size: A4; margin: 10mm; }
   * { box-sizing: border-box; }
-  html, body { background: #eef2f7; }
-  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 60px 10px 20px; direction: rtl; }
-  .toolbar { position: fixed; top: 0; right: 0; left: 0; background: #0078d4; color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
-  .toolbar .title { font-weight: bold; font-size: 13px; }
-  .toolbar .actions { display: flex; gap: 8px; }
-  .toolbar button { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4); padding: 6px 14px; border-radius: 6px; font-family: inherit; font-size: 12px; cursor: pointer; transition: background 0.2s; }
-  .toolbar button:hover { background: rgba(255,255,255,0.3); }
-  .toolbar button.primary { background: #fff; color: #0078d4; font-weight: bold; }
-  .toolbar button.primary:hover { background: #e6f0fb; }
-  .sheet { background: #fff; max-width: 210mm; margin: 0 auto; padding: 12mm; box-shadow: 0 4px 16px rgba(0,0,0,0.12); border-radius: 4px; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 10px; direction: rtl; }
+  .sheet { background: #fff; max-width: 210mm; margin: 0 auto; padding: 12mm; }
   h1 { font-size: 16px; text-align: center; border-bottom: 2px solid #0078d4; padding-bottom: 6px; margin: 0 0 10px; color: #0078d4; }
   h2 { font-size: 12px; background: #eef2f7; padding: 4px 8px; border-right: 3px solid #0078d4; margin: 10px 0 6px; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px; }
@@ -2455,24 +2451,9 @@ const html = `<!DOCTYPE html>
   .result-card .value { font-size: 13px; font-weight: bold; color: #0078d4; }
   .page-break { page-break-before: always; }
   .footer { margin-top: 15px; text-align: center; font-size: 9px; color: #888; border-top: 1px solid #ccc; padding-top: 5px; }
-  @media print {
-    @page { size: A4; margin: 10mm; }
-    html, body { background: #fff; padding: 0; }
-    .toolbar { display: none !important; }
-    .sheet { box-shadow: none; padding: 0; max-width: none; margin: 0; border-radius: 0; }
-  }
 </style>
 </head>
 <body>
-
-<div class="toolbar">
-  <div class="title">پیش‌نمایش برگه چاپ — ${escapeHtml(projectName || 'طرح مخلوط بتن')}</div>
-  <div class="actions">
-    <button class="primary" onclick="window.print()">🖨️ چاپ / ذخیره PDF</button>
-    <button onclick="window.parent.postMessage({type:'close-print-preview'}, '*')">✕ بستن و بازگشت</button>
-  </div>
-</div>
-
 <div class="sheet">
 
 <h1>گزارش طرح مخلوط بتن</h1>
@@ -2487,8 +2468,8 @@ const html = `<!DOCTYPE html>
 
 <h2>۲. مقاومت هدف</h2>
 <table>
-  <tr><th>رتبه کارگاه</th><td>${data.workshopRank}</td><th>انحراف معیار S</th><td>${target ? fmt(target.S) + ' MPa' : '—'}</td><th>روش تعیین</th><td>${data.targetMethod === 'manual' ? 'دستی' : 'خودکار'}</td></tr>
-  <tr><th>fcm1 = fc + 1.34S</th><td>${target ? fmt(target.fcm1) : '—'}</td><th>fcm2 = 0.9fc + 2.33S</th><td>${target ? fmt(target.fcm2) : '—'}</td><th>مقاومت هدف</th><td><strong>${targetStrength ? fmt(targetStrength) + ' MPa' : '—'}</strong></td></tr>
+  <tr><th>رتبه کارگاه</th><td>${data.workshopRank}</td><th>انحراف معیار S</th><td>${target ? fmt(target.S) + ' MPa' : '—'}</td><th>روش</th><td>${data.targetMethod === 'manual' ? 'دستی' : 'خودکار'}</td></tr>
+  <tr><th>fcm1</th><td>${target ? fmt(target.fcm1) : '—'}</td><th>fcm2</th><td>${target ? fmt(target.fcm2) : '—'}</td><th>مقاومت هدف</th><td><strong>${targetStrength ? fmt(targetStrength) + ' MPa' : '—'}</strong></td></tr>
 </table>
 
 <h2>۳. مشخصات سنگدانه‌ها</h2>
@@ -2497,7 +2478,7 @@ const html = `<!DOCTYPE html>
   ${aggRows}
 </table>
 
-<h2>۴. منحنی دانه‌بندی و مدول نرمی</h2>
+<h2>۴. منحنی دانه‌بندی</h2>
 <div class="chart-box">${gradingSvg}</div>
 <p style="text-align:center; margin:4px 0;"><strong>مدول نرمی مخلوط (F.M.): ${fmt(fm)}</strong></p>
 
@@ -2505,20 +2486,20 @@ const html = `<!DOCTYPE html>
 
 <h2>۵. نسبت آب به سیمان</h2>
 <table>
-  <tr><th>W/C انتخابی</th><td>${fmt(num('wc'), 3)}</td><th>مقاومت متناظر</th><td>${fmt(num('step1Strength'), 1)} MPa</td><th>منحنی فعال</th><td>${activeCurve ? activeCurve.name : '—'}</td></tr>
+  <tr><th>W/C</th><td>${fmt(num('wc'), 3)}</td><th>مقاومت متناظر</th><td>${fmt(num('step1Strength'), 1)} MPa</td><th>منحنی</th><td>${activeCurve ? activeCurve.name : '—'}</td></tr>
 </table>
 <div class="chart-box">${wcSvg}</div>
 
 <h2>۶. آب آزاد</h2>
 <table>
-  <tr><th>مدول نرمی</th><td>${fmt(waterCalc.fm)}</td><th>نوع سنگدانه</th><td>${waterCalc.isCrushed ? 'تیزگوشه' : 'گردگوشه'}</td><th>آب آزاد پایه</th><td>${fmt(waterCalc.water, 1)} kg/m³</td></tr>
-  <tr><th>درصد کاهش آب</th><td>${data.waterReductionPct || 0}٪</td><th>آب مؤثر</th><td colspan="3">${fmt(effectiveWater(), 1)} kg/m³</td></tr>
+  <tr><th>مدول نرمی</th><td>${fmt(waterCalc.fm)}</td><th>نوع</th><td>${waterCalc.isCrushed ? 'تیزگوشه' : 'گردگوشه'}</td><th>آب آزاد پایه</th><td>${fmt(waterCalc.water, 1)} kg/m³</td></tr>
+  <tr><th>درصد کاهش</th><td>${data.waterReductionPct || 0}٪</td><th>آب مؤثر</th><td colspan="3">${fmt(effectiveWater(), 1)} kg/m³</td></tr>
 </table>
 <div class="chart-box">${waterSvg}</div>
 
 <div class="page-break"></div>
 
-<h2>۷. نتایج نهایی طرح مخلوط</h2>
+<h2>۷. نتایج نهایی</h2>
 <div class="result-grid">
   <div class="result-card"><div class="label">سیمان</div><div class="value">${fmt(c, 1)} kg</div></div>
   <div class="result-card"><div class="label">آب مؤثر</div><div class="value">${fmt(w, 1)} kg</div></div>
@@ -2548,44 +2529,24 @@ const html = `<!DOCTYPE html>
 </body>
 </html>`;
 
-  // حذف هرگونه preview قبلی
-  const existing = document.getElementById('print-preview-overlay');
-  if (existing) existing.remove();
+  // === چاپ از طریق پلاگین Capacitor ===
+  try {
+    // پلاگین به صورت global در دسترس است اگر در index.html یا از طریق Capacitor بارگذاری شده باشد
+    const PrinterPlugin = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Printer)
+      || (window.Printer);
 
-  // ساخت overlay + iframe
-  const overlay = document.createElement('div');
-  overlay.id = 'print-preview-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:#0f172a;z-index:2147483647;display:flex;flex-direction:column;';
-
-  const iframe = document.createElement('iframe');
-  iframe.id = 'print-preview-iframe';
-  iframe.style.cssText = 'flex:1;width:100%;border:0;background:#eef2f7;';
-  iframe.setAttribute('srcdoc', html);
-
-  overlay.appendChild(iframe);
-  document.body.appendChild(overlay);
-
-  // گوش دادن به پیام از داخل iframe برای بستن
-  const closeHandler = (event) => {
-    if (event && event.data && event.data.type === 'close-print-preview') {
-      overlay.remove();
-      window.removeEventListener('message', closeHandler);
-      window.removeEventListener('keydown', escHandler);
+    if (PrinterPlugin && typeof PrinterPlugin.printHtml === 'function') {
+      await PrinterPlugin.printHtml({ html: html, name: 'Beton-Report' });
+      return;
     }
-  };
 
-  // Escape هم preview را ببندد
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      overlay.remove();
-      window.removeEventListener('message', closeHandler);
-      window.removeEventListener('keydown', escHandler);
-    }
-  };
-
-  window.addEventListener('message', closeHandler);
-  window.addEventListener('keydown', escHandler);
-}
+    // اگر پلاگین موجود نبود، پیام خطا بده
+    alert('پلاگین چاپ در دسترس نیست. لطفاً APK را با پلاگین Capacitor Printer مجدداً بسازید.');
+  } catch (error) {
+    console.error('خطا در چاپ:', error);
+    alert('خطا در چاپ: ' + (error.message || error));
+  }
+                                                                                    }
 
 function initNewMenu() {
 const menuHTML = `<div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
