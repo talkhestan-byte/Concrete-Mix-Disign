@@ -377,7 +377,7 @@ return `
   ${selectInput('aggregateCount', 'تعداد انواع سنگدانه', [{ value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }])}
   ${selectInput('msa', 'حداکثر اندازه اسمی سنگدانه NMSA', [{ value: 9.5, label: '9.5' }, { value: 12.5, label: '12.5' }, { value: 19, label: '19' }, { value: 25, label: '25' }])}
 </div>
-<div class="table-scroll" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+<div class="table-scroll">
   <table class="aggregate-table">
     <thead><tr><th style="width: 140px;">مشخصات</th>${headers}</tr></thead>
     <tbody>${nameRow}${sgRow}${waterAbsRow}${fractureRow}${sieveRows}</tbody>
@@ -760,7 +760,6 @@ ${renderWaterChart(fm, water, isCrushed, num('slump'))}
 <table><tbody>
 <tr><td>1. مدول نرمی مخلوط سنگدانه</td><td>${Number.isFinite(fm) ? fm.toFixed(2) : '—'}</td></tr>
 <tr><td>2. اسلامپ مشخصه</td><td>${data.slump} mm</td></tr>
-<tr><td>3. درصد شکستگی متوسط</td><td>${Number.isFinite(avgFracture) ? avgFracture.toFixed(1) : '—'}٪ (${isCrushed ? 'تیزگوشه' : 'گردگوشه'})</td></tr>
 <tr><td>4. آب آزاد مورد نیاز حاصل از منحنی (kg/m³)</td><td>${fmt(water)}</td></tr>
 <tr><td>5. درصد کاهش آب ناشی از روان‌کننده (%)</td><td><input type="text" inputmode="decimal" enterkeyhint="next" data-key="waterReductionPct" value="${escapeHtml(data.waterReductionPct ?? '')}" ${data.admixture === 'none' ? 'disabled' : ''} style="width: 80px; padding: 4px;"></td></tr>
 <tr><td>6. مقدار کاهش آب آزاد (kg/m³)</td><td>${fmt(reduction)}</td></tr>
@@ -845,15 +844,14 @@ const Vassd = result.aggregateVolume;
 return `<div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1;">
 <h2 style="text-align: center; color: #1e293b; margin-bottom: 20px; font-size: 18px;">گزارش نهایی طرح مخلوط بتن</h2>
 <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-<h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">محاسبه حجم مطلق</h3>
+<h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">محاسبه حجم مطلق (V_Assd)</h3>
 <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; font-size: 11px; direction: ltr; justify-content: center; font-family: monospace;">
-<div style="text-align: center;">
-<div>V_Assd</div>
-<div>= 1 - (C / (1000 &times; SG_c)) - W - Air - Adm</div>
-<div>= 1 - (${c.toFixed(2)} / (1000 &times; ${data.sgCement})) - ${w.toFixed(2)}/1000 - ${(air * 100).toFixed(2)}/100 ${data.admixture !== 'none' ? `- ${result.admixtureMass.toFixed(2)}/(1000 &times; ${data.sgAdmixture})` : ''}</div>
-<div style="background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-weight: bold; margin-top: 4px;">= ${Vassd.toFixed(3)} m³</div>
+V_Assd = 1 - (C / (1000 × SG_c)) - W/1000 - Air - Adm
 </div>
+<div style="text-align: center; font-size: 11px; direction: ltr; margin-top: 8px; font-family: monospace; background: #f1f5f9; padding: 8px; border-radius: 6px;">
+= 1 - (${c.toFixed(2)} / (1000 × ${data.sgCement})) - ${w.toFixed(2)}/1000 - ${(air * 100).toFixed(2)}/100 ${data.admixture !== 'none' ? `- ${result.admixtureMass.toFixed(2)}/(1000 × ${data.sgAdmixture})` : ''}
 </div>
+<div style="text-align: center; font-size: 12px; margin-top: 10px; font-weight: bold;">= ${Vassd.toFixed(3)} m³</div>
 </div>
 <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
 <h3 style="font-size: 14px; color: #475569; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px;">سنگدانه‌ها در 1m³</h3>
@@ -1210,7 +1208,6 @@ th { background: linear-gradient(180deg, #eef3fa, #e3eaf3); font-weight: 600; co
 tr:nth-child(even) td { background: #fafcff; }
 tr:hover td { background: #eef6ff; }
 
-/* اصلاح فیکس شدن ستون اول در جدول سنگدانه‌ها */
 .aggregate-table th:first-child {
   position: sticky;
   right: 0;
