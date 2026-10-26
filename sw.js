@@ -6,7 +6,6 @@ const ASSETS = [
   './index.html',
   './style.css',
   './app.js',
-  './page3.js',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'
@@ -25,7 +24,7 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(
         keys
-          .filter(key => key.startsWith('beton479-') && key !== CACHE)
+          .filter(key => key.startsWith('Iranian Concrete Mix Disign-') && key !== CACHE)
           .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
