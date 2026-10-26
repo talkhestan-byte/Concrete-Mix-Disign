@@ -280,9 +280,9 @@ const maxDisabled = data.limitMinCementOn;
 return `
 <h2>اطلاعات اولیه طرح</h2>
 <div class="grid">
-  <label class="field" style="width:100%;">
-    <span style="min-width:60px; max-width:60px;">نام طرح</span>
-    <input type="text" enterkeyhint="next" data-key="projectName" value="${escapeHtml(data.projectName ?? '')}" style="width: 420px !important; text-align: right;">
+  <label class="field" style="width:100%; flex-wrap:nowrap;">
+    <span style="flex-shrink:0;">نام طرح</span>
+    <input type="text" enterkeyhint="next" data-key="projectName" value="${escapeHtml(data.projectName ?? '')}" style="width:100% !important; max-width:100%; text-align:right; flex:1;">
   </label>
 </div>
 <div class="grid">
@@ -1057,31 +1057,209 @@ else next.disabled = page === titles.length - 1;
 
 function injectWindowsTheme() {
 const style = document.createElement('style');
-style.innerHTML = `:root { --primary: #0078d4; --border: #d2d0ce; --text: #201f1e; --text-muted: #605e5c; }
-body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%); color: var(--text); margin: 0; padding: 20px; direction: rtl; }
-#app { background: #ffffff; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); max-width: 1100px; margin: 20px auto; overflow: hidden; border: 1px solid var(--border); }
-#tabs { display: grid; grid-template-columns: repeat(4, 1fr); background: rgba(248,249,250,0.8); border-bottom: 1px solid var(--border); gap: 4px; padding: 8px 8px 0 8px; }
-#tabs button { background: transparent; border: none; border-radius: 10px 10px 0 0; padding: 8px 4px; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); font-family: inherit; }
-#tabs button.active { background: #fff; color: var(--primary); border-bottom: 3px solid var(--primary); }
-.panel { padding: 20px; }
-.grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.field { display: inline-flex; flex-direction: row; align-items: center; gap: 5px; background: #f8f9fa; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 11px; white-space: nowrap; }
+style.innerHTML = `:root {
+  --primary: #0067c0;
+  --primary-hover: #1976d2;
+  --accent: #0078d4;
+  --border: #d6dbe1;
+  --border-strong: #b8c0ca;
+  --text: #1a1a1a;
+  --text-muted: #5b6570;
+  --bg-soft: #f4f7fb;
+  --bg-card: #ffffff;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --shadow-sm: 0 2px 6px rgba(15, 35, 70, 0.08);
+  --shadow-md: 0 8px 24px rgba(15, 35, 70, 0.12);
+  --shadow-lg: 0 20px 48px rgba(15, 35, 70, 0.18);
+}
+* { box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(0, 120, 212, 0.18), transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba(99, 102, 241, 0.16), transparent 50%),
+    linear-gradient(135deg, #eaf1fb 0%, #dfe8f5 100%);
+  background-attachment: fixed;
+  color: var(--text);
+  margin: 0;
+  padding: 24px 16px;
+  direction: rtl;
+  min-height: 100vh;
+}
+#app {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 1120px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  outline: 1px solid rgba(0, 120, 212, 0.08);
+  transition: transform 0.2s ease;
+}
+#tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: linear-gradient(180deg, rgba(240, 245, 252, 0.95), rgba(228, 236, 246, 0.85));
+  border-bottom: 1px solid var(--border);
+  gap: 4px;
+  padding: 10px 10px 0 10px;
+}
+#tabs button {
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  padding: 10px 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: inherit;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+#tabs button:hover { background: rgba(255, 255, 255, 0.7); color: var(--primary); }
+#tabs button.active {
+  background: #ffffff;
+  color: var(--primary);
+  border-bottom: 3px solid var(--primary);
+  box-shadow: 0 -2px 10px rgba(0, 120, 212, 0.08);
+}
+.panel { padding: 22px; }
+.grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.field {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-soft);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  white-space: nowrap;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15); }
 .field > span { flex-shrink: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
-input[type="number"], input[type="text"], select { width: 130px !important; padding: 4px 6px; border: 1px solid #c8c6c4; border-radius: 4px; font-family: Arial, sans-serif !important; font-size: 12px; background: #fff; text-align: center; box-sizing: border-box; flex-shrink: 0; }
+input[type="number"], input[type="text"], select {
+  width: 130px !important;
+  padding: 6px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: 'Segoe UI', Arial, sans-serif !important;
+  font-size: 12px;
+  background: #fff;
+  text-align: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="number"]:focus, input[type="text"]:focus, select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15);
+}
 input.table-input[type="text"] { width: 75px !important; text-align: right; }
-button { background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-th, td { border: 1px solid var(--border); padding: 8px; text-align: right; font-size: 12px; }
-th { background: #f3f2f1; font-weight: 600; }
-tr:nth-child(even) { background: #faf9f8; }
-.aggregate-table th:first-child { position: sticky; right: 0; background-color: #f3f2f1; z-index: 10; }
-.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; }
-@media (max-width: 600px) { #tabs button { font-size: 11px; padding: 6px 2px; } .panel { padding: 12px; } .field { width: 100%; justify-content: space-between; } .field > span { max-width: none; } }`;
+button {
+  background: linear-gradient(180deg, var(--primary), var(--primary-hover));
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s;
+}
+button:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); filter: brightness(1.05); }
+button:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
+button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; filter: none; }
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 16px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+th, td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); padding: 9px; text-align: right; font-size: 12px; }
+th:last-child, td:last-child { border-right: none; }
+tr:last-child td { border-bottom: none; }
+th { background: linear-gradient(180deg, #eef3fa, #e3eaf3); font-weight: 600; color: #2a3542; }
+tr:nth-child(even) td { background: #fafcff; }
+tr:hover td { background: #eef6ff; }
+.aggregate-table th:first-child { position: sticky; right: 0; background: linear-gradient(180deg, #eef3fa, #e3eaf3); z-index: 10; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; border-radius: var(--radius-md); }
+h2 { color: var(--primary); border-bottom: 2px solid rgba(0, 120, 212, 0.15); padding-bottom: 8px; }
+h3 { color: #334155; }
+.limit-box {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.hint { color: var(--text-muted); font-size: 12px; }
+.bad { color: #b91c1c; background: #fef2f2; padding: 12px; border-radius: var(--radius-md); border: 1px solid #fecaca; }
+.checkline { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+@media (max-width: 600px) {
+  body { padding: 12px 6px; }
+  #tabs button { font-size: 11px; padding: 8px 2px; }
+  .panel { padding: 12px; }
+  .field { width: 100%; justify-content: space-between; }
+  .field > span { max-width: none; }
+}`;
 document.head.appendChild(style);
+}
+
+function injectZoomControl() {
+  if (document.getElementById('zoom-control')) return;
+  const saved = Number(localStorage.getItem('app_zoom') || 1);
+  const app = document.getElementById('app');
+  if (app) {
+    app.style.transform = `scale(${saved})`;
+    app.style.transformOrigin = 'top center';
+  }
+  const el = document.createElement('div');
+  el.id = 'zoom-control';
+  el.style.cssText = 'position:fixed;bottom:16px;left:16px;z-index:99998;display:flex;flex-direction:column;gap:6px;direction:ltr;';
+  el.innerHTML = `
+    <button type="button" data-zoom="in" title="بزرگ‌نمایی" style="width:42px;height:42px;border-radius:50%;font-size:20px;padding:0;line-height:1;">+</button>
+    <button type="button" data-zoom="out" title="کوچک‌نمایی" style="width:42px;height:42px;border-radius:50%;font-size:20px;padding:0;line-height:1;">−</button>
+    <button type="button" data-zoom="reset" title="بازنشانی" style="width:42px;height:42px;border-radius:50%;font-size:14px;padding:0;line-height:1;">⟲</button>
+  `;
+  document.body.appendChild(el);
+  const applyZoom = (z) => {
+    z = Math.max(0.7, Math.min(1.6, z));
+    const appEl = document.getElementById('app');
+    if (appEl) {
+      appEl.style.transform = `scale(${z})`;
+      appEl.style.transformOrigin = 'top center';
+    }
+    localStorage.setItem('app_zoom', z);
+  };
+  el.querySelectorAll('[data-zoom]').forEach(b => {
+    b.onclick = () => {
+      const cur = Number(localStorage.getItem('app_zoom') || 1);
+      if (b.dataset.zoom === 'in') applyZoom(cur + 0.1);
+      else if (b.dataset.zoom === 'out') applyZoom(cur - 0.1);
+      else applyZoom(1);
+    };
+  });
 }
 
 function startApp() {
 injectWindowsTheme();
+injectZoomControl();
 const prev = document.getElementById('prev');
 const next = document.getElementById('next');
 if (!prev || !next) { console.error('دکمه‌های پیمایش پیدا نشدند'); return; }
@@ -1093,8 +1271,71 @@ save();
 view();
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startApp);
-else startApp();
+function showSplash() {
+  if (document.getElementById('splash-screen')) return;
+  const splash = document.createElement('div');
+  splash.id = 'splash-screen';
+  splash.innerHTML = `
+    <div class="splash-card">
+      <div class="splash-title">طرح مخلوط بتن</div>
+      <div class="splash-sub">Iranian Concrete Mix Design</div>
+      <div class="splash-divider"></div>
+      <div class="splash-credit">گردآورنده: <strong>مهدی پناهی</strong></div>
+      <div class="splash-email">talkhestan@gmail.com</div>
+      <div class="splash-spinner"></div>
+    </div>
+  `;
+  document.body.appendChild(splash);
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    #splash-screen {
+      position: fixed; inset: 0; z-index: 999999;
+      background: radial-gradient(circle at 20% 20%, #1e3a8a, #0b1220 70%);
+      display: flex; align-items: center; justify-content: center;
+      direction: rtl;
+      animation: splashIn 0.4s ease;
+    }
+    #splash-screen.fade-out { animation: splashOut 0.5s ease forwards; }
+    .splash-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px;
+      padding: 42px 52px;
+      text-align: center;
+      color: #e5edff;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+      animation: splashCardIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .splash-title { font-size: 26px; font-weight: 800; letter-spacing: 1px;
+      background: linear-gradient(90deg, #60a5fa, #a78bfa, #f472b6);
+      -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .splash-sub { font-size: 12px; color: #93a4c4; margin-top: 6px; letter-spacing: 2px; }
+    .splash-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); margin: 20px 0; }
+    .splash-credit { font-size: 14px; color: #dbe6ff; }
+    .splash-credit strong { color: #93c5fd; }
+    .splash-email { font-size: 12px; color: #7dd3fc; margin-top: 6px; direction: ltr; }
+    .splash-spinner {
+      width: 32px; height: 32px; margin: 22px auto 0;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #60a5fa;
+      border-radius: 50%;
+      animation: splashSpin 0.9s linear infinite;
+    }
+    @keyframes splashSpin { to { transform: rotate(360deg); } }
+    @keyframes splashIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes splashOut { to { opacity: 0; visibility: hidden; } }
+    @keyframes splashCardIn {
+      from { opacity: 0; transform: scale(0.9) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+  `;
+  document.head.appendChild(styleEl);
+  setTimeout(() => {
+    splash.classList.add('fade-out');
+    setTimeout(() => splash.remove(), 520);
+  }, 2000);
+}
 
 if ('serviceWorker' in navigator) {
 window.addEventListener('load', () => {
@@ -1355,11 +1596,11 @@ async function printFullReport() {
 
 function initNewMenu() {
 const menuHTML = `<div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
-<button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
-<div id="app-menu-dropdown" style="display: none; position: absolute; top: 45px; left: 0; background: white; border: 1px solid #ccc; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 180px; overflow: hidden;">
-<button id="app-menu-save" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">🖨️ نمایش و چاپ گزارش</button>
-<button id="app-menu-load" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; border-bottom: 1px solid #eee; cursor: pointer; font-family: inherit; font-size: 14px; color: #333;">📂 بازیابی طرح</button>
-<button id="app-menu-exit" style="display: block; width: 100%; padding: 12px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #dc2626;">🚪 خروج</button>
+<button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 12px; padding: 8px 14px; font-size: 20px; cursor: pointer; box-shadow: 0 6px 14px rgba(0,120,212,0.35); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
+<div id="app-menu-dropdown" style="display: none; position: absolute; top: 50px; left: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); border: 1px solid rgba(0,120,212,0.2); border-radius: 14px; box-shadow: 0 12px 32px rgba(15,35,70,0.22); min-width: 200px; overflow: hidden;">
+<button id="app-menu-save" style="display: block; width: 100%; padding: 13px 14px; text-align: right; background: none; border: none; border-bottom: 1px solid #eef2f7; cursor: pointer; font-family: inherit; font-size: 14px; color: #1e293b; transition: background 0.15s;">🖨️ نمایش و چاپ گزارش</button>
+<button id="app-menu-load" style="display: block; width: 100%; padding: 13px 14px; text-align: right; background: none; border: none; border-bottom: 1px solid #eef2f7; cursor: pointer; font-family: inherit; font-size: 14px; color: #1e293b; transition: background 0.15s;">📂 بازیابی طرح</button>
+<button id="app-menu-contact" style="display: block; width: 100%; padding: 13px 14px; text-align: right; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #0078d4; font-weight: 700; transition: background 0.15s;">✉️ ارتباط با سازنده</button>
 </div></div>
 <input type="file" id="app-hidden-file-input" accept=".json" style="display: none;">`;
 document.body.insertAdjacentHTML('beforeend', menuHTML);
@@ -1368,7 +1609,7 @@ const menuBtn = document.getElementById('app-menu-btn');
 const menuDropdown = document.getElementById('app-menu-dropdown');
 const menuSave = document.getElementById('app-menu-save');
 const menuLoad = document.getElementById('app-menu-load');
-const menuExit = document.getElementById('app-menu-exit');
+const menuContact = document.getElementById('app-menu-contact');
 const fileInput = document.getElementById('app-hidden-file-input');
 
 menuBtn.onclick = (e) => {
@@ -1393,22 +1634,145 @@ fileInput.click();
 menuDropdown.style.display = 'none';
 };
 
-menuExit.onclick = () => {
-menuDropdown.style.display = 'none';
-const confirmSave = confirm('آیا مایل به ذخیره اطلاعات طرح قبل از خروج هستید؟');
-if (confirmSave) {
-try {
-const jsonStr = JSON.stringify(data, null, 2);
-const fileName = `beton_project_${new Date().toISOString().slice(0, 10)}.json`;
-const blob = new Blob([jsonStr], { type: 'application/json' });
-const url = URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url; a.download = fileName; a.style.display = 'none';
-document.body.appendChild(a); a.click();
-setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); window.close(); setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد.'), 500); }, 500);
-} catch (err) { window.close(); setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد.'), 500); }
-} else { window.close(); setTimeout(() => alert('مرورگر اجازه بستن خودکار را نمی‌دهد.'), 500); }
+menuContact.onclick = () => {
+  menuDropdown.style.display = 'none';
+  openContactCard();
 };
+
+function openContactCard() {
+  if (document.getElementById('contact-card-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'contact-card-overlay';
+  overlay.innerHTML = `
+    <div class="contact-card">
+      <button type="button" class="contact-close" aria-label="بستن">×</button>
+      <div class="contact-header">
+        <div class="contact-badge">ارتباط با سازنده</div>
+        <div class="contact-title">طرح مخلوط بتن</div>
+        <div class="contact-sub">Iranian Concrete Mix Design</div>
+      </div>
+      <div class="contact-divider"></div>
+      <div class="contact-body">
+        <div class="contact-row"><span class="contact-label">گردآورنده</span><span class="contact-value">مهدی پناهی</span></div>
+        <div class="contact-row"><span class="contact-label">ایمیل</span><span class="contact-value contact-email">talkhestan@gmail.com</span></div>
+      </div>
+      <div class="contact-divider"></div>
+      <div class="contact-actions">
+        <a class="contact-btn" href="mailto:talkhestan@gmail.com">ارسال ایمیل</a>
+        <button type="button" class="contact-btn contact-btn-secondary" id="contact-copy">کپی ایمیل</button>
+      </div>
+      <div class="contact-footer">با آرزوی موفقیت 🌟</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `
+    #contact-card-overlay {
+      position: fixed; inset: 0; z-index: 999999;
+      background: rgba(10, 20, 40, 0.55);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      animation: contactFade 0.25s ease;
+    }
+    .contact-card {
+      position: relative;
+      background: linear-gradient(160deg, #ffffff 0%, #f0f7ff 100%);
+      border-radius: 22px;
+      padding: 28px 26px 22px;
+      width: 100%; max-width: 380px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.6) inset;
+      border: 1px solid rgba(0,120,212,0.25);
+      overflow: hidden;
+      animation: contactPop 0.4s cubic-bezier(0.2, 0.9, 0.2, 1.2);
+      direction: rtl;
+    }
+    .contact-card::before {
+      content: ''; position: absolute; inset: 0;
+      padding: 3px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6, #fbbf24, #34d399, #60a5fa);
+      background-size: 300% 300%;
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      animation: contactBorder 6s linear infinite;
+      pointer-events: none;
+    }
+    .contact-close {
+      position: absolute; top: 10px; left: 10px;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(0,0,0,0.06); border: none; cursor: pointer;
+      font-size: 20px; line-height: 1; color: #64748b;
+      padding: 0; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .contact-close:hover { background: rgba(0,0,0,0.12); color: #dc2626; transform: rotate(90deg); }
+    .contact-header { text-align: center; margin-bottom: 16px; }
+    .contact-badge {
+      display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      color: #ffffff;
+      background: linear-gradient(90deg, #0078d4, #6366f1);
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 10px;
+      box-shadow: 0 4px 10px rgba(0,120,212,0.3);
+    }
+    .contact-title {
+      font-size: 22px; font-weight: 800;
+      background: linear-gradient(90deg, #0078d4, #6366f1, #a855f7);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      margin-bottom: 4px;
+    }
+    .contact-sub { font-size: 11px; color: #64748b; letter-spacing: 2px; }
+    .contact-divider {
+      height: 1px; margin: 14px 0;
+      background: linear-gradient(90deg, transparent, rgba(0,120,212,0.4), transparent);
+    }
+    .contact-body { display: flex; flex-direction: column; gap: 10px; }
+    .contact-row {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(0,120,212,0.15);
+      border-radius: 12px; padding: 10px 14px;
+    }
+    .contact-label { font-size: 12px; color: #64748b; font-weight: 600; }
+    .contact-value { font-size: 14px; color: #0f172a; font-weight: 700; }
+    .contact-email { direction: ltr; color: #0369a1; font-family: 'Segoe UI', monospace; }
+    .contact-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .contact-btn {
+      flex: 1; padding: 11px; border-radius: 12px; border: none; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      text-decoration: none; text-align: center;
+      background: linear-gradient(180deg, #0078d4, #005a9e); color: white;
+      box-shadow: 0 6px 14px rgba(0,120,212,0.3);
+      transition: all 0.2s;
+    }
+    .contact-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,120,212,0.4); }
+    .contact-btn-secondary {
+      background: linear-gradient(180deg, #f8fafc, #e2e8f0);
+      color: #334155; box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+    }
+    .contact-btn-secondary:hover { box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+    .contact-footer { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 16px; }
+    @keyframes contactFade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes contactPop { from { opacity: 0; transform: scale(0.85) translateY(15px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    @keyframes contactBorder { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+  `;
+  document.head.appendChild(styleEl);
+  const close = () => overlay.remove();
+  overlay.querySelector('.contact-close').onclick = close;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  overlay.querySelector('#contact-copy').onclick = async () => {
+    try {
+      await navigator.clipboard.writeText('talkhestan@gmail.com');
+      const btn = overlay.querySelector('#contact-copy');
+      const orig = btn.textContent;
+      btn.textContent = '✓ کپی شد';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    } catch (_) {
+      alert('talkhestan@gmail.com');
+    }
+  };
+}
 
 fileInput.onchange = (e) => {
 const file = e.target.files[0];
@@ -1429,5 +1793,11 @@ fileInput.value = '';
 };
 }
 
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initNewMenu);
-else initNewMenu();
+function bootstrap() {
+  showSplash();
+  startApp();
+  initNewMenu();
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
+else bootstrap();
