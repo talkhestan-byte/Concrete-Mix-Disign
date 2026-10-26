@@ -1,5 +1,5 @@
 
-name: Build Beton479 APK
+name: Build Iranian Concrete Mix Disign APK
 
 on:
   workflow_dispatch:
@@ -38,7 +38,7 @@ jobs:
 
       - name: Configure Capacitor
         run: |
-          npx cap init Beton479 org.beton479 --web-dir www
+          npx cap init Iranian Concrete Mix Disign org.Iranian Concrete Mix Disign --web-dir www
           npx cap add android
           npx cap sync android
 
@@ -51,6 +51,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Beton479-APK
+          name: Iranian Concrete Mix Disign-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
