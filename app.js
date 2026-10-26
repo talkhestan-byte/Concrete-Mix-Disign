@@ -2559,34 +2559,57 @@ function printFullReport() {
 </body>
 </html>`;
 
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
+    // ایجاد پنجره چاپ بدون استفاده از Blob
+  let printFrame = document.getElementById('beton-print-frame');
 
-  let win = null;
-  try {
-    win = window.open(url, '_blank');
-  } catch (e) {
-    win = null;
+  if (printFrame) {
+    printFrame.remove();
   }
 
-  if (win) {
-    setTimeout(() => { try { URL.revokeObjectURL(url); } catch(e){} }, 60000);
-    return;
+  printFrame = document.createElement('iframe');
+  printFrame.id = 'beton-print-frame';
+
+  printFrame.style.position = 'fixed';
+  printFrame.style.left = '0';
+  printFrame.style.top = '0';
+  printFrame.style.width = '100%';
+  printFrame.style.height = '100%';
+  printFrame.style.border = 'none';
+  printFrame.style.zIndex = '999999';
+  printFrame.style.background = 'white';
+
+  document.body.appendChild(printFrame);
+
+  const doc = printFrame.contentDocument ||
+              printFrame.contentWindow.document;
+
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  // اتصال دکمه چاپ
+  const printBtn = doc.getElementById('btnPrint');
+
+  if (printBtn) {
+    printBtn.onclick = function () {
+      try {
+        printFrame.contentWindow.focus();
+        printFrame.contentWindow.print();
+      } catch (error) {
+        alert('امکان اجرای چاپ در این محیط وجود ندارد.');
+      }
+    };
   }
 
-  const a = document.createElement('a');
-  a.href = url;
-  a.target = '_blank';
-  a.rel = 'noopener';
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    try { document.body.removeChild(a); } catch(e) {}
-  }, 500);
-  setTimeout(() => { try { URL.revokeObjectURL(url); } catch(e){} }, 60000);
-}
+  // اتصال دکمه بازگشت
+  const closeBtn = doc.getElementById('btnClose');
 
+  if (closeBtn) {
+    closeBtn.onclick = function () {
+      printFrame.remove();
+    };
+  }
+    }
 function initNewMenu() {
 const menuHTML = `<div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: rtl; font-family: inherit;">
 <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 8px; padding: 6px 12px; font-size: 20px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
