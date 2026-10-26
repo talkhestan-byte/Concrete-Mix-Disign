@@ -2469,7 +2469,7 @@ const html = `<!DOCTYPE html>
   <div class="title">پیش‌نمایش برگه چاپ — ${escapeHtml(projectName || 'طرح مخلوط بتن')}</div>
   <div class="actions">
     <button class="primary" onclick="window.print()">🖨️ چاپ / ذخیره PDF</button>
-    <button onclick="window.close()">✕ بستن و بازگشت</button>
+    <button onclick="window.parent.postMessage({type:'close-print-preview'}, '*')">✕ بستن و بازگشت</button>
   </div>
 </div>
 
@@ -2548,28 +2548,43 @@ const html = `<!DOCTYPE html>
 </body>
 </html>`;
 
-  // ذخیره به صورت Blob و باز کردن در تب جدید پایدار
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const win = window.open(url, '_blank');
+  // حذف هرگونه preview قبلی
+  const existing = document.getElementById('print-preview-overlay');
+  if (existing) existing.remove();
 
-  if (!win) {
-    // اگر پاپ‌آپ مسدود شد، با لینک مستقیم باز کن
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 5000);
-  } else {
-    // آزادسازی URL بعد از بارگذاری
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }
+  // ساخت overlay + iframe
+  const overlay = document.createElement('div');
+  overlay.id = 'print-preview-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#0f172a;z-index:2147483647;display:flex;flex-direction:column;';
+
+  const iframe = document.createElement('iframe');
+  iframe.id = 'print-preview-iframe';
+  iframe.style.cssText = 'flex:1;width:100%;border:0;background:#eef2f7;';
+  iframe.setAttribute('srcdoc', html);
+
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
+
+  // گوش دادن به پیام از داخل iframe برای بستن
+  const closeHandler = (event) => {
+    if (event && event.data && event.data.type === 'close-print-preview') {
+      overlay.remove();
+      window.removeEventListener('message', closeHandler);
+      window.removeEventListener('keydown', escHandler);
+    }
+  };
+
+  // Escape هم preview را ببندد
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      overlay.remove();
+      window.removeEventListener('message', closeHandler);
+      window.removeEventListener('keydown', escHandler);
+    }
+  };
+
+  window.addEventListener('message', closeHandler);
+  window.addEventListener('keydown', escHandler);
 }
 
 function initNewMenu() {
