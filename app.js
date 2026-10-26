@@ -281,7 +281,7 @@ return `
 <h2>اطلاعات اولیه طرح</h2>
 <div class="grid">
   <label class="field" style="width:100%;">
-    <span style="min-width:60px;">نام طرح</span>
+    <span style="min-width:60px; max-width:60px;">نام طرح</span>
     <input type="text" enterkeyhint="next" data-key="projectName" value="${escapeHtml(data.projectName ?? '')}" style="width: 420px !important; text-align: right;">
   </label>
 </div>
@@ -629,7 +629,7 @@ const px = x(targetX), py = y(targetY);
 intersectionLines += `<line x1="${left}" y1="${py}" x2="${px}" y2="${py}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
 intersectionLines += `<line x1="${px}" y1="${py}" x2="${px}" y2="${height - bottom}" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="4,4" />`;
 intersectionLines += `<circle cx="${px}" cy="${py}" r="4" fill="#dc2626" />`;
-intersectionText = `<div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">W/C متناظر با مقاومت هدف: <strong>${targetX.toFixed(3)}</strong></div>`;
+intersectionText = `<div class="hint" style="margin-top: 15px; font-size: 1.1em; text-align: center; color: #b91c1c;">نسبت آب به سیمان متناظر با مقاومت هدف: <strong>${targetX.toFixed(3)}</strong></div>`;
 } else if (targetY !== null) intersectionText = `<div class="hint" style="margin-top: 15px; text-align: center; color: #b91c1c;">مقاومت هدف ${targetY.toFixed(1)} MPa خارج از محدوده است.</div>`;
 else intersectionText = `<div class="hint" style="margin-top: 15px; text-align: center; color: #b91c1c;">لطفاً مقاومت هدف را تعیین کنید.</div>`;
 let userMarker = '';
@@ -658,14 +658,14 @@ const wcExceeds = wcLimitActive && Number.isFinite(currentWcNum) && currentWcNum
 return `
 <h2>تعیین نسبت آب به سیمان</h2>
 ${wcExceeds ? `<div style="background:#fffbeb; border:1px solid #f59e0b; color:#92400e; padding:12px; border-radius:6px; margin-bottom:15px; font-size:13px;">
-<strong>هشدار:</strong> W/C انتخاب‌شده (${currentWcNum.toFixed(3)}) از حداکثر مجاز (${Number(data.limitWc).toFixed(3)}) بیشتر است.
+<strong>هشدار:</strong> نسبت آب به سیمان انتخاب‌شده (${currentWcNum.toFixed(3)}) از حداکثر مجاز (${Number(data.limitWc).toFixed(3)}) بیشتر است.
 <div style="display:flex; gap:10px; margin-top:10px;">
 <button type="button" id="wc-limit-continue" style="flex:1;">ادامه</button>
 <button type="button" id="wc-limit-fix" style="flex:1; background:linear-gradient(180deg,#6b7280,#4b5563);">اصلاح</button>
 </div></div>` : ''}
 <div class="grid" style="margin-bottom: 15px;">
   <label class="field"><span>نسبت آب به سیمان انتخابی</span><input type="text" inputmode="decimal" enterkeyhint="next" data-key="wc" value="${wcDisplay}"></label>
-  <label class="field"><span>مقاومت فشاری متوسط متناظر (MPa)</span><input type="text" inputmode="decimal" enterkeyhint="next" data-key="step1Strength" value="${strengthDisplay}"></label>
+  <label class="field"><span>مقاومت فشاری متوسط (MPa)</span><input type="text" inputmode="decimal" enterkeyhint="next" data-key="step1Strength" value="${strengthDisplay}"></label>
 </div>
 ${renderWCChart()}
 `;
@@ -1065,9 +1065,9 @@ body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial
 #tabs button.active { background: #fff; color: var(--primary); border-bottom: 3px solid var(--primary); }
 .panel { padding: 20px; }
 .grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.field { display: inline-flex; align-items: center; gap: 5px; background: #f8f9fa; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 11px; white-space: nowrap; }
-.field > span { flex-shrink: 0; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
-input[type="number"], input[type="text"], select { width: 150px !important; padding: 4px 6px; border: 1px solid #c8c6c4; border-radius: 4px; font-family: Arial, sans-serif !important; font-size: 12px; background: #fff; text-align: center; box-sizing: border-box; }
+.field { display: inline-flex; flex-direction: row; align-items: center; gap: 5px; background: #f8f9fa; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; font-size: 11px; white-space: nowrap; }
+.field > span { flex-shrink: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+input[type="number"], input[type="text"], select { width: 130px !important; padding: 4px 6px; border: 1px solid #c8c6c4; border-radius: 4px; font-family: Arial, sans-serif !important; font-size: 12px; background: #fff; text-align: center; box-sizing: border-box; flex-shrink: 0; }
 input.table-input[type="text"] { width: 75px !important; text-align: right; }
 button { background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
 table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
@@ -1076,7 +1076,7 @@ th { background: #f3f2f1; font-weight: 600; }
 tr:nth-child(even) { background: #faf9f8; }
 .aggregate-table th:first-child { position: sticky; right: 0; background-color: #f3f2f1; z-index: 10; }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; }
-@media (max-width: 600px) { #tabs button { font-size: 11px; padding: 6px 2px; } .panel { padding: 12px; } .field { width: 100%; justify-content: space-between; } }`;
+@media (max-width: 600px) { #tabs button { font-size: 11px; padding: 6px 2px; } .panel { padding: 12px; } .field { width: 100%; justify-content: space-between; } .field > span { max-width: none; } }`;
 document.head.appendChild(style);
 }
 
@@ -1103,7 +1103,7 @@ navigator.serviceWorker.register('./sw.js').catch(error => console.warn('SW ثب
 }
 
 /* ============================================================
-   تابع چاپ: یک صفحه A4 + فقط نام فایل
+   تابع چاپ: یک صفحه A4 کامل + فقط نام فایل
    ============================================================ */
 async function printFullReport() {
   let step5 = null;
@@ -1116,7 +1116,6 @@ async function printFullReport() {
   const targetStrength = getTargetStrength();
   const sharesInfo = getSharesInfo();
 
-  // فقط نام فایل (نه نام شخص، نه آدرس)
   const fileNameRaw = prompt(
     'نام فایل گزارش را وارد کنید:',
     data.reportFileName || (data.projectName ? data.projectName : 'گزارش-طرح-مخلوط-بتن')
@@ -1173,7 +1172,7 @@ async function printFullReport() {
 <style>
   @page { size: A4 portrait; margin: 5mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: #fff; }
+  html, body { background: #fff; height: 100%; }
   body {
     font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
     font-size: 10.5px;
@@ -1209,7 +1208,9 @@ async function printFullReport() {
   th, td { border: 0.6px solid #999; padding: 2.5px 5px; text-align: right; line-height: 1.25; }
   th { background: #e2e8f0; font-weight: bold; font-size: 9.5px; }
 
-  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1 1 auto; }
+  .two-col > div { display: flex; flex-direction: column; }
+  .two-col .chart-box { flex: 1 1 auto; display: flex; align-items: center; justify-content: center; }
   .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
 
   .chart-box {
