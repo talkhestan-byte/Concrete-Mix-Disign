@@ -2432,12 +2432,10 @@ function printFullReport() {
   @page { size: A4; margin: 10mm; }
   * { box-sizing: border-box; }
   html, body { background: #eef2f7; }
-  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 60px 10px 20px; direction: rtl; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 70px 10px 20px; direction: rtl; }
   .toolbar { position: fixed; top: 0; right: 0; left: 0; background: #0078d4; color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; gap: 8px; flex-wrap: wrap; }
   .toolbar .title { font-weight: bold; font-size: 13px; }
-  .toolbar button { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4); padding: 8px 16px; border-radius: 6px; font-family: inherit; font-size: 13px; cursor: pointer; transition: background 0.2s; }
-  .toolbar button:hover { background: rgba(255,255,255,0.3); }
-  .toolbar button.primary { background: #fff; color: #0078d4; font-weight: bold; }
+  .toolbar button { background: #fff; color: #0078d4; border: none; padding: 10px 18px; border-radius: 6px; font-family: inherit; font-size: 14px; font-weight: bold; cursor: pointer; }
   .sheet { background: #fff; max-width: 210mm; margin: 0 auto; padding: 12mm; box-shadow: 0 4px 16px rgba(0,0,0,0.12); border-radius: 4px; }
   h1 { font-size: 16px; text-align: center; border-bottom: 2px solid #0078d4; padding-bottom: 6px; margin: 0 0 10px; color: #0078d4; }
   h2 { font-size: 12px; background: #eef2f7; padding: 4px 8px; border-right: 3px solid #0078d4; margin: 10px 0 6px; }
@@ -2463,10 +2461,8 @@ function printFullReport() {
 <body>
 
 <div class="toolbar">
-  <div class="title">گزارش آماده است — برای چاپ دکمه را بزنید</div>
-  <div>
-    <button class="primary" id="btnPrint">🖨️ چاپ / ذخیره PDF</button>
-  </div>
+  <div class="title">گزارش طرح مخلوط بتن</div>
+  <button onclick="window.print()">🖨️ چاپ / ذخیره PDF</button>
 </div>
 
 <div class="sheet">
@@ -2541,64 +2537,48 @@ function printFullReport() {
 <div class="footer">${footerText}</div>
 
 </div>
-
-<script>
-  document.getElementById('btnPrint').addEventListener('click', function() {
-    window.print();
-  });
-</script>
 </body>
 </html>`;
 
-  // === استراتژی چندلایه برای APK/WebView ===
+  // باز کردن در مرورگر پیش‌فرض موبایل با Intent اندروید
+  try {
+    const dataUri = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+    window.location.href = dataUri;
+    return;
+  } catch (e) {
+    // ادامه به fallback
+  }
+
+  // Fallback: ذخیره فایل
   try {
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const fileName = `beton-report-${new Date().toISOString().slice(0,10)}.html`;
+    const blobUrl = URL.createObjectURL(blob);
 
-    if (navigator.canShare && typeof File !== 'undefined') {
-      const file = new File([blob], fileName, { type: 'text/html' });
-      if (navigator.canShare({ files: [file] })) {
-        navigator.share({
-          files: [file],
-          title: docTitle
-        }).then(() => {
-          // موفق
-        }).catch((err) => {
-          if (err && err.name === 'AbortError') return;
-          downloadHtml(blob, fileName);
-        });
-        return;
-      }
-    }
-
-    downloadHtml(blob, fileName);
-  } catch (e) {
-    alert('خطا در تولید فایل: ' + (e.message || e));
-  }
-
-  function downloadHtml(blob, fileName) {
     try {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.rel = 'noopener';
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      a.click();
+      window.location.href = blobUrl;
       setTimeout(() => {
-        try { document.body.removeChild(a); } catch(e) {}
-        try { URL.revokeObjectURL(url); } catch(e) {}
-      }, 1000);
-      alert('فایل گزارش ذخیره شد. برای مشاهده و چاپ، فایل "' + fileName + '" را در پوشه Downloads با Chrome باز کنید.');
+        try { URL.revokeObjectURL(blobUrl); } catch(e) {}
+      }, 60000);
+      return;
     } catch (e) {
-      try {
-        const url = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-        window.location.href = url;
-      } catch (e2) {
-        alert('متأسفانه ذخیره فایل ممکن نشد. لطفاً از طریق مرورگر برنامه را باز کنید.');
-      }
+      // ادامه به دانلود
     }
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = fileName;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try { document.body.removeChild(a); } catch(e) {}
+    }, 1000);
+
+    alert('فایل گزارش ذخیره شد: ' + fileName + '\n\nبرای مشاهده و چاپ، فایل را در پوشه Downloads با Chrome باز کنید.');
+  } catch (e2) {
+    alert('خطا: ' + (e2.message || e2) + '\n\nلطفاً از مرورگر Chrome برنامه را باز کنید.');
   }
 }
 
