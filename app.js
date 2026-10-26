@@ -281,7 +281,7 @@ return `
 <h2>اطلاعات اولیه طرح</h2>
 <div class="grid">
   <label class="field" style="width:100%; flex-wrap:nowrap;">
-    <span style="flex-shrink:0;">نام طرح</span>
+    <span style="flex-shrink:0; max-width:110px;">نام طرح</span>
     <input type="text" enterkeyhint="next" data-key="projectName" value="${escapeHtml(data.projectName ?? '')}" style="width:100% !important; max-width:100%; text-align:right; flex:1;">
   </label>
 </div>
@@ -297,7 +297,7 @@ return `
 </div>
 <div class="grid">
   ${selectInput('admixture', 'نوع افزودنی', [{ value: 'none', label: 'بدون افزودنی' }, { value: 'slump', label: 'افزودنی افزایش‌دهنده اسلامپ' }, { value: 'water_reducer', label: 'افزودنی کاهنده آب' }])}
-  ${numberInput('admixturePct', 'درصد افزودنی نسبت به جرم سیمان (%)', 0.1, data.admixture === 'none' ? 'min="0" max="99.9" disabled' : 'min="0" max="99.9"')}
+  ${numberInput('admixturePct', 'نسبت افزودنی به سیمان (%)', 0.1, data.admixture === 'none' ? 'min="0" max="99.9" disabled' : 'min="0" max="99.9"')}
   ${numberInput('sgAdmixture', 'چگالی افزودنی', 0.01, data.admixture === 'none' ? 'disabled' : '')}
 </div>
 <h3>کنترل‌های اختیاری طرح</h3>
@@ -377,7 +377,7 @@ return `
   ${selectInput('aggregateCount', 'تعداد انواع سنگدانه', [{ value: 2, label: '2' }, { value: 3, label: '3' }, { value: 4, label: '4' }])}
   ${selectInput('msa', 'حداکثر اندازه اسمی سنگدانه NMSA', [{ value: 9.5, label: '9.5' }, { value: 12.5, label: '12.5' }, { value: 19, label: '19' }, { value: 25, label: '25' }])}
 </div>
-<div class="table-scroll">
+<div class="table-scroll" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
   <table class="aggregate-table">
     <thead><tr><th style="width: 140px;">مشخصات</th>${headers}</tr></thead>
     <tbody>${nameRow}${sgRow}${waterAbsRow}${fractureRow}${sieveRows}</tbody>
@@ -1099,7 +1099,6 @@ body {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.6);
   outline: 1px solid rgba(0, 120, 212, 0.08);
-  transition: transform 0.2s ease;
 }
 #tabs {
   display: grid;
@@ -1144,9 +1143,9 @@ body {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .field:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15); }
-.field > span { flex-shrink: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+.field > span { flex-shrink: 0; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
 input[type="number"], input[type="text"], select {
-  width: 130px !important;
+  width: 150px !important;
   padding: 6px 8px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
@@ -1196,7 +1195,23 @@ tr:last-child td { border-bottom: none; }
 th { background: linear-gradient(180deg, #eef3fa, #e3eaf3); font-weight: 600; color: #2a3542; }
 tr:nth-child(even) td { background: #fafcff; }
 tr:hover td { background: #eef6ff; }
-.aggregate-table th:first-child { position: sticky; right: 0; background: linear-gradient(180deg, #eef3fa, #e3eaf3); z-index: 10; }
+.aggregate-table th:first-child {
+  position: sticky;
+  right: 0;
+  background: linear-gradient(180deg, #eef3fa, #e3eaf3);
+  z-index: 10;
+  box-shadow: -2px 0 6px rgba(0, 0, 0, 0.06);
+}
+.aggregate-table td:first-child {
+  position: sticky;
+  right: 0;
+  background: #f8fafc;
+  z-index: 9;
+  font-weight: 600;
+  box-shadow: -2px 0 6px rgba(0, 0, 0, 0.04);
+}
+.aggregate-table tr:nth-child(even) td:first-child { background: #eef3fa; }
+.aggregate-table tr:hover td:first-child { background: #e0ecff; }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 10px; border-radius: var(--radius-md); }
 h2 { color: var(--primary); border-bottom: 2px solid rgba(0, 120, 212, 0.15); padding-bottom: 8px; }
 h3 { color: #334155; }
@@ -1221,45 +1236,8 @@ h3 { color: #334155; }
 document.head.appendChild(style);
 }
 
-function injectZoomControl() {
-  if (document.getElementById('zoom-control')) return;
-  const saved = Number(localStorage.getItem('app_zoom') || 1);
-  const app = document.getElementById('app');
-  if (app) {
-    app.style.transform = `scale(${saved})`;
-    app.style.transformOrigin = 'top center';
-  }
-  const el = document.createElement('div');
-  el.id = 'zoom-control';
-  el.style.cssText = 'position:fixed;bottom:16px;left:16px;z-index:99998;display:flex;flex-direction:column;gap:6px;direction:ltr;';
-  el.innerHTML = `
-    <button type="button" data-zoom="in" title="بزرگ‌نمایی" style="width:42px;height:42px;border-radius:50%;font-size:20px;padding:0;line-height:1;">+</button>
-    <button type="button" data-zoom="out" title="کوچک‌نمایی" style="width:42px;height:42px;border-radius:50%;font-size:20px;padding:0;line-height:1;">−</button>
-    <button type="button" data-zoom="reset" title="بازنشانی" style="width:42px;height:42px;border-radius:50%;font-size:14px;padding:0;line-height:1;">⟲</button>
-  `;
-  document.body.appendChild(el);
-  const applyZoom = (z) => {
-    z = Math.max(0.7, Math.min(1.6, z));
-    const appEl = document.getElementById('app');
-    if (appEl) {
-      appEl.style.transform = `scale(${z})`;
-      appEl.style.transformOrigin = 'top center';
-    }
-    localStorage.setItem('app_zoom', z);
-  };
-  el.querySelectorAll('[data-zoom]').forEach(b => {
-    b.onclick = () => {
-      const cur = Number(localStorage.getItem('app_zoom') || 1);
-      if (b.dataset.zoom === 'in') applyZoom(cur + 0.1);
-      else if (b.dataset.zoom === 'out') applyZoom(cur - 0.1);
-      else applyZoom(1);
-    };
-  });
-}
-
 function startApp() {
 injectWindowsTheme();
-injectZoomControl();
 const prev = document.getElementById('prev');
 const next = document.getElementById('next');
 if (!prev || !next) { console.error('دکمه‌های پیمایش پیدا نشدند'); return; }
