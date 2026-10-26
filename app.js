@@ -47,10 +47,10 @@ const SIEVE_635_INDEX = sieves.findIndex(s => s.mm === 6.35);
 const aggregateSieves = sieves.map((sieve, j) => ({ sieve, j })).filter(({ sieve }) => sieve.mm !== 6.35);
 const chartSieves = sieves.filter(s => s.mm !== 6.35);
 
-const titles = ['اطلاعات اولیه', 'مشخصات سنگدانه‌ها', 'سهم‌بندی سنگدانه‌ها', '1. آب به سیمان', '2. آب آزاد', '3. مقدار سیمان', 'گزارش نهایی'];
+const titles = ['اطلاعات اولیه', 'مشخصات سنگدانه‌ها', 'سهم‌بندی سنگدانه‌ها', 'آب به سیمان', 'آب آزاد', 'مقدار سیمان', 'گزارش نهایی'];
 
 const fields = {
-strength: ['مقاومت مشخصه استوانه‌ای (MPa)', 0.1], slump: ['اسلامپ (mm)', 1],
+strength: ['مقاومت مشخصه استوانه‌ای(MPa)', 0.1], slump: ['اسلامپ (mm)', 1],
 water: ['آب آزاد پایه (kg/m³)', 0.1], wc: ['نسبت آب به سیمان', 0.001],
 coarseShare: ['سهم حجمی شن از کل سنگدانه', 0.001], air: ['هوای بتن (%)', 0.1],
 sgCement: ['چگالی نسبی سیمان', 0.01], sgSand: ['چگالی نسبی ماسه', 0.01],
@@ -296,7 +296,7 @@ return `
   ${numberInput('sgCement', fields.sgCement[0], 0.01)}
 </div>
 <div class="grid">
-  ${selectInput('admixture', 'نوع افزودنی', [{ value: 'none', label: 'بدون افزودنی' }, { value: 'slump', label: 'افزودنی افزایش‌دهنده اسلامپ' }, { value: 'water_reducer', label: 'افزودنی کاهنده نیاز آب' }])}
+  ${selectInput('admixture', 'نوع افزودنی', [{ value: 'none', label: 'بدون افزودنی' }, { value: 'slump', label: 'افزودنی افزایش‌دهنده اسلامپ' }, { value: 'water_reducer', label: 'افزودنی کاهنده آب' }])}
   ${numberInput('admixturePct', 'درصد افزودنی نسبت به جرم سیمان (%)', 0.1, data.admixture === 'none' ? 'min="0" max="99.9" disabled' : 'min="0" max="99.9"')}
   ${numberInput('sgAdmixture', 'چگالی افزودنی', 0.01, data.admixture === 'none' ? 'disabled' : '')}
 </div>
