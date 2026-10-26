@@ -2419,24 +2419,34 @@ const ssdSand = step5 ? step5.ssdSand : null;
 const ssdGravel = step5 ? step5.ssdGravel : null;
 const admMass = step5 ? step5.admixtureMass : 0;
 
-const projectLabel = data.projectName ? escapeHtml(data.projectName) + ' — ' : '';
-const footerText = `${projectLabel}تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
+const projectName = (data.projectName || '').trim();
+const docTitle = projectName ? `گزارش طرح مخلوط بتن — ${projectName}` : 'گزارش طرح مخلوط بتن';
+const footerText = `${projectName ? escapeHtml(projectName) + ' — ' : ''}تاریخ: ${new Date().toLocaleDateString('fa-IR')}`;
 
 const html = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>گزارش طرح مخلوط بتن</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(docTitle)}</title>
 <style>
   @page { size: A4; margin: 10mm; }
   * { box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 10px; direction: rtl; }
+  html, body { background: #eef2f7; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; font-size: 11px; color: #111; margin: 0; padding: 60px 10px 20px; direction: rtl; }
+  .toolbar { position: fixed; top: 0; right: 0; left: 0; background: #0078d4; color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 1000; }
+  .toolbar .title { font-weight: bold; font-size: 13px; }
+  .toolbar .actions { display: flex; gap: 8px; }
+  .toolbar button { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4); padding: 6px 14px; border-radius: 6px; font-family: inherit; font-size: 12px; cursor: pointer; transition: background 0.2s; }
+  .toolbar button:hover { background: rgba(255,255,255,0.3); }
+  .toolbar button.primary { background: #fff; color: #0078d4; font-weight: bold; }
+  .toolbar button.primary:hover { background: #e6f0fb; }
+  .sheet { background: #fff; max-width: 210mm; margin: 0 auto; padding: 12mm; box-shadow: 0 4px 16px rgba(0,0,0,0.12); border-radius: 4px; }
   h1 { font-size: 16px; text-align: center; border-bottom: 2px solid #0078d4; padding-bottom: 6px; margin: 0 0 10px; color: #0078d4; }
   h2 { font-size: 12px; background: #eef2f7; padding: 4px 8px; border-right: 3px solid #0078d4; margin: 10px 0 6px; }
   table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 10px; }
   th, td { border: 1px solid #999; padding: 3px 5px; text-align: right; }
   th { background: #e2e8f0; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .chart-box { border: 1px solid #ccc; padding: 4px; page-break-inside: avoid; }
   .chart-box svg { width: 100%; height: auto; }
   .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 6px 0; }
@@ -2445,19 +2455,31 @@ const html = `<!DOCTYPE html>
   .result-card .value { font-size: 13px; font-weight: bold; color: #0078d4; }
   .page-break { page-break-before: always; }
   .footer { margin-top: 15px; text-align: center; font-size: 9px; color: #888; border-top: 1px solid #ccc; padding-top: 5px; }
-  .back-btn { position: fixed; top: 12px; left: 12px; background: #0078d4; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-family: inherit; font-size: 12px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); z-index: 1000; }
-  .back-btn:hover { background: #005a9e; }
-  @media print { body { padding: 0; } .no-print { display: none !important; } .back-btn { display: none !important; } }
+  @media print {
+    @page { size: A4; margin: 10mm; }
+    html, body { background: #fff; padding: 0; }
+    .toolbar { display: none !important; }
+    .sheet { box-shadow: none; padding: 0; max-width: none; margin: 0; border-radius: 0; }
+  }
 </style>
 </head>
 <body>
 
-<button class="back-btn no-print" onclick="window.close()">← بازگشت به برنامه</button>
+<div class="toolbar">
+  <div class="title">پیش‌نمایش برگه چاپ — ${escapeHtml(projectName || 'طرح مخلوط بتن')}</div>
+  <div class="actions">
+    <button class="primary" onclick="window.print()">🖨️ چاپ / ذخیره PDF</button>
+    <button onclick="window.close()">✕ بستن و بازگشت</button>
+  </div>
+</div>
+
+<div class="sheet">
 
 <h1>گزارش طرح مخلوط بتن</h1>
 
 <h2>۱. اطلاعات اولیه</h2>
 <table>
+  <tr><th>نام طرح</th><td colspan="5">${projectName ? escapeHtml(projectName) : '—'}</td></tr>
   <tr><th>مقاومت مشخصه</th><td>${fmt(num('strength'), 1)} MPa</td><th>رده اسلامپ</th><td>${data.slumpClass}</td><th>اسلامپ</th><td>${data.slump} mm</td></tr>
   <tr><th>NMSA</th><td>${data.msa} mm</td><th>رده سیمان</th><td>${data.cementClass}</td><th>درصد هوا</th><td>${fmt(num('air'), 1)}٪</td></tr>
   <tr><th>افزودنی</th><td>${data.admixture === 'none' ? 'ندارد' : data.admixture}</td><th>درصد افزودنی</th><td>${fmt(num('admixturePct'), 1)}٪</td><th>چگالی سیمان</th><td>${fmt(num('sgCement'))}</td></tr>
@@ -2520,24 +2542,34 @@ const html = `<!DOCTYPE html>
   <tr><td>حجم سنگدانه</td><td>${step5 ? fmt(step5.aggregateVolume, 3) : '—'}</td><td>m³</td></tr>
 </table>
 
-<div class="footer">
-  ${footerText}
-</div>
+<div class="footer">${footerText}</div>
 
-<script>
-  window.onload = function() { setTimeout(function(){ window.print(); }, 400); };
-<\/script>
+</div>
 </body>
 </html>`;
 
-const printWindow = window.open('', '_blank');
-if (!printWindow) {
-alert('امکان باز کردن پنجره چاپ وجود ندارد. لطفاً پاپ‌آپ را مجاز کنید.');
-return;
-}
-printWindow.document.open();
-printWindow.document.write(html);
-printWindow.document.close();
+  // ذخیره به صورت Blob و باز کردن در تب جدید پایدار
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+
+  if (!win) {
+    // اگر پاپ‌آپ مسدود شد، با لینک مستقیم باز کن
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 5000);
+  } else {
+    // آزادسازی URL بعد از بارگذاری
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
 }
 
 function initNewMenu() {
@@ -2647,4 +2679,4 @@ if (document.readyState === 'loading') {
 document.addEventListener('DOMContentLoaded', initNewMenu);
 } else {
 initNewMenu();
-  }
+}
