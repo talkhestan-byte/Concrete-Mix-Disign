@@ -44,7 +44,7 @@ jobs:
           npx cap sync android
 
       - name: Generate Android Icons
-        run: npx capacitor-assets generate --android
+        run: npx capacitor-assets generate --android --verbose
       - name: Verify Icons Generated
         run: |
           echo "بررسی فایل‌های آیکون در پوشه اندروید:"
