@@ -1428,7 +1428,7 @@ async function printFullReport() {
     z-index: 0;
     pointer-events: none;
     overflow: hidden;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='260'><text x='50%25' y='50%25' transform='rotate(-35 210 130)' text-anchor='middle' font-family='Segoe UI, Arial' font-size='20' fill='rgba(0,120,212,0.12)' font-weight='700'>talkhestan@gmail.com</text></svg>");
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='260'><text x='50%25' y='50%25' transform='rotate(-35 210 130)' text-anchor='middle' font-family='Segoe UI, Arial' font-size='20' fill='rgba(0,120,212,0.18)' font-weight='700'>talkhestan@gmail.com</text></svg>");
     background-repeat: repeat;
     background-size: 420px 260px;
   }
