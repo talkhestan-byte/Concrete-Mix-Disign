@@ -30,7 +30,7 @@ jobs:
         run: |
           mkdir -p www
           cp index.html app.js style.css manifest.webmanifest sw.js www/
-          cp icon-192.png icon-512.png www/
+          #cp icon-192.png icon-512.png www/
           npm init -y
           npm install @capacitor/core@6 @capacitor/android@6
           npm install --save-dev @capacitor/cli@6
