@@ -101,7 +101,8 @@ const translations = {
       admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'وزن مخصوص بر مبنای وزن خشک سنگدانه‌ها',
       aggregatesInM3: 'نتایج نهایی سنگدانه‌ها', aggregate1: 'سنگدانه ۱', aggregate2: 'سنگدانه ۲',
       sgSSD: 'چگالی نسبی SSD', volumeM3: 'حجم سنگدانه (m³)', massSSD: 'وزن سنگدانه SSD (kg)', dryMass: 'وزن سنگدانه خشک (kg)',
-      totalWater: 'آب کل (W_total)', dryMassAd: 'جرم خشک (Ad)', finalDensity: 'چگالی نهایی (G)'
+      totalWater: 'آب کل (W_total)', dryMassAd: 'جرم خشک (Ad)', finalDensity: 'چگالی نهایی (G)',
+      finalSummary: 'خلاصه نهایی'
     }
   },
   en: {
@@ -197,7 +198,8 @@ const translations = {
       admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'Specific gravity on dry aggregate weight basis',
       aggregatesInM3: 'Final Aggregate Results', aggregate1: 'Aggregate 1', aggregate2: 'Aggregate 2',
       sgSSD: 'SSD relative density', volumeM3: 'Aggregate volume (m³)', massSSD: 'Aggregate SSD weight (kg)', dryMass: 'Aggregate dry weight (kg)',
-      totalWater: 'Total water (W_total)', dryMassAd: 'Dry mass (Ad)', finalDensity: 'Final density (G)'
+      totalWater: 'Total water (W_total)', dryMassAd: 'Dry mass (Ad)', finalDensity: 'Final density (G)',
+      finalSummary: 'Final summary'
     }
   }
 };
@@ -1890,7 +1892,6 @@ function initNewMenu() {
     e.preventDefault();
     e.stopPropagation();
     menuDropdown.style.display = 'none';
-    // استفاده از location.href برای باز شدن در مرورگر پیش‌فرض سیستم در WebView
     window.location.href = 'guide.pdf';
   };
 
