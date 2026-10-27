@@ -1058,10 +1058,16 @@ function renderReport() {
   const Vassd = result.aggregateVolume;
 
   const formulaHtml = `
-<div style="text-align: center; direction: ltr; font-size: 11px; margin-bottom: 12px; font-family: monospace; white-space: nowrap; overflow-x: auto;">
-  V<sub>Assd</sub> = 1 &minus; (${c.toFixed(2)} / (1000&times;${data.sgCement})) &minus; (${w.toFixed(2)} / 1000) &minus; ${air.toFixed(3)}
-  ${data.admixture !== 'none' ? `&minus; (${result.admixtureMass.toFixed(2)} / (1000&times;${data.sgAdmixture}))` : ''}
-  = <strong>${Vassd.toFixed(3)} m³</strong>
+<div style="text-align: center; direction: ltr; font-size: 11px; margin-bottom: 12px; font-family: monospace; white-space: nowrap; overflow-x: auto; display:flex; justify-content:center; align-items:center; flex-wrap:nowrap;">
+  <span>VAssd = 1 - (</span>
+  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 2px;">${c.toFixed(2)}</span><span style="padding:0 2px;">${(1000 * data.sgCement).toFixed(0)}</span></div>
+  <span> + </span>
+  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 2px;">${w.toFixed(2)}</span><span style="padding:0 2px;">1000</span></div>
+  <span> + </span>
+  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 2px;">${result.admixtureMass.toFixed(2)}</span><span style="padding:0 2px;">${(1000 * (Number(data.sgAdmixture) || 1.1)).toFixed(0)}</span></div>
+  <span> + </span>
+  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 2px;">${air.toFixed(2)}</span><span style="padding:0 2px;">1</span></div>
+  <span> ) = ${Vassd.toFixed(3)} m³</span>
 </div>`;
 
   const r = t('report');
