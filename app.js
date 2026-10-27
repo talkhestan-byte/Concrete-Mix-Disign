@@ -1342,7 +1342,7 @@ navigator.serviceWorker.register('./sw.js').catch(error => console.warn('SW ثب
 }
 
 /* ============================================================
-   تابع چاپ: یک صفحه A4 کامل + واترمارک مورب روی محتوا + نام فایل
+   تابع چاپ: یک صفحه A4 کامل + نام فایل
    ============================================================ */
 async function printFullReport() {
   let step5 = null;
@@ -1421,18 +1421,6 @@ async function printFullReport() {
     position: relative;
   }
 
-  /* ========== واترمارک مورب روی محتوا ========== */
-  .watermark-layer {
-    position: fixed;
-    inset: 0;
-    z-index: 2;
-    pointer-events: none;
-    overflow: hidden;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='260'><text x='50%25' y='50%25' transform='rotate(-35 210 130)' text-anchor='middle' font-family='Segoe UI, Arial' font-size='75' fill='rgba(0,120,212,0.25)' font-weight='700'>talkhestan@gmail.com</text></svg>");
-    background-repeat: repeat;
-    background-size: 420px 260px;
-  }
-
   .sheet {
     padding: 2mm 3mm;
     min-height: 287mm;
@@ -1506,9 +1494,6 @@ async function printFullReport() {
 </style>
 </head>
 <body>
-
-<!-- لایه واترمارک مورب روی محتوا -->
-<div class="watermark-layer" aria-hidden="true"></div>
 
 <div class="sheet">
 
