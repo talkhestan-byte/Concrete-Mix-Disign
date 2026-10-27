@@ -98,7 +98,7 @@ const translations = {
       admixtureLabel: 'افزودنی', sandSSD: 'ماسه SSD', gravelSSD: 'شن SSD', totalDry: 'خشک کل',
       parameter: 'پارامتر', value: 'مقدار', cementC: 'سیمان (C)', waterW: 'آب مؤثر (W)',
       sandSSD2: 'ماسه SSD', gravelSSD2: 'شن SSD', sandDry: 'ماسه خشک', gravelDry: 'شن خشک',
-      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'وزن مخصوص بر مبنای وزن خشک سنگدانه‌ها',
+      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'γ<sub>SSD</sub>',
       aggregatesInM3: 'نتایج نهایی سنگدانه‌ها', aggregate1: 'سنگدانه ۱', aggregate2: 'سنگدانه ۲',
       sgSSD: 'چگالی نسبی SSD', volumeM3: 'حجم سنگدانه (m³)', massSSD: 'وزن سنگدانه SSD (kg)', dryMass: 'وزن سنگدانه خشک (kg)',
       totalWater: 'آب کل (W_total)', dryMassAd: 'جرم خشک (Ad)', finalDensity: 'چگالی نهایی (G)',
@@ -195,7 +195,7 @@ const translations = {
       admixtureLabel: 'Admixture', sandSSD: 'Sand SSD', gravelSSD: 'Gravel SSD', totalDry: 'Total dry',
       parameter: 'Parameter', value: 'Value', cementC: 'Cement (C)', waterW: 'Effective water (W)',
       sandSSD2: 'Sand SSD', gravelSSD2: 'Gravel SSD', sandDry: 'Dry sand', gravelDry: 'Dry gravel',
-      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'Specific gravity on dry aggregate weight basis',
+      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'γ<sub>SSD</sub>',
       aggregatesInM3: 'Final Aggregate Results', aggregate1: 'Aggregate 1', aggregate2: 'Aggregate 2',
       sgSSD: 'SSD relative density', volumeM3: 'Aggregate volume (m³)', massSSD: 'Aggregate SSD weight (kg)', dryMass: 'Aggregate dry weight (kg)',
       totalWater: 'Total water (W_total)', dryMassAd: 'Dry mass (Ad)', finalDensity: 'Final density (G)',
@@ -1892,7 +1892,14 @@ function initNewMenu() {
     e.preventDefault();
     e.stopPropagation();
     menuDropdown.style.display = 'none';
-    window.location.href = 'guide.pdf';
+    // استفاده از anchor tag برای باز کردن در سیستم عامل اندروید بدون خطای صفحه سفید
+    const link = document.createElement('a');
+    link.href = 'guide.pdf';
+    link.target = '_blank';
+    link.download = 'guide.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   menuLang.onclick = (e) => {
