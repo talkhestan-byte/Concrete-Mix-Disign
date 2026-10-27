@@ -1342,7 +1342,7 @@ navigator.serviceWorker.register('./sw.js').catch(error => console.warn('SW ثب
 }
 
 /* ============================================================
-   تابع چاپ: یک صفحه A4 کامل + فقط نام فایل
+   تابع چاپ: یک صفحه A4 کامل + واترمارک مورب با ایمیل + نام فایل
    ============================================================ */
 async function printFullReport() {
   let step5 = null;
@@ -1418,8 +1418,30 @@ async function printFullReport() {
     color: #111;
     direction: rtl;
     line-height: 1.35;
+    position: relative;
   }
-  .sheet { padding: 2mm 3mm; min-height: 287mm; display: flex; flex-direction: column; }
+
+  /* ========== واترمارک مورب با ایمیل ========== */
+  .watermark-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='420' height='260'><text x='50%25' y='50%25' transform='rotate(-35 210 130)' text-anchor='middle' font-family='Segoe UI, Arial' font-size='20' fill='rgba(0,120,212,0.12)' font-weight='700'>talkhestan@gmail.com</text></svg>");
+    background-repeat: repeat;
+    background-size: 420px 260px;
+  }
+
+  .sheet {
+    padding: 2mm 3mm;
+    min-height: 287mm;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+  }
+  .sheet > * { position: relative; z-index: 1; }
 
   .header {
     border-bottom: 1.5px solid #0078d4;
@@ -1429,6 +1451,7 @@ async function printFullReport() {
     justify-content: space-between;
     align-items: flex-start;
     gap: 8px;
+    background: rgba(255,255,255,0.85);
   }
   .header-title { font-size: 15px; font-weight: bold; color: #0078d4; }
   .header-info { font-size: 9px; text-align: left; line-height: 1.4; }
@@ -1436,16 +1459,16 @@ async function printFullReport() {
 
   h2 {
     font-size: 11px;
-    background: #eef2f7;
+    background: rgba(238,242,247,0.9);
     padding: 3px 8px;
     border-right: 3px solid #0078d4;
     margin: 6px 0 4px;
     font-weight: bold;
   }
 
-  table { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 9.5px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 4px; font-size: 9.5px; background: rgba(255,255,255,0.88); }
   th, td { border: 0.6px solid #999; padding: 2.5px 5px; text-align: right; line-height: 1.25; }
-  th { background: #e2e8f0; font-weight: bold; font-size: 9.5px; }
+  th { background: rgba(226,232,240,0.95); font-weight: bold; font-size: 9.5px; }
 
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; flex: 1 1 auto; }
   .two-col > div { display: flex; flex-direction: column; }
@@ -1456,12 +1479,12 @@ async function printFullReport() {
     border: 0.6px solid #bbb;
     padding: 3px;
     page-break-inside: avoid;
-    background: #fff;
+    background: rgba(255,255,255,0.92);
   }
-  .chart-box svg { width: 100%; height: auto; display: block; }
+  .chart-box svg { width: 100%; height: auto; display: block; background: transparent; }
 
   .result-card {
-    background: #f1f5f9;
+    background: rgba(241,245,249,0.92);
     border: 0.6px solid #cbd5e1;
     padding: 4px;
     border-radius: 3px;
@@ -1478,10 +1501,15 @@ async function printFullReport() {
     font-size: 8px;
     color: #666;
     border-top: 0.6px solid #ccc;
+    background: rgba(255,255,255,0.85);
   }
 </style>
 </head>
 <body>
+
+<!-- لایه واترمارک مورب -->
+<div class="watermark-layer" aria-hidden="true"></div>
+
 <div class="sheet">
 
   <div class="header">
