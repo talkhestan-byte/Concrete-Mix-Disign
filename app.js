@@ -16,6 +16,8 @@ const translations = {
     reportFileNamePrompt: 'نام فایل گزارش را وارد کنید:',
     reportDefaultName: 'گزارش-طرح-مخلوط-بتن',
     tabs: ['اطلاعات اولیه', 'مشخصات سنگدانه‌ها', 'سهم‌بندی سنگدانه‌ها', 'آب به سیمان', 'آب آزاد', 'مقدار سیمان', 'گزارش نهایی'],
+    btnPrev: 'مرحله قبل',
+    btnNext: 'مرحله بعد',
     fields: {
       strength: 'مقاومت مشخصه استوانه‌ای(MPa)', slump: 'اسلامپ (mm)', water: 'آب آزاد پایه (kg/m³)',
       wc: 'نسبت آب به سیمان', coarseShare: 'سهم حجمی شن از کل سنگدانه', air: 'هوای بتن (%)',
@@ -61,10 +63,6 @@ const translations = {
       chooseAction: '--- انتخاب کنید ---', proceed: '1. نادیده گرفتن و ادامه',
       gradingFix: '2. اصلاح بافت دانه‌بندی', wcFix: '3. اصلاح نسبت آب به سیمان',
       acceptMin: 'پذیرش حداقل مجاز و ادامه', acceptMax: 'پذیرش حداکثر مجاز و ادامه',
-      aggregatesInM3: 'سنگدانه‌ها در 1m³', aggregate1: 'سنگدانه1', aggregate2: 'سنگدانه2',
-      sgSSD: 'چگالی SSD', waterAbs: 'جذب آب (%)', fracture: 'شکستگی (%)', sharePct: 'سهم (%)',
-      volumeM3: 'حجم (m³)', massSSD: 'جرم SSD (kg)', dryMass: 'جرم خشک (kg)', finalSummary: 'خلاصه نهایی',
-      totalWater: 'آب کل (W_total)', dryMassAd: 'جرم خشک (Ad)', finalDensity: 'چگالی نهایی (G)',
       menuTitle: 'منوی برنامه', menuPrint: '🖨️ نمایش و چاپ گزارش', menuLanguage: '🌐 زبان',
       menuGuide: '📖 راهنما', menuContact: '✉️ ارتباط با سازنده', contactBadge: 'ارتباط با سازنده',
       contactEmail: 'ایمیل', contactSend: 'ارسال ایمیل', contactCopy: 'کپی ایمیل',
@@ -100,7 +98,9 @@ const translations = {
       admixtureLabel: 'افزودنی', sandSSD: 'ماسه SSD', gravelSSD: 'شن SSD', totalDry: 'خشک کل',
       parameter: 'پارامتر', value: 'مقدار', cementC: 'سیمان (C)', waterW: 'آب مؤثر (W)',
       sandSSD2: 'ماسه SSD', gravelSSD2: 'شن SSD', sandDry: 'ماسه خشک', gravelDry: 'شن خشک',
-      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'γ<sub>SSD</sub>',
+      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'وزن مخصوص بر مبنای وزن خشک سنگدانه‌ها',
+      aggregatesInM3: 'نتایج نهایی سنگدانه‌ها', aggregate1: 'سنگدانه ۱', aggregate2: 'سنگدانه ۲',
+      sgSSD: 'چگالی نسبی SSD', volumeM3: 'حجم سنگدانه (m³)', massSSD: 'وزن سنگدانه SSD (kg)', dryMass: 'وزن سنگدانه خشک (kg)',
       totalWater: 'آب کل (W_total)', dryMassAd: 'جرم خشک (Ad)', finalDensity: 'چگالی نهایی (G)'
     }
   },
@@ -112,6 +112,8 @@ const translations = {
     reportFileNamePrompt: 'Enter report file name:',
     reportDefaultName: 'Concrete-Mix-Design-Report',
     tabs: ['Initial Info', 'Aggregate Properties', 'Aggregate Shares', 'Water to Cement', 'Free Water', 'Cement Content', 'Final Report'],
+    btnPrev: 'Previous',
+    btnNext: 'Next',
     fields: {
       strength: 'Characteristic strength (MPa)', slump: 'Slump (mm)', water: 'Base free water (kg/m³)',
       wc: 'Water/cement ratio', coarseShare: 'Volume share of gravel', air: 'Concrete air (%)',
@@ -157,10 +159,6 @@ const translations = {
       chooseAction: '--- Choose ---', proceed: '1. Ignore and continue',
       gradingFix: '2. Fix grading', wcFix: '3. Fix W/C ratio',
       acceptMin: 'Accept minimum and continue', acceptMax: 'Accept maximum and continue',
-      aggregatesInM3: 'Aggregates per 1m³', aggregate1: 'Aggregate 1', aggregate2: 'Aggregate 2',
-      sgSSD: 'SSD density', waterAbs: 'Water absorption (%)', fracture: 'Fracture (%)', sharePct: 'Share (%)',
-      volumeM3: 'Volume (m³)', massSSD: 'SSD mass (kg)', dryMass: 'Dry mass (kg)', finalSummary: 'Final summary',
-      totalWater: 'Total water (W_total)', dryMassAd: 'Dry mass (Ad)', finalDensity: 'Final density (G)',
       menuTitle: 'App menu', menuPrint: '🖨️ View & print report', menuLanguage: '🌐 Language',
       menuGuide: '📖 Guide', menuContact: '✉️ Contact developer', contactBadge: 'Contact developer',
       contactEmail: 'Email', contactSend: 'Send email', contactCopy: 'Copy email',
@@ -196,7 +194,9 @@ const translations = {
       admixtureLabel: 'Admixture', sandSSD: 'Sand SSD', gravelSSD: 'Gravel SSD', totalDry: 'Total dry',
       parameter: 'Parameter', value: 'Value', cementC: 'Cement (C)', waterW: 'Effective water (W)',
       sandSSD2: 'Sand SSD', gravelSSD2: 'Gravel SSD', sandDry: 'Dry sand', gravelDry: 'Dry gravel',
-      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'γ<sub>SSD</sub>',
+      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'Specific gravity on dry aggregate weight basis',
+      aggregatesInM3: 'Final Aggregate Results', aggregate1: 'Aggregate 1', aggregate2: 'Aggregate 2',
+      sgSSD: 'SSD relative density', volumeM3: 'Aggregate volume (m³)', massSSD: 'Aggregate SSD weight (kg)', dryMass: 'Aggregate dry weight (kg)',
       totalWater: 'Total water (W_total)', dryMassAd: 'Dry mass (Ad)', finalDensity: 'Final density (G)'
     }
   }
@@ -873,8 +873,6 @@ function renderStep1() {
   let targetX = null;
   if (targetY !== null && activeCurve) targetX = calculateWc(targetY, activeCurve);
 
-  // اگر مقدار step1Strength خالی باشد یعنی کاربر هنوز دستی تغییری نداده است
-  // در این حالت مقدار wc را با targetX (مقدار قرمز پایین صفحه) برابر می‌کنیم
   const isManualStep1 = data.step1Strength !== null && data.step1Strength !== '' && Number(data.step1Strength) > 0;
 
   if (!isManualStep1 && targetX !== null) {
@@ -1109,7 +1107,7 @@ ${formulaHtml}
 <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #bae6fd;"><div style="font-size: 11px; color: #0369a1;">${r.finalDensity}</div><strong style="font-size: 16px; color: #0284c7;">${finalDensity.toFixed(0)} kg/m³</strong></div>
 </div></div>
 <div style="margin-top: 15px; text-align: center; font-size: 13px; color: #1e293b; direction: ltr; font-family: monospace;">
-${r.gammaSSD} = ${result.ssdSand.toFixed(0)} + ${result.ssdGravel.toFixed(0)} + ${c.toFixed(0)} + ${w.toFixed(0)} = <strong>${finalDensity.toFixed(0)} kg/m³</strong>
+${r.gammaSSD} = ${totalDry.toFixed(0)} + ${totalWater.toFixed(0)} = <strong>${finalDensity.toFixed(0)} kg/m³</strong>
 </div>
 </div>`;
 }
@@ -1122,8 +1120,13 @@ function view() {
   const prev = document.getElementById('prev');
   const next = document.getElementById('next');
   if (!tabs || !screen || !prev || !next) { console.error('Main elements not found'); return; }
+  
   const titlesCurrent = t('tabs');
   tabs.innerHTML = titlesCurrent.map((title, i) => `<button type="button" data-page="${i}" class="${i === page ? 'active' : ''}">${title}</button>`).join('');
+  
+  prev.textContent = t('btnPrev');
+  next.textContent = t('btnNext');
+
   let html = '';
   try {
     switch (page) {
@@ -1887,14 +1890,8 @@ function initNewMenu() {
     e.preventDefault();
     e.stopPropagation();
     menuDropdown.style.display = 'none';
-    // روش بهتر برای باز کردن PDF در WebView
-    const link = document.createElement('a');
-    link.href = 'guide.pdf';
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // استفاده از location.href برای باز شدن در مرورگر پیش‌فرض سیستم در WebView
+    window.location.href = 'guide.pdf';
   };
 
   menuLang.onclick = (e) => {
@@ -1902,7 +1899,6 @@ function initNewMenu() {
     e.stopPropagation();
     menuDropdown.style.display = 'none';
     toggleLanguage();
-    //  بازسازی منو با زبان جدید
     const oldMenu = document.getElementById('app-options-menu');
     if (oldMenu) oldMenu.remove();
     initNewMenu();
