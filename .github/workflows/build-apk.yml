@@ -43,13 +43,35 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      # مرحله ۱: تولید آیکون با مسیر دقیق عکس‌ها
       - name: Generate Android Icons
-        run: npx capacitor-assets generate --android --verbose
+        run: npx capacitor-assets generate --android --icon assets/icon-only.png --splash assets/icon-only.png --verbose
+
+      # مرحله ۲: پشتیبان (اگر ابزار بالا به هر دلیلی عکس‌ها را پیدا نکرد، این مرحله به زور جایگزین می‌کند)
+      - name: Force Copy Icons (Fallback)
+        run: |
+          if [ -f assets/icon-only.png ]; then
+            echo "عکس آیکون پیدا شد. در حال کپی مستقیم به پوشه اندروید..."
+            cp assets/icon-only.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            cp assets/icon-only.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+            cp assets/icon-only.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+            # کپی به پوشه‌های با کیفیت پایین‌تر برای اطمینان
+            cp assets/icon-only.png android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+            cp assets/icon-only.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+            cp assets/icon-only.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+            cp assets/icon-only.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+            echo "کپی با موفقیت انجام شد."
+          else
+            echo "خطا: فایل assets/icon-only.png پیدا نشد! لطفا مسیر و نام فایل را بررسی کنید."
+            exit 1
+          fi
+
       - name: Verify Icons Generated
         run: |
           echo "بررسی فایل‌های آیکون در پوشه اندروید:"
           ls -la android/app/src/main/res/mipmap-xxxhdpi/
           ls -la android/app/src/main/res/mipmap-anydpi-v26/
+
       - name: Sync Capacitor after Icons
         run: npx cap sync android
 
