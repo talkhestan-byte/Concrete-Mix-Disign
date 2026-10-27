@@ -100,7 +100,7 @@ const translations = {
       admixtureLabel: 'افزودنی', sandSSD: 'ماسه SSD', gravelSSD: 'شن SSD', totalDry: 'خشک کل',
       parameter: 'پارامتر', value: 'مقدار', cementC: 'سیمان (C)', waterW: 'آب مؤثر (W)',
       sandSSD2: 'ماسه SSD', gravelSSD2: 'شن SSD', sandDry: 'ماسه خشک', gravelDry: 'شن خشک',
-      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'پارامتر گامای SSD'
+      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'γ<sub>SSD</sub>'
     }
   },
   en: {
@@ -195,7 +195,7 @@ const translations = {
       admixtureLabel: 'Admixture', sandSSD: 'Sand SSD', gravelSSD: 'Gravel SSD', totalDry: 'Total dry',
       parameter: 'Parameter', value: 'Value', cementC: 'Cement (C)', waterW: 'Effective water (W)',
       sandSSD2: 'Sand SSD', gravelSSD2: 'Gravel SSD', sandDry: 'Dry sand', gravelDry: 'Dry gravel',
-      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'SSD Gamma Parameter'
+      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'γ<sub>SSD</sub>'
     }
   }
 };
