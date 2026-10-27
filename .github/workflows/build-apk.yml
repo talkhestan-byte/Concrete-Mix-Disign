@@ -1,4 +1,3 @@
-
 name: Build Iranian Concrete Mix Disign APK
 
 on:
@@ -36,15 +35,19 @@ jobs:
           npm install @capacitor/core@6 @capacitor/android@6
           npm install --save-dev @capacitor/cli@6
           npm install @bcyesil/capacitor-plugin-printer@0.0.5
+          npm install -D @capacitor/assets
+
       - name: Configure Capacitor
         run: |
           npx cap init "Iranian Concrete Mix Design" com.iranianconcrete.mixdesign --web-dir www
           npx cap add android
-          - name: Install Capacitor Assets
-          run: npm install -D @capacitor/assets
-          - name: Generate Android Icons
-          run: npx capacitor-assets generate --android
           npx cap sync android
+
+      - name: Generate Android Icons
+        run: npx capacitor-assets generate --android
+
+      - name: Sync Capacitor after Icons
+        run: npx cap sync android
 
       - name: Build APK
         run: |
