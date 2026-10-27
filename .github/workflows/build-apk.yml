@@ -40,6 +40,10 @@ jobs:
         run: |
           npx cap init "Iranian Concrete Mix Design" com.iranianconcrete.mixdesign --web-dir www
           npx cap add android
+          - name: Install Capacitor Assets
+          run: npm install -D @capacitor/assets
+          - name: Generate Android Icons
+          run: npx capacitor-assets generate --android
           npx cap sync android
 
       - name: Build APK
