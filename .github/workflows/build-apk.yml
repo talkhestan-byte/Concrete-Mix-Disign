@@ -45,7 +45,11 @@ jobs:
 
       - name: Generate Android Icons
         run: npx capacitor-assets generate --android
-
+      - name: Verify Icons Generated
+        run: |
+          echo "بررسی فایل‌های آیکون در پوشه اندروید:"
+          ls -la android/app/src/main/res/mipmap-xxxhdpi/
+          ls -la android/app/src/main/res/mipmap-anydpi-v26/
       - name: Sync Capacitor after Icons
         run: npx cap sync android
 
