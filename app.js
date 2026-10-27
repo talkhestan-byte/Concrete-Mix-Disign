@@ -66,7 +66,7 @@ const translations = {
       volumeM3: 'حجم (m³)', massSSD: 'جرم SSD (kg)', dryMass: 'جرم خشک (kg)', finalSummary: 'خلاصه نهایی',
       totalWater: 'آب کل (W_total)', dryMassAd: 'جرم خشک (Ad)', finalDensity: 'چگالی نهایی (G)',
       menuTitle: 'منوی برنامه', menuPrint: '🖨️ نمایش و چاپ گزارش', menuLanguage: '🌐 زبان',
-      menuContact: '✉️ ارتباط با سازنده', contactBadge: 'ارتباط با سازنده',
+      menuGuide: '📖 راهنما', menuContact: '✉️ ارتباط با سازنده', contactBadge: 'ارتباط با سازنده',
       contactEmail: 'ایمیل', contactSend: 'ارسال ایمیل', contactCopy: 'کپی ایمیل',
       contactCopied: '✓ کپی شد', contactFooter: 'با آرزوی موفقیت 🌟', author: 'مهدی پناهی',
       close: 'بستن', notAvailable: 'در دسترس نیست', error: 'خطا',
@@ -100,7 +100,7 @@ const translations = {
       admixtureLabel: 'افزودنی', sandSSD: 'ماسه SSD', gravelSSD: 'شن SSD', totalDry: 'خشک کل',
       parameter: 'پارامتر', value: 'مقدار', cementC: 'سیمان (C)', waterW: 'آب مؤثر (W)',
       sandSSD2: 'ماسه SSD', gravelSSD2: 'شن SSD', sandDry: 'ماسه خشک', gravelDry: 'شن خشک',
-      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه'
+      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'پارامتر گامای SSD'
     }
   },
   en: {
@@ -161,7 +161,7 @@ const translations = {
       volumeM3: 'Volume (m³)', massSSD: 'SSD mass (kg)', dryMass: 'Dry mass (kg)', finalSummary: 'Final summary',
       totalWater: 'Total water (W_total)', dryMassAd: 'Dry mass (Ad)', finalDensity: 'Final density (G)',
       menuTitle: 'App menu', menuPrint: '🖨️ View & print report', menuLanguage: '🌐 Language',
-      menuContact: '✉️ Contact developer', contactBadge: 'Contact developer',
+      menuGuide: '📖 Guide', menuContact: '✉️ Contact developer', contactBadge: 'Contact developer',
       contactEmail: 'Email', contactSend: 'Send email', contactCopy: 'Copy email',
       contactCopied: '✓ Copied', contactFooter: 'Best wishes 🌟', author: 'Mahdi Panahi',
       close: 'Close', notAvailable: 'Not available', error: 'Error',
@@ -195,7 +195,7 @@ const translations = {
       admixtureLabel: 'Admixture', sandSSD: 'Sand SSD', gravelSSD: 'Gravel SSD', totalDry: 'Total dry',
       parameter: 'Parameter', value: 'Value', cementC: 'Cement (C)', waterW: 'Effective water (W)',
       sandSSD2: 'Sand SSD', gravelSSD2: 'Gravel SSD', sandDry: 'Dry sand', gravelDry: 'Dry gravel',
-      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume'
+      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'SSD Gamma Parameter'
     }
   }
 };
@@ -206,8 +206,6 @@ function t(key) {
   for (const p of parts) { if (obj == null) return key; obj = obj[p]; }
   return obj != null ? obj : key;
 }
-
-function tv(key) { return t(key); }
 
 function isFa() { return currentLang === 'fa'; }
 
@@ -1058,22 +1056,22 @@ function renderReport() {
   const Vassd = result.aggregateVolume;
 
   const formulaHtml = `
-<div style="text-align: center; direction: ltr; font-size: 11px; margin-bottom: 12px; font-family: monospace; white-space: nowrap; overflow-x: auto; display:flex; justify-content:center; align-items:center; flex-wrap:nowrap;">
-  <span>VAssd = 1 - (</span>
-  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 2px;">${c.toFixed(2)}</span><span style="padding:0 2px;">${(1000 * data.sgCement).toFixed(0)}</span></div>
-  <span> + </span>
-  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 2px;">${w.toFixed(2)}</span><span style="padding:0 2px;">1000</span></div>
-  <span> + </span>
-  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 2px;">${result.admixtureMass.toFixed(2)}</span><span style="padding:0 2px;">${(1000 * (Number(data.sgAdmixture) || 1.1)).toFixed(0)}</span></div>
-  <span> + </span>
-  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 2px;">${air.toFixed(2)}</span><span style="padding:0 2px;">1</span></div>
-  <span> ) = ${Vassd.toFixed(3)} m³</span>
+<div style="text-align: center; direction: ltr; margin-bottom: 12px; font-family: monospace; white-space: nowrap; overflow-x: auto; background:#f8fafc; padding:10px; border-radius:6px; border:1px solid #cbd5e1; display:flex; justify-content:flex-start; align-items:center;">
+  <span style="font-size: 12px; margin-right: 8px;">VAssd = 1 - (</span>
+  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 4px;">${c.toFixed(2)}</span><span style="padding:0 4px;">${(1000 * data.sgCement).toFixed(0)}</span></div>
+  <span style="font-size: 12px;"> + </span>
+  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 4px;">${w.toFixed(2)}</span><span style="padding:0 4px;">1000</span></div>
+  <span style="font-size: 12px;"> + </span>
+  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 4px;">${result.admixtureMass.toFixed(2)}</span><span style="padding:0 4px;">${(1000 * (Number(data.sgAdmixture) || 1.1)).toFixed(0)}</span></div>
+  <span style="font-size: 12px;"> + </span>
+  <div style="display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 2px; font-size:10px;"><span style="border-bottom:1px solid #333; padding:0 4px;">${air.toFixed(2)}</span><span style="padding:0 4px;">1</span></div>
+  <span style="font-size: 12px;"> ) = ${Vassd.toFixed(3)} m³</span>
 </div>`;
 
   const r = t('report');
   return `<div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #cbd5e1;">
 <h2 style="text-align: center; color: #1e293b; margin-bottom: 20px; font-size: 18px;">${t('reportTitle')}</h2>
-<div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+<div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow-x:auto;">
 ${formulaHtml}
 </div>
 <div style="background: white; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
@@ -1094,8 +1092,8 @@ ${formulaHtml}
 <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;"><div style="font-size: 11px; color: #64748b;">${r.dryMassAd}</div><strong style="font-size: 16px;">${totalDry.toFixed(0)} kg/m³</strong></div>
 <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #bae6fd;"><div style="font-size: 11px; color: #0369a1;">${r.finalDensity}</div><strong style="font-size: 16px; color: #0284c7;">${finalDensity.toFixed(0)} kg/m³</strong></div>
 </div></div>
-<div style="margin-top: 15px; text-align: center; font-size: 11px; color: #64748b; direction: ltr; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-C: ${c.toFixed(0)} + W: ${w.toFixed(0)} + Sand: ${result.drySand.toFixed(0)} + Gravel: ${result.dryGravel.toFixed(0)} ${data.admixture !== 'none' ? `+ Adm: ${result.admixtureMass.toFixed(1)}` : ''} = G: ${finalDensity.toFixed(0)} kg/m³
+<div style="margin-top: 15px; text-align: center; font-size: 13px; color: #1e293b; direction: ltr; font-family: monospace;">
+${r.gammaSSD} = ${result.ssdSand.toFixed(0)} + ${result.ssdGravel.toFixed(0)} + ${c.toFixed(0)} + ${w.toFixed(0)} = <strong>${finalDensity.toFixed(0)} kg/m³</strong>
 </div>
 </div>`;
 }
@@ -1381,7 +1379,7 @@ body {
 .field:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.15); }
 .field > span { flex-shrink: 0; max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
 input[type="number"], input[type="text"], select {
-  width: 150px !important;
+  width: ${isFa() ? '150px' : '120px'} !important;
   padding: 6px 8px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
@@ -1839,6 +1837,7 @@ function initNewMenu() {
 <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 12px; padding: 8px 14px; font-size: 20px; cursor: pointer; box-shadow: 0 6px 14px rgba(0,120,212,0.35); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
 <div id="app-menu-dropdown" style="display: none; position: absolute; top: 50px; left: 0; background: rgba(255,255,255,0.98); backdrop-filter: blur(10px); border: 1px solid rgba(0,120,212,0.2); border-radius: 14px; box-shadow: 0 12px 32px rgba(15,35,70,0.22); min-width: 200px; overflow: hidden;">
 <button id="app-menu-save" style="display: block; width: 100%; padding: 13px 14px; text-align: ${isFa() ? 'right' : 'left'}; background: none; border: none; border-bottom: 1px solid #eef2f7; cursor: pointer; font-family: inherit; font-size: 14px; color: #1e293b; transition: background 0.15s;">${t('misc.menuPrint')}</button>
+<button id="app-menu-guide" style="display: block; width: 100%; padding: 13px 14px; text-align: ${isFa() ? 'right' : 'left'}; background: none; border: none; border-bottom: 1px solid #eef2f7; cursor: pointer; font-family: inherit; font-size: 14px; color: #1e293b; transition: background 0.15s;">${t('misc.menuGuide')}</button>
 <button id="app-menu-lang" style="display: block; width: 100%; padding: 13px 14px; text-align: ${isFa() ? 'right' : 'left'}; background: none; border: none; border-bottom: 1px solid #eef2f7; cursor: pointer; font-family: inherit; font-size: 14px; color: #1e293b; transition: background 0.15s;">${t('misc.menuLanguage')}</button>
 <button id="app-menu-contact" style="display: block; width: 100%; padding: 13px 14px; text-align: ${isFa() ? 'right' : 'left'}; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; color: #0078d4; font-weight: 700; transition: background 0.15s;">${t('misc.menuContact')}</button>
 </div></div>`;
@@ -1847,6 +1846,7 @@ function initNewMenu() {
   const menuBtn = document.getElementById('app-menu-btn');
   const menuDropdown = document.getElementById('app-menu-dropdown');
   const menuSave = document.getElementById('app-menu-save');
+  const menuGuide = document.getElementById('app-menu-guide');
   const menuLang = document.getElementById('app-menu-lang');
   const menuContact = document.getElementById('app-menu-contact');
 
@@ -1865,6 +1865,13 @@ function initNewMenu() {
     e.stopPropagation();
     menuDropdown.style.display = 'none';
     try { printFullReport(); } catch (err) { alert(t('misc.printError') + (err.message || err)); }
+  };
+
+  menuGuide.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    menuDropdown.style.display = 'none';
+    window.open('./guide.pdf', '_blank');
   };
 
   menuLang.onclick = (e) => {
