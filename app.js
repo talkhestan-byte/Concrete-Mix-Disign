@@ -100,7 +100,8 @@ const translations = {
       admixtureLabel: 'افزودنی', sandSSD: 'ماسه SSD', gravelSSD: 'شن SSD', totalDry: 'خشک کل',
       parameter: 'پارامتر', value: 'مقدار', cementC: 'سیمان (C)', waterW: 'آب مؤثر (W)',
       sandSSD2: 'ماسه SSD', gravelSSD2: 'شن SSD', sandDry: 'ماسه خشک', gravelDry: 'شن خشک',
-      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'γ<sub>SSD</sub>'
+      admixtureLabel2: 'افزودنی', aggVolume: 'حجم سنگدانه', gammaSSD: 'γ<sub>SSD</sub>',
+      totalWater: 'آب کل (W_total)', dryMassAd: 'جرم خشک (Ad)', finalDensity: 'چگالی نهایی (G)'
     }
   },
   en: {
@@ -195,7 +196,8 @@ const translations = {
       admixtureLabel: 'Admixture', sandSSD: 'Sand SSD', gravelSSD: 'Gravel SSD', totalDry: 'Total dry',
       parameter: 'Parameter', value: 'Value', cementC: 'Cement (C)', waterW: 'Effective water (W)',
       sandSSD2: 'Sand SSD', gravelSSD2: 'Gravel SSD', sandDry: 'Dry sand', gravelDry: 'Dry gravel',
-      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'γ<sub>SSD</sub>'
+      admixtureLabel2: 'Admixture', aggVolume: 'Aggregate volume', gammaSSD: 'γ<sub>SSD</sub>',
+      totalWater: 'Total water (W_total)', dryMassAd: 'Dry mass (Ad)', finalDensity: 'Final density (G)'
     }
   }
 };
@@ -866,10 +868,24 @@ ${grid}
 }
 
 function renderStep1() {
+  const activeCurve = getActiveCurve();
+  const targetY = getTargetStrength();
+  let targetX = null;
+  if (targetY !== null && activeCurve) targetX = calculateWc(targetY, activeCurve);
+
+  // اگر مقدار step1Strength خالی باشد یعنی کاربر هنوز دستی تغییری نداده است
+  // در این حالت مقدار wc را با targetX (مقدار قرمز پایین صفحه) برابر می‌کنیم
+  const isManualStep1 = data.step1Strength !== null && data.step1Strength !== '' && Number(data.step1Strength) > 0;
+
+  if (!isManualStep1 && targetX !== null) {
+    if (Math.abs(num('wc') - targetX) > 0.0001) {
+      data.wc = Number(targetX.toFixed(3));
+      save();
+    }
+  }
+
   const wcDisplay = Number.isFinite(Number(data.wc)) ? Number(data.wc).toFixed(3) : '';
-  const step1Valid = data.step1Strength !== null && data.step1Strength !== '' && Number.isFinite(Number(data.step1Strength)) && Number(data.step1Strength) > 0;
-  const target = getTargetStrength();
-  const strengthDisplay = step1Valid ? Number(data.step1Strength).toFixed(2) : (target !== null ? target.toFixed(2) : '');
+  const strengthDisplay = isManualStep1 ? Number(data.step1Strength).toFixed(2) : (targetY !== null ? targetY.toFixed(2) : '');
   const wcLimitActive = data.limitWcOn && Number(data.limitWc) > 0 && Number(data.limitWc) < 1;
   const currentWcNum = num('wc');
   const wcExceeds = wcLimitActive && Number.isFinite(currentWcNum) && currentWcNum > Number(data.limitWc);
@@ -1871,7 +1887,14 @@ function initNewMenu() {
     e.preventDefault();
     e.stopPropagation();
     menuDropdown.style.display = 'none';
-    window.open('./guide.pdf', '_blank');
+    // روش بهتر برای باز کردن PDF در WebView
+    const link = document.createElement('a');
+    link.href = 'guide.pdf';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   menuLang.onclick = (e) => {
