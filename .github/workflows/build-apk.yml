@@ -31,30 +31,36 @@ jobs:
           mkdir -p www
           cp index.html app.js style.css manifest.webmanifest sw.js www/
           
-          # کپی کردن فایل‌های راهنما به پوشه www
-          mkdir -p www/pdfjs
+          # کپی کردن فایل راهنما
           cp guide.pdf www/
           cp guide-viewer.html www/
-          cp pdfjs/pdf.mjs www/pdfjs/
-          cp pdfjs/pdf.worker.mjs www/pdfjs/
           
           npm init -y
           npm install @capacitor/core@6 @capacitor/android@6
           npm install --save-dev @capacitor/cli@6
           npm install @bcyesil/capacitor-plugin-printer@0.0.5
           npm install -D @capacitor/assets
+          
+          # نصب پکیج استاندارد PDF.js
+          npm install pdfjs-dist@4.10.38
 
       - name: Configure Capacitor
         run: |
           npx cap init "Iranian Concrete Mix Design" com.iranianconcrete.mixdesign --web-dir www
           npx cap add android
+          # سینک کردن فایل‌های وب با اندروید
           npx cap sync android
 
-      # مرحله ۱: تولید آیکون به روش استاندارد (بدون فلگ اضافی)
+      # کپی فایل‌های PDF.js به داخل خروجی اندروید
+      - name: Copy PDF.js to Android Assets
+        run: |
+          mkdir -p android/app/src/main/assets/public/pdfjs-dist/build
+          cp node_modules/pdfjs-dist/build/pdf.mjs android/app/src/main/assets/public/pdfjs-dist/build/
+          cp node_modules/pdfjs-dist/build/pdf.worker.mjs android/app/src/main/assets/public/pdfjs-dist/build/
+
       - name: Generate Android Icons
         run: npx capacitor-assets generate --android
 
-      # مرحله ۲: کپی اجباری (پشتیبان) - این مرحله تضمین می‌کند که عکس شما در APK قرار بگیرد
       - name: Force Copy Icons (Fallback)
         run: |
           echo "در حال کپی اجباری عکس آیکون به پوشه‌های اندروید..."
@@ -71,9 +77,6 @@ jobs:
         run: |
           echo "بررسی فایل‌های آیکون در پوشه اندروید:"
           ls -la android/app/src/main/res/mipmap-xxxhdpi/
-
-      - name: Sync Capacitor after Icons
-        run: npx cap sync android
 
       - name: Build APK
         run: |
