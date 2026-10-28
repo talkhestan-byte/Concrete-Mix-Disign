@@ -1,1 +1,26 @@
+name: Generate Release Keystore
 
+on:
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Generate Keystore
+        run: |
+          # در اینجا رمز عبور خود را تعیین می‌کنیم (می‌توانید آن را تغییر دهید)
+          keytool -genkeypair -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias -storepass Kabab123! -keypass Kabab123! -dname "CN=IranianMix, OU=Dev, O=MyOrg, L=Tehran, S=Tehran, C=IR"
+
+      - name: Print Base64 String
+        run: |
+          echo "=================== لطفا متن زیر را کپی کنید ==================="
+          base64 -w0 my-release-key.jks
+          echo ""
+          echo "=================================================================="
