@@ -82,7 +82,9 @@ document.getElementById('close').onclick = () => {
 };
 async function loadPDF() {
   try {
-    const task = pdfjsLib.getDocument({ url: './guide.pdf', useSystemFonts: true });
+    const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
+const pdfUrl = baseUrl + 'guide.pdf';
+const task = pdfjsLib.getDocument({ url: pdfUrl, useSystemFonts: true });
     pdf = await task.promise;
     await renderPage(1);
   } catch (error) {
