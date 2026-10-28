@@ -1,4 +1,4 @@
-name: Build Iranian Concrete Mix Disign APK
+name: Build and Sign APK
 
 on:
   workflow_dispatch:
@@ -30,6 +30,11 @@ jobs:
         run: |
           mkdir -p www
           cp index.html app.js style.css manifest.webmanifest sw.js www/
+          
+          # کپی عکس راهنما (اگر اسم فایل چیز دیگری است، این خط را تغییر دهید)
+          cp guide.jpg www/ || true
+          cp guide-viewer.html www/
+          
           npm init -y
           npm install @capacitor/core@6 @capacitor/android@6
           npm install --save-dev @capacitor/cli@6
@@ -46,9 +51,7 @@ jobs:
         run: |
           TARGET_DIR="android/app/src/main/assets/public"
           cp guide-viewer.html $TARGET_DIR/
-          # کپی عکس راهنما (فرقی نمی‌کند jpg باشد یا png، این دستور همه را کپی می‌کند)
           cp guide.jpg $TARGET_DIR/ || true
-          cp guide.png $TARGET_DIR/ || true
 
       - name: Generate Android Icons
         run: npx capacitor-assets generate --android
@@ -63,15 +66,33 @@ jobs:
           cp assets/icon-only.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
           cp assets/icon-only.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
 
-      - name: Build APK
+      # ساخت APK دیباگ
+      - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Upload APK
+      # امضا کردن APK با کلید شما
+      - name: Sign APK
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: android/app/build/outputs/apk/debug
+          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
+          alias: ${{ secrets.RELEASE_KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.RELEASE_KEY_PASSWORD }}
+
+      # تغییر نام فایل برای آپلود
+      - name: Rename Signed APK
+        run: |
+          mv ${{ steps.sign_app.outputs.signedReleaseFile }} android/app/build/outputs/apk/debug/app-release-signed.apk
+
+      # آپلود فایل نهایی
+      - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: Iranian Concrete Mix Disign-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Iranian-Concrete-Mix-Design-Release
+          path: android/app/build/outputs/apk/debug/app-release-signed.apk
           if-no-files-found: error
