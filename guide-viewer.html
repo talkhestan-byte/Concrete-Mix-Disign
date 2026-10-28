@@ -36,7 +36,7 @@ canvas { display: block; margin: auto; background: white; box-shadow: 0 3px 15px
 </div>
 <script type="module">
 import * as pdfjsLib from './pdfjs/pdf.mjs';
-pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = './pdf.worker.mjs';
 let pdf = null, pageNumber = 1, zoom = 1, rendering = false, pendingPage = null;
 const canvas = document.getElementById('pdfCanvas');
 const ctx = canvas.getContext('2d');
