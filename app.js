@@ -1579,7 +1579,7 @@ function showSplash() {
   setTimeout(() => {
     splash.classList.add('fade-out');
     setTimeout(() => splash.remove(), 520);
-  }, 3000);
+  }, 4000);
 }
 
 if ('serviceWorker' in navigator) {
@@ -1854,37 +1854,14 @@ async function printFullReport() {
 }
 
 function showGuideReport() {
-  const html = `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>راهنمای برنامه</title>
-<style>
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #333; }
-  iframe { width: 100%; height: 100%; border: none; display: block; }
-</style>
-</head>
-<body>
-  <iframe src="guide.pdf#toolbar=0&navpanes=0&scrollbar=0" title="راهنما"></iframe>
-</body>
-</html>`;
-
-  try {
-    const PrinterPlugin = window.Capacitor?.Plugins?.Printer;
-    if (PrinterPlugin && typeof PrinterPlugin.print === 'function') {
-      PrinterPlugin.print({
-        content: html,
-        name: 'guide',
-        orientation: 'portrait'
-      });
-      return;
-    }
-    alert("پلاگین چاپ در دسترس نیست.");
-  } catch (error) {
-    console.error('Error opening guide:', error);
-    alert('خطا در نمایش راهنما: ' + (error.message || error));
-  }
+  // در WebView اندروید، باز کردن مستقیم فایل PDF با print منجر به صفحه سیاه می‌شود.
+  // بهترین روش ارجاع فایل به مرورگر یا PDF خوان پیش‌فرض سیستم عامل است.
+  const link = document.createElement('a');
+  link.href = 'guide.pdf';
+  link.target = '_blank';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function initNewMenu() {
@@ -2084,8 +2061,11 @@ function bootstrap() {
   document.documentElement.lang = currentLang;
   document.documentElement.dir = isFa() ? 'rtl' : 'ltr';
   showSplash();
-  startApp();
-  initNewMenu();
+  // تأخیر در استارت برنامه تا اسپلش اسکرین ابتدا نمایش داده شود
+  setTimeout(() => {
+    startApp();
+    initNewMenu();
+  }, 100);
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootstrap);
