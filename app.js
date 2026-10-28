@@ -1853,22 +1853,73 @@ async function printFullReport() {
   }
 }
 
+/* تغییر اصلی: بارگذاری آفلاین PDF.js */
 function showGuideReport() {
-  const guideUrl = './guide.pdf';
-  // استفاده از iframe داخل یک صفحه وب برای جلوگیری از صفحه سیاه در WebView
   const html = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>راهنمای برنامه</title>
+<title>راهنما</title>
 <style>
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #333; }
-  iframe { width: 100%; height: 100%; border: none; display: block; }
+  body, html { margin: 0; padding: 0; background: #333; overflow: hidden; height: 100%; }
+  #pdf-container { width: 100%; height: 100%; overflow-y: auto; background: #333; display: flex; flex-direction: column; align-items: center; padding: 10px 0; }
+  canvas { max-width: 100%; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); background: white; }
+  .loading { color: white; font-family: Tahoma; margin-top: 20px; }
 </style>
 </head>
 <body>
-  <iframe src="${guideUrl}#toolbar=0&navpanes=0&scrollbar=0" title="راهنما"></iframe>
+<div id="pdf-container">
+  <div class="loading" id="loading-msg">در حال بارگذاری فایل...</div>
+</div>
+<!-- استفاده از CDN برای PDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  const container = document.getElementById('pdf-container');
+  const loadingMsg = document.getElementById('loading-msg');
+  
+  // تنظیم مسیر Worker برای PDF.js
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  // بارگذاری فایل guide.pdf از ریشه
+  const loadingTask = pdfjsLib.getDocument('guide.pdf');
+  
+  loadingTask.promise.then(function(pdf) {
+    loadingMsg.style.display = 'none';
+    const totalPages = pdf.numPages;
+
+    const renderPage = (pageNumber) => {
+      pdf.getPage(pageNumber).then(function(page) {
+        const viewport = page.getViewport({ scale: 1.5 });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        container.appendChild(canvas);
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+        
+        page.render(renderContext).promise.then(() => {
+          if (pageNumber < totalPages) {
+            renderPage(pageNumber + 1);
+          }
+        });
+      });
+    };
+    
+    if (totalPages > 0) {
+      renderPage(1);
+    }
+  }).catch(function(error) {
+    console.error('Error loading PDF:', error);
+    loadingMsg.innerHTML = 'خطا در بارگذاری فایل راهنما. لطفاً مطمئن شوید فایل guide.pdf در ریشه برنامه قرار دارد و اینترنت متصل است.';
+    loadingMsg.style.color = '#ff6b6b';
+  });
+</script>
 </body>
 </html>`;
 
@@ -1882,7 +1933,7 @@ function showGuideReport() {
       });
       return;
     }
-    alert("پلاگین چاپ در دسترس نیست. برای مشاهده راهنما، فایل PDF را در مرورگر باز کنید.");
+    alert('پلاگین چاپ در دسترس نیست.');
   } catch (error) {
     console.error('Error opening guide:', error);
     alert('خطا در نمایش راهنما: ' + (error.message || error));
