@@ -1108,7 +1108,7 @@ ${formulaHtml}
 <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center;"><div style="font-size: 11px; color: #64748b;">${r.dryMassAd}</div><strong style="font-size: 16px;">${totalDry.toFixed(0)} kg/m³</strong></div>
 <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #bae6fd;"><div style="font-size: 11px; color: #0369a1;">${r.finalDensity}</div><strong style="font-size: 16px; color: #0284c7;">${finalDensity.toFixed(0)} kg/m³</strong></div>
 </div></div>
-<div style="margin-top: 15px; text-align: center; font-size: 13px; color: #1e293b; direction: ltr; font-family: monospace;">
+<div style="margin-top: 15px; text-align: center; font-size: 9px; color: #1e293b; direction: ltr; font-family: monospace;">
 ${r.gammaSSD} = ${result.drySand.toFixed(0)} + ${result.dryGravel.toFixed(0)} + ${c.toFixed(0)} + ${totalWater.toFixed(0)} = <strong>${finalDensity.toFixed(0)} kg/m³</strong>
 </div>
 </div>`;
@@ -1854,11 +1854,10 @@ async function printFullReport() {
 }
 
 function showGuideReport() {
-  // در WebView اندروید، باز کردن مستقیم فایل PDF با print منجر به صفحه سیاه می‌شود.
-  // بهترین روش ارجاع فایل به مرورگر یا PDF خوان پیش‌فرض سیستم عامل است.
+  // استفاده از لینک دانلود برای ارجاع مستقیم فایل PDF به سیستم‌عامل
   const link = document.createElement('a');
-  link.href = 'guide.pdf';
-  link.target = '_blank';
+  link.href = './guide.pdf';
+  link.download = 'guide.pdf';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
