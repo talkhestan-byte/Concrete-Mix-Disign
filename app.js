@@ -1109,7 +1109,7 @@ ${formulaHtml}
 <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; flex: 1; min-width: 120px; text-align: center; border: 1px solid #bae6fd;"><div style="font-size: 11px; color: #0369a1;">${r.finalDensity}</div><strong style="font-size: 16px; color: #0284c7;">${finalDensity.toFixed(0)} kg/m³</strong></div>
 </div></div>
 <div style="margin-top: 15px; text-align: center; font-size: 13px; color: #1e293b; direction: ltr; font-family: monospace;">
-${r.gammaSSD} = ${totalDry.toFixed(0)} + ${totalWater.toFixed(0)} = <strong>${finalDensity.toFixed(0)} kg/m³</strong>
+${r.gammaSSD} = ${result.drySand.toFixed(0)} + ${result.dryGravel.toFixed(0)} + ${c.toFixed(0)} + ${totalWater.toFixed(0)} = <strong>${finalDensity.toFixed(0)} kg/m³</strong>
 </div>
 </div>`;
 }
@@ -1142,7 +1142,7 @@ function view() {
       default: html = renderHome();
     }
   } catch (error) { console.error(error); html = `<p class="bad">${escapeHtml(error.message)}</p>`; }
-  screen.innerHTML = `<article class="panel">${html}</article>`;
+  screen.innerHTML = `<article class="panel" dir="${isFa() ? 'rtl' : 'ltr'}" style="text-align: ${isFa() ? 'right' : 'left'};">${html}</article>`;
   document.querySelectorAll('[data-page]').forEach(button => { button.onclick = () => { page = Number(button.dataset.page); view(); }; });
   const wcContinueBtn = document.getElementById('wc-limit-continue');
   const wcFixBtn = document.getElementById('wc-limit-fix');
@@ -1853,6 +1853,40 @@ async function printFullReport() {
   }
 }
 
+function showGuideReport() {
+  const html = `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>راهنمای برنامه</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #333; }
+  iframe { width: 100%; height: 100%; border: none; display: block; }
+</style>
+</head>
+<body>
+  <iframe src="guide.pdf#toolbar=0&navpanes=0&scrollbar=0" title="راهنما"></iframe>
+</body>
+</html>`;
+
+  try {
+    const PrinterPlugin = window.Capacitor?.Plugins?.Printer;
+    if (PrinterPlugin && typeof PrinterPlugin.print === 'function') {
+      PrinterPlugin.print({
+        content: html,
+        name: 'guide',
+        orientation: 'portrait'
+      });
+      return;
+    }
+    alert("پلاگین چاپ در دسترس نیست.");
+  } catch (error) {
+    console.error('Error opening guide:', error);
+    alert('خطا در نمایش راهنما: ' + (error.message || error));
+  }
+}
+
 function initNewMenu() {
   const menuHTML = `<div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: ${isFa() ? 'rtl' : 'ltr'}; font-family: inherit;">
 <button id="app-menu-btn" style="background: linear-gradient(180deg, #0078d4, #005a9e); color: white; border: none; border-radius: 12px; padding: 8px 14px; font-size: 20px; cursor: pointer; box-shadow: 0 6px 14px rgba(0,120,212,0.35); display: flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.2s;">⋮</button>
@@ -1892,14 +1926,7 @@ function initNewMenu() {
     e.preventDefault();
     e.stopPropagation();
     menuDropdown.style.display = 'none';
-    // استفاده از anchor tag برای باز کردن در سیستم عامل اندروید بدون خطای صفحه سفید
-    const link = document.createElement('a');
-    link.href = 'guide.pdf';
-    link.target = '_blank';
-    link.download = 'guide.pdf';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    showGuideReport();
   };
 
   menuLang.onclick = (e) => {
