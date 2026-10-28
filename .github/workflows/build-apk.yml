@@ -31,32 +31,33 @@ jobs:
           mkdir -p www
           cp index.html app.js style.css manifest.webmanifest sw.js www/
           
-          # کپی کردن فایل راهنما
-          cp guide.pdf www/
-          cp guide-viewer.html www/
-          
           npm init -y
           npm install @capacitor/core@6 @capacitor/android@6
           npm install --save-dev @capacitor/cli@6
           npm install @bcyesil/capacitor-plugin-printer@0.0.5
           npm install -D @capacitor/assets
-          
-          # نصب پکیج استاندارد PDF.js
           npm install pdfjs-dist@4.10.38
 
       - name: Configure Capacitor
         run: |
           npx cap init "Iranian Concrete Mix Design" com.iranianconcrete.mixdesign --web-dir www
           npx cap add android
-          # سینک کردن فایل‌های وب با اندروید
           npx cap sync android
 
-      # کپی فایل‌های PDF.js به داخل خروجی اندروید
-      - name: Copy PDF.js to Android Assets
+      # مرحله حیاتی: کپی فایل‌ها دقیقاً به پوشه اندروید
+      - name: Copy Assets to Android Public Folder
         run: |
-          mkdir -p android/app/src/main/assets/public/pdfjs-dist/build
-          cp node_modules/pdfjs-dist/build/pdf.mjs android/app/src/main/assets/public/pdfjs-dist/build/
-          cp node_modules/pdfjs-dist/build/pdf.worker.mjs android/app/src/main/assets/public/pdfjs-dist/build/
+          # پیدا کردن پوشه هدف در اندروید
+          TARGET_DIR="android/app/src/main/assets/public"
+          mkdir -p $TARGET_DIR/pdfjs-dist/build
+          
+          # کپی فایل راهنما و نمایشگر
+          cp guide.pdf $TARGET_DIR/
+          cp guide-viewer.html $TARGET_DIR/
+          
+          # کپی موتورهای PDF.js
+          cp node_modules/pdfjs-dist/build/pdf.mjs $TARGET_DIR/pdfjs-dist/build/
+          cp node_modules/pdfjs-dist/build/pdf.worker.mjs $TARGET_DIR/pdfjs-dist/build/
 
       - name: Generate Android Icons
         run: npx capacitor-assets generate --android
