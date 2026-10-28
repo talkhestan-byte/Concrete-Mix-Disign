@@ -1,1 +1,96 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=5">
+<title>راهنمای طرح اختلاط بتن</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; background: #e5eaf1; font-family: Tahoma, Arial, sans-serif; }
+header { position: sticky; top: 0; z-index: 10; background: #0078d4; color: white; padding: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+header strong { font-size: 14px; }
+button { border: 0; border-radius: 8px; padding: 9px 12px; background: white; color: #005a9e; font-weight: bold; cursor: pointer; }
+button:disabled { opacity: .4; }
+.toolbar { position: sticky; top: 52px; z-index: 9; background: #f8fafc; padding: 10px 5px; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; box-shadow: 0 2px 5px #0002; }
+#viewer { padding: 14px 8px 30px; text-align: center; overflow: auto; }
+canvas { display: block; margin: auto; background: white; box-shadow: 0 3px 15px #0003; max-width: none; }
+#status { padding: 12px; text-align: center; color: #334155; }
+</style>
+</head>
+<body>
+<header>
+  <strong>راهنمای طرح اختلاط بتن</strong>
+  <button id="close">✕ بستن</button>
+</header>
+<div class="toolbar">
+  <button id="prev">قبلی</button>
+  <span id="pageInfo">—</span>
+  <button id="next">بعدی</button>
+  <button id="zoomOut">−</button>
+  <span id="zoomInfo">100%</span>
+  <button id="zoomIn">+</button>
+</div>
+<div id="status">در حال بارگذاری راهنما...</div>
+<div id="viewer">
+  <canvas id="pdfCanvas"></canvas>
+</div>
+<script type="module">
+import * as pdfjsLib from './pdfjs/pdf.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = './pdfjs/pdf.worker.mjs';
+let pdf = null, pageNumber = 1, zoom = 1, rendering = false, pendingPage = null;
+const canvas = document.getElementById('pdfCanvas');
+const ctx = canvas.getContext('2d');
+const status = document.getElementById('status');
 
+async function renderPage(number) {
+  if (!pdf) return;
+  if (rendering) { pendingPage = number; return; }
+  rendering = true;
+  try {
+    const page = await pdf.getPage(number);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const availableWidth = Math.max(200, window.innerWidth - 20);
+    const fitScale = Math.min(1.5, availableWidth / baseViewport.width);
+    const scale = fitScale * zoom;
+    const viewport = page.getViewport({ scale });
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(viewport.width * dpr);
+    canvas.height = Math.floor(viewport.height * dpr);
+    canvas.style.width = viewport.width + 'px';
+    canvas.style.height = viewport.height + 'px';
+    const transform = [dpr, 0, 0, dpr, 0, 0];
+    await page.render({ canvasContext: ctx, viewport, transform }).promise;
+    document.getElementById('pageInfo').textContent = number + ' / ' + pdf.numPages;
+    document.getElementById('zoomInfo').textContent = Math.round(zoom * 100) + '%';
+    document.getElementById('prev').disabled = number <= 1;
+    document.getElementById('next').disabled = number >= pdf.numPages;
+    status.textContent = '';
+  } catch (error) {
+    status.textContent = 'خطا در نمایش صفحه: ' + error.message;
+  } finally {
+    rendering = false;
+    if (pendingPage !== null) { const nextPage = pendingPage; pendingPage = null; renderPage(nextPage); }
+  }
+}
+document.getElementById('prev').onclick = () => { if (pageNumber > 1) { pageNumber--; renderPage(pageNumber); } };
+document.getElementById('next').onclick = () => { if (pdf && pageNumber < pdf.numPages) { pageNumber++; renderPage(pageNumber); } };
+document.getElementById('zoomIn').onclick = () => { zoom = Math.min(3, zoom + 0.25); renderPage(pageNumber); };
+document.getElementById('zoomOut').onclick = () => { zoom = Math.max(0.5, zoom - 0.25); renderPage(pageNumber); };
+document.getElementById('close').onclick = () => {
+  if (window.parent !== window && typeof window.parent.closeGuideViewer === 'function') { window.parent.closeGuideViewer(); }
+  else { window.history.back(); }
+};
+async function loadPDF() {
+  try {
+    const task = pdfjsLib.getDocument({ url: './guide.pdf', useSystemFonts: true });
+    pdf = await task.promise;
+    await renderPage(1);
+  } catch (error) {
+    console.error(error);
+    status.textContent = 'فایل راهنما بارگذاری نشد: ' + error.message;
+  }
+}
+loadPDF();
+</script>
+</body>
+</html>
