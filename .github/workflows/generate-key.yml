@@ -1,10 +1,10 @@
-name: Generate Release Keystore
+name: Generate Key
 
 on:
   workflow_dispatch:
 
 jobs:
-  generate:
+  make-key:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Java
@@ -15,12 +15,11 @@ jobs:
 
       - name: Generate Keystore
         run: |
-          # در اینجا رمز عبور خود را تعیین می‌کنیم (می‌توانید آن را تغییر دهید)
           keytool -genkeypair -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias -storepass Kabab123! -keypass Kabab123! -dname "CN=IranianMix, OU=Dev, O=MyOrg, L=Tehran, S=Tehran, C=IR"
 
-      - name: Print Base64 String
+      - name: Print Base64
         run: |
-          echo "=================== لطفا متن زیر را کپی کنید ==================="
+          echo "=================== کد زیر را کپی کنید ==================="
           base64 -w0 my-release-key.jks
           echo ""
-          echo "=================================================================="
+          echo "=========================================================="
