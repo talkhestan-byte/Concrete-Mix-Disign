@@ -45,8 +45,10 @@ jobs:
       - name: Copy Assets to Android Public Folder
         run: |
           TARGET_DIR="android/app/src/main/assets/public"
-          cp guide.pdf $TARGET_DIR/
           cp guide-viewer.html $TARGET_DIR/
+          # کپی عکس راهنما (فرقی نمی‌کند jpg باشد یا png، این دستور همه را کپی می‌کند)
+          cp guide.jpg $TARGET_DIR/ || true
+          cp guide.png $TARGET_DIR/ || true
 
       - name: Generate Android Icons
         run: npx capacitor-assets generate --android
