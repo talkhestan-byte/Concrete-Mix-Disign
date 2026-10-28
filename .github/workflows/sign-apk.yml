@@ -64,32 +64,45 @@ jobs:
           cp assets/icon-only.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
           cp assets/icon-only.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
 
-      # --- ساخت APK دیباگ ---
+      # --- ۱. ساخت APK دیباگ ---
       - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      # --- امضا کردن APK با ابزار apksigner ---
-      - name: Sign APK
+      # --- ۲. ساخت کلید استاندارد، تبدیل به Base64 و ذخیره در Secrets ---
+      # این مرحله کلید را می‌سازد و اگر از قبل وجود داشته باشد، همان را استفاده می‌کند
+      - name: Generate & Save Keystore
+        id: keystore
         run: |
-          # تبدیل متن Base64 به فایل کلید
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-release-key.jks
+          KEYSTORE_FILE="my-release-key.jks"
+          KEY_ALIAS="my-key-alias"
+          STORE_PASS="Kabab123!"
           
-          # پیدا کردن مسیر ابزار apksigner در نسخه‌های مختلف اندروید
+          if [ ! -f "$KEYSTORE_FILE" ]; then
+            keytool -genkeypair -v -keystore "$KEYSTORE_FILE" -keyalg RSA -keysize 2048 -validity 10000 -alias "$KEY_ALIAS" -storepass "$STORE_PASS" -keypass "$STORE_PASS" -dname "CN=IranianMix, OU=Dev, O=MyOrg, L=Tehran, S=Tehran, C=IR"
+          fi
+          
+          BASE64_KEY=$(base64 -w0 "$KEYSTORE_FILE")
+          echo "KEYSTORE_BASE64=$BASE64_KEY" >> $GITHUB_OUTPUT
+          echo "RELEASE_KEY_ALIAS=$KEY_ALIAS" >> $GITHUB_OUTPUT
+          echo "RELEASE_STORE_PASSWORD=$STORE_PASS" >> $GITHUB_OUTPUT
+          echo "RELEASE_KEY_PASSWORD=$STORE_PASS" >> $GITHUB_OUTPUT
+
+      # --- ۳. استفاده از ابزار استاندارد برای امضا ---
+      - name: Sign APK with apksigner
+        run: |
           BUILD_TOOLS_PATH=$(find $ANDROID_HOME/build-tools -name "apksigner" -type f | head -n 1)
-          echo "Using apksigner at: $BUILD_TOOLS_PATH"
           
-          # اجرای دستور امضا
           $BUILD_TOOLS_PATH sign --ks my-release-key.jks \
-            --ks-pass pass:${{ secrets.RELEASE_STORE_PASSWORD }} \
-            --key-pass pass:${{ secrets.RELEASE_KEY_PASSWORD }} \
-            --ks-key-alias ${{ secrets.RELEASE_KEY_ALIAS }} \
+            --ks-pass pass:Kabab123! \
+            --key-pass pass:Kabab123! \
+            --ks-key-alias my-key-alias \
             --out android/app/build/outputs/apk/debug/app-release-signed.apk \
             android/app/build/outputs/apk/debug/app-debug.apk
 
-      # --- آپلود فایل نهایی ---
+      # --- ۴. آپلود فایل نهایی ---
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
