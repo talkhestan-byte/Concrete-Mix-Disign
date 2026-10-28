@@ -30,13 +30,11 @@ jobs:
         run: |
           mkdir -p www
           cp index.html app.js style.css manifest.webmanifest sw.js www/
-          
           npm init -y
           npm install @capacitor/core@6 @capacitor/android@6
           npm install --save-dev @capacitor/cli@6
           npm install @bcyesil/capacitor-plugin-printer@0.0.5
           npm install -D @capacitor/assets
-          npm install pdfjs-dist@4.10.38
 
       - name: Configure Capacitor
         run: |
@@ -44,27 +42,17 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      # مرحله حیاتی: کپی فایل‌ها دقیقاً به پوشه اندروید
       - name: Copy Assets to Android Public Folder
         run: |
-          # پیدا کردن پوشه هدف در اندروید
           TARGET_DIR="android/app/src/main/assets/public"
-          mkdir -p $TARGET_DIR/pdfjs-dist/build
-          
-          # کپی فایل راهنما و نمایشگر
           cp guide.pdf $TARGET_DIR/
           cp guide-viewer.html $TARGET_DIR/
-          
-          # کپی موتورهای PDF.js
-          cp node_modules/pdfjs-dist/build/pdf.mjs $TARGET_DIR/pdfjs-dist/build/
-          cp node_modules/pdfjs-dist/build/pdf.worker.mjs $TARGET_DIR/pdfjs-dist/build/
 
       - name: Generate Android Icons
         run: npx capacitor-assets generate --android
 
       - name: Force Copy Icons (Fallback)
         run: |
-          echo "در حال کپی اجباری عکس آیکون به پوشه‌های اندروید..."
           cp assets/icon-only.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           cp assets/icon-only.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
           cp assets/icon-only.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
@@ -72,12 +60,6 @@ jobs:
           cp assets/icon-only.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
           cp assets/icon-only.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
           cp assets/icon-only.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          echo "کپی اجباری با موفقیت انجام شد."
-
-      - name: Verify Icons Generated
-        run: |
-          echo "بررسی فایل‌های آیکون در پوشه اندروید:"
-          ls -la android/app/src/main/res/mipmap-xxxhdpi/
 
       - name: Build APK
         run: |
