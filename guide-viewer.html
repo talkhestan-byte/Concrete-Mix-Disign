@@ -10,9 +10,8 @@
   header { position: sticky; top: 0; z-index: 10; background: #0078d4; color: white; padding: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px #0003; }
   header strong { font-size: 15px; }
   button { border: 0; border-radius: 8px; padding: 10px 15px; background: white; color: #005a9e; font-weight: bold; cursor: pointer; font-family: inherit; }
-  #viewer { padding: 10px; text-align: center; }
-  .pdf-page { width: 100%; max-width: 800px; display: block; margin: 0 auto 15px auto; background: white; box-shadow: 0 3px 15px #0003; border-radius: 5px; }
-  #error { color: #b91c1c; padding: 20px; text-align: center; font-weight: bold; display: none; }
+  #viewer { padding: 10px; text-align: center; overflow: auto; }
+  .guide-img { width: 100%; max-width: 900px; display: block; margin: 0 auto; background: white; box-shadow: 0 3px 15px #0003; }
 </style>
 </head>
 <body>
@@ -20,8 +19,11 @@
   <strong>راهنمای طرح اختلاط بتن</strong>
   <button id="close">✕ بستن</button>
 </header>
-<div id="error">متأسفانه فایل راهنما بارگذاری نشد. لطفاً مطمئن شوید فایل guide.pdf در برنامه قرار دارد.</div>
-<div id="viewer"></div>
+<div id="viewer">
+  <!-- نام فایل عکس شما اینجا قرار می‌گیرد -->
+  <img src="./guide.jpg" class="guide-img" alt="راهنمای برنامه" onerror="this.style.display='none'; document.getElementById('err').style.display='block';">
+  <div id="err" style="display:none; color:red; padding:20px; font-weight:bold;">عکس راهنما پیدا نشد. لطفاً مطمئن شوید فایل guide.jpg در ریشه برنامه قرار دارد.</div>
+</div>
 <script>
 document.getElementById('close').onclick = () => {
   if (window.parent !== window && typeof window.parent.closeGuideViewer === 'function') {
@@ -30,25 +32,6 @@ document.getElementById('close').onclick = () => {
     window.history.back();
   }
 };
-
-// در اینجا ما فایل PDF را به مرورگر پاس می‌دهیم تا مرورگر خودش آن را به صورت عکس در بیاورد
-const viewer = document.getElementById('viewer');
-const errorDiv = document.getElementById('error');
-
-// این ترفند باعث می‌شود فایل PDF در WebView اندروید به جای دانلود، به صورت یک تصویر درون برنامه نمایش داده شود
-const embed = document.createElement('embed');
-embed.src = './guide.pdf#toolbar=0&navpanes=0&scrollbar=0';
-embed.type = 'application/pdf';
-embed.style.width = '100%';
-embed.style.height = '100vh'; 
-embed.style.border = 'none';
-
-// اگر مرورگر نتوانست فایل را نمایش دهد، خطا نشان می‌دهد
-embed.onerror = () => {
-  errorDiv.style.display = 'block';
-};
-
-viewer.appendChild(embed);
 </script>
 </body>
 </html>
