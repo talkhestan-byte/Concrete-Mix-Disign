@@ -66,6 +66,11 @@ jobs:
           ls -la android/app/src/main/res/mipmap-xxxhdpi/
 
       - name: Sync Capacitor after Icons
+          mkdir -p www/pdfjs
+          cp guide.pdf www/
+          cp guide-viewer.html www/
+          cp pdfjs/pdf.mjs www/pdfjs/
+          cp pdfjs/pdf.worker.mjs www/pdfjs/
         run: npx cap sync android
 
       - name: Build APK
