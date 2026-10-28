@@ -1853,22 +1853,22 @@ async function printFullReport() {
   }
 }
 
-/* راه‌حل قطعی راهنما */
 function showGuideReport() {
-  // ما فایل PDF را به سیستم‌عامل پاس می‌دهیم تا در مرورگر یا PDF خوان پیش‌فرض باز شود
-  const pdfUrl = 'guide.pdf';
-  const isCapacitor = !!(window.Capacitor && window.Capacitor.isNative);
-
-  if (isCapacitor) {
-    // در اپلیکیشن اندروید، مسیر فایل محلی باید به صورت کامل به مرورگر پاس داده شود.
-    // از آنجا که Capacitor از پروتکل http://localhost برای فایل‌های استاتیک استفاده می‌کند:
-    const fullUrl = window.location.origin + '/' + pdfUrl;
-    window.open(fullUrl, '_system');
-  } else {
-    // در مرورگر یا پی‌سی
-    window.open(pdfUrl, '_blank');
-  }
+  if (document.getElementById('guide-overlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'guide-overlay';
+  overlay.style.cssText = `position: fixed; inset: 0; z-index: 9999999; background: white;`;
+  const iframe = document.createElement('iframe');
+  iframe.src = './guide-viewer.html';
+  iframe.title = 'راهنمای برنامه';
+  iframe.style.cssText = `width: 100%; height: 100%; border: none; display: block;`;
+  overlay.appendChild(iframe);
+  document.body.appendChild(overlay);
 }
+window.closeGuideViewer = function() {
+  const overlay = document.getElementById('guide-overlay');
+  if (overlay) overlay.remove();
+};
 
 function initNewMenu() {
   const menuHTML = `<div id="app-options-menu" style="position: fixed; top: 15px; left: 15px; z-index: 99999; direction: ${isFa() ? 'rtl' : 'ltr'}; font-family: inherit;">
