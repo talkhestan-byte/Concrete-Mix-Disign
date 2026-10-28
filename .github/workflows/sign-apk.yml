@@ -30,8 +30,6 @@ jobs:
         run: |
           mkdir -p www
           cp index.html app.js style.css manifest.webmanifest sw.js www/
-          
-          # کپی عکس راهنما (اگر اسم فایل چیز دیگری است، این خط را تغییر دهید)
           cp guide.jpg www/ || true
           cp guide-viewer.html www/
           
@@ -66,35 +64,34 @@ jobs:
           cp assets/icon-only.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
           cp assets/icon-only.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
 
-      # ساخت APK دیباگ
-      - name: Build Debug APK
+      # --- مرحله ۱: ساخت keystore.properties ---
+      - name: Create keystore.properties
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.jks
+          cat > android/keystore.properties <<EOT
+          storeFile=../my-release-key.jks
+          storePassword=${{ secrets.RELEASE_STORE_PASSWORD }}
+          keyAlias=${{ secrets.RELEASE_KEY_ALIAS }}
+          keyPassword=${{ secrets.RELEASE_KEY_PASSWORD }}
+          EOT
+
+      # --- مرحله ۲: تزریق تنظیمات امضا به build.gradle ---
+      - name: Inject Signing Config into build.gradle
+        run: |
+          # این دستور تنظیمات امضا را به فایل build.gradle اضافه می‌کند
+          sed -i 's/android {/android {\n    signingConfigs {\n        release {\n            storeFile file("my-release-key.jks")\n            storePassword "${{ secrets.RELEASE_STORE_PASSWORD }}"\n            keyAlias "${{ secrets.RELEASE_KEY_ALIAS }}"\n            keyPassword "${{ secrets.RELEASE_KEY_PASSWORD }}"\n        }\n    }\n    buildTypes {\n        release {\n            signingConfig signingConfigs.release\n        }\n    }/' android/app/build.gradle
+
+      # --- مرحله ۳: ساخت نسخه Release با امضا ---
+      - name: Build Release APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
-      # امضا کردن APK با کلید شما
-      - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDirectory: android/app/build/outputs/apk/debug
-          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
-          alias: ${{ secrets.RELEASE_KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.RELEASE_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        env:
-          BUILD_TOOLS_VERSION: "34.0.0"
-
-      # تغییر نام فایل برای آپلود
-      - name: Rename Signed APK
-        run: |
-          mv ${{ steps.sign_app.outputs.signedReleaseFile }} android/app/build/outputs/apk/debug/app-release-signed.apk
-
-      # آپلود فایل نهایی
+      # --- مرحله ۴: تغییر نام و آپلود ---
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: Iranian-Concrete-Mix-Design-Release
-          path: android/app/build/outputs/apk/debug/app-release-signed.apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
