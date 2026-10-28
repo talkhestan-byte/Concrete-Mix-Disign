@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Android APk
+    name: Build Android APK
     runs-on: ubuntu-22.04
 
     steps:
@@ -30,7 +30,14 @@ jobs:
         run: |
           mkdir -p www
           cp index.html app.js style.css manifest.webmanifest sw.js www/
-          #cp icon-192.png icon-512.png www/
+          
+          # کپی کردن فایل‌های راهنما به پوشه www
+          mkdir -p www/pdfjs
+          cp guide.pdf www/
+          cp guide-viewer.html www/
+          cp pdfjs/pdf.mjs www/pdfjs/
+          cp pdfjs/pdf.worker.mjs www/pdfjs/
+          
           npm init -y
           npm install @capacitor/core@6 @capacitor/android@6
           npm install --save-dev @capacitor/cli@6
@@ -66,11 +73,6 @@ jobs:
           ls -la android/app/src/main/res/mipmap-xxxhdpi/
 
       - name: Sync Capacitor after Icons
-          mkdir -p www/pdfjs
-          cp guide.pdf www/
-          cp guide-viewer.html www/
-          cp pdfjs/pdf.mjs www/pdfjs/
-          cp pdfjs/pdf.worker.mjs www/pdfjs/
         run: npx cap sync android
 
       - name: Build APK
