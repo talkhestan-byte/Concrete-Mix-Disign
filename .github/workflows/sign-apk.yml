@@ -64,85 +64,35 @@ jobs:
           cp assets/icon-only.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
           cp assets/icon-only.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
 
-      # --- مرحله ۱: ساخت کلید و فایل properties ---
-      - name: Setup Keystore
-        run: |
-          # تبدیل متن Base64 به فایل کلید
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.jks
-          
-          # ساخت فایل تنظیمات کلید
-          cat > android/keystore.properties <<EOT
-          storeFile=my-release-key.jks
-          storePassword=${{ secrets.RELEASE_STORE_PASSWORD }}
-          keyAlias=${{ secrets.RELEASE_KEY_ALIAS }}
-          keyPassword=${{ secrets.RELEASE_KEY_PASSWORD }}
-          EOT
-
-      # --- مرحله ۲: تغییر فایل build.gradle به روش استاندارد ---
-      - name: Configure Build Gradle for Signing
-        run: |
-          # این دستور به صورت استاندارد تنظیمات امضا را به Gradle اضافه می‌کند
-          cat > android/app/build.gradle << 'EOF'
-          apply plugin: 'com.android.application'
-
-          android {
-              namespace "com.iranianconcrete.mixdesign"
-              compileSdk 34
-              defaultConfig {
-                  applicationId "com.iranianconcrete.mixdesign"
-                  minSdkVersion 22
-                  targetSdkVersion 34
-                  versionCode 1
-                  versionName "1.0"
-                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-                  aaptOptions {
-                      ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
-                  }
-              }
-              signingConfigs {
-                  release {
-                      def keystoreProperties = new Properties()
-                      def keystorePropertiesFile = rootProject.file("keystore.properties")
-                      if (keystorePropertiesFile.exists()) {
-                          keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-                          storeFile file(keystoreProperties['storeFile'])
-                          storePassword keystoreProperties['storePassword']
-                          keyAlias keystoreProperties['keyAlias']
-                          keyPassword keystoreProperties['keyPassword']
-                      }
-                  }
-              }
-              buildTypes {
-                  release {
-                      minifyEnabled false
-                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-                      signingConfig signingConfigs.release
-                  }
-              }
-          }
-          dependencies {
-              implementation fileTree(dir: 'libs', include: ['*.jar'])
-              implementation "androidx.appcompat:appcompat:1.6.1"
-              implementation "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
-              implementation "androidx.core:core-splashscreen:1.0.1"
-              implementation project(':capacitor-android')
-              testImplementation "junit:junit:4.13.2"
-              androidTestImplementation "androidx.test.ext:junit:1.1.5"
-              androidTestImplementation "androidx.test.espresso:espresso-core:3.5.1"
-          }
-          EOF
-
-      # --- مرحله ۳: ساخت نسخه Release ---
-      - name: Build Release APK
+      # --- ساخت APK دیباگ ---
+      - name: Build Debug APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleDebug
 
-      # --- مرحله ۴: آپلود فایل ---
+      # --- امضا کردن APK با ابزار apksigner ---
+      - name: Sign APK
+        run: |
+          # تبدیل متن Base64 به فایل کلید
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-release-key.jks
+          
+          # پیدا کردن مسیر ابزار apksigner در نسخه‌های مختلف اندروید
+          BUILD_TOOLS_PATH=$(find $ANDROID_HOME/build-tools -name "apksigner" -type f | head -n 1)
+          echo "Using apksigner at: $BUILD_TOOLS_PATH"
+          
+          # اجرای دستور امضا
+          $BUILD_TOOLS_PATH sign --ks my-release-key.jks \
+            --ks-pass pass:${{ secrets.RELEASE_STORE_PASSWORD }} \
+            --key-pass pass:${{ secrets.RELEASE_KEY_PASSWORD }} \
+            --ks-key-alias ${{ secrets.RELEASE_KEY_ALIAS }} \
+            --out android/app/build/outputs/apk/debug/app-release-signed.apk \
+            android/app/build/outputs/apk/debug/app-debug.apk
+
+      # --- آپلود فایل نهایی ---
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
           name: Iranian-Concrete-Mix-Design-Release
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/debug/app-release-signed.apk
           if-no-files-found: error
