@@ -1854,13 +1854,39 @@ async function printFullReport() {
 }
 
 function showGuideReport() {
-  // استفاده از لینک دانلود برای ارجاع مستقیم فایل PDF به سیستم‌عامل
-  const link = document.createElement('a');
-  link.href = './guide.pdf';
-  link.download = 'guide.pdf';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  const guideUrl = './guide.pdf';
+  // استفاده از iframe داخل یک صفحه وب برای جلوگیری از صفحه سیاه در WebView
+  const html = `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>راهنمای برنامه</title>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #333; }
+  iframe { width: 100%; height: 100%; border: none; display: block; }
+</style>
+</head>
+<body>
+  <iframe src="${guideUrl}#toolbar=0&navpanes=0&scrollbar=0" title="راهنما"></iframe>
+</body>
+</html>`;
+
+  try {
+    const PrinterPlugin = window.Capacitor?.Plugins?.Printer;
+    if (PrinterPlugin && typeof PrinterPlugin.print === 'function') {
+      PrinterPlugin.print({
+        content: html,
+        name: 'guide',
+        orientation: 'portrait'
+      });
+      return;
+    }
+    alert("پلاگین چاپ در دسترس نیست. برای مشاهده راهنما، فایل PDF را در مرورگر باز کنید.");
+  } catch (error) {
+    console.error('Error opening guide:', error);
+    alert('خطا در نمایش راهنما: ' + (error.message || error));
+  }
 }
 
 function initNewMenu() {
