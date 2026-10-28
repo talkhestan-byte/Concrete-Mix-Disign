@@ -64,31 +64,82 @@ jobs:
           cp assets/icon-only.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
           cp assets/icon-only.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
 
-      # --- مرحله ۱: ساخت keystore.properties ---
-      - name: Create keystore.properties
+      # --- مرحله ۱: ساخت کلید و فایل properties ---
+      - name: Setup Keystore
         run: |
+          # تبدیل متن Base64 به فایل کلید
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.jks
+          
+          # ساخت فایل تنظیمات کلید
           cat > android/keystore.properties <<EOT
-          storeFile=../my-release-key.jks
+          storeFile=my-release-key.jks
           storePassword=${{ secrets.RELEASE_STORE_PASSWORD }}
           keyAlias=${{ secrets.RELEASE_KEY_ALIAS }}
           keyPassword=${{ secrets.RELEASE_KEY_PASSWORD }}
           EOT
 
-      # --- مرحله ۲: تزریق تنظیمات امضا به build.gradle ---
-      - name: Inject Signing Config into build.gradle
+      # --- مرحله ۲: تغییر فایل build.gradle به روش استاندارد ---
+      - name: Configure Build Gradle for Signing
         run: |
-          # این دستور تنظیمات امضا را به فایل build.gradle اضافه می‌کند
-          sed -i 's/android {/android {\n    signingConfigs {\n        release {\n            storeFile file("my-release-key.jks")\n            storePassword "${{ secrets.RELEASE_STORE_PASSWORD }}"\n            keyAlias "${{ secrets.RELEASE_KEY_ALIAS }}"\n            keyPassword "${{ secrets.RELEASE_KEY_PASSWORD }}"\n        }\n    }\n    buildTypes {\n        release {\n            signingConfig signingConfigs.release\n        }\n    }/' android/app/build.gradle
+          # این دستور به صورت استاندارد تنظیمات امضا را به Gradle اضافه می‌کند
+          cat > android/app/build.gradle << 'EOF'
+          apply plugin: 'com.android.application'
 
-      # --- مرحله ۳: ساخت نسخه Release با امضا ---
+          android {
+              namespace "com.iranianconcrete.mixdesign"
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.iranianconcrete.mixdesign"
+                  minSdkVersion 22
+                  targetSdkVersion 34
+                  versionCode 1
+                  versionName "1.0"
+                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+                  aaptOptions {
+                      ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+                  }
+              }
+              signingConfigs {
+                  release {
+                      def keystoreProperties = new Properties()
+                      def keystorePropertiesFile = rootProject.file("keystore.properties")
+                      if (keystorePropertiesFile.exists()) {
+                          keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+                          storeFile file(keystoreProperties['storeFile'])
+                          storePassword keystoreProperties['storePassword']
+                          keyAlias keystoreProperties['keyAlias']
+                          keyPassword keystoreProperties['keyPassword']
+                      }
+                  }
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                      signingConfig signingConfigs.release
+                  }
+              }
+          }
+          dependencies {
+              implementation fileTree(dir: 'libs', include: ['*.jar'])
+              implementation "androidx.appcompat:appcompat:1.6.1"
+              implementation "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
+              implementation "androidx.core:core-splashscreen:1.0.1"
+              implementation project(':capacitor-android')
+              testImplementation "junit:junit:4.13.2"
+              androidTestImplementation "androidx.test.ext:junit:1.1.5"
+              androidTestImplementation "androidx.test.espresso:espresso-core:3.5.1"
+          }
+          EOF
+
+      # --- مرحله ۳: ساخت نسخه Release ---
       - name: Build Release APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
 
-      # --- مرحله ۴: تغییر نام و آپلود ---
+      # --- مرحله ۴: آپلود فایل ---
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
         with:
